@@ -1,0 +1,513 @@
+import {
+  Region,
+  School,
+  LocalKnowledgeItem,
+  Profile,
+  ClassRoom,
+  Question,
+  QuestionContextualization,
+  LearningMaterial,
+  Examination,
+  ExaminationAttempt,
+  Notification,
+} from "./types";
+
+
+export const INITIAL_REGIONS: Region[] = [
+  {
+    id: "region-samarinda",
+    province: "Kalimantan Timur",
+    regency: "Kota Samarinda",
+    district: "Samarinda Kota",
+    village: "Pasar Pagi",
+    geographical_summary:
+      "Wilayah perairan Sungai Mahakam dan perbukitan. Ekosistem sungai menjadi urat nadi perhubungan dan ekonomi lokal.",
+    economic_summary:
+      "Perdagangan pasar tradisional, pelabuhan sungai, kerajinan kain tenun Samarinda, serta logistik perdagangan perikanan air tawar.",
+    cultural_summary:
+      "Masyarakat pesisir Mahakam dengan tradisi Festival Mahakam, kearifan kebersihan sungai, dan gotong royong bebaras.",
+    created_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "region-sleman",
+    province: "DI Yogyakarta",
+    regency: "Kabupaten Sleman",
+    district: "Pakem",
+    village: "Pakembinangun",
+    geographical_summary:
+      "Wilayah lereng subur Gunung Merapi dengan hawa sejuk dan aliran sungai vulkanik.",
+    economic_summary:
+      "Pertanian salak pondoh, peternakan sapi perah Kaliurang, agrowisata, dan industri kreatif kerajinan batik tulis.",
+    cultural_summary:
+      "Tradisi gotong royong sambatan, upacara labuhan, dan pelestarian kesenian karawitan.",
+    created_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+export const INITIAL_SCHOOLS: School[] = [
+  {
+    id: "school-sd001-samarinda",
+    name: "SD Negeri 001 Samarinda Kota",
+    address: "Jl. Jenderal Sudirman No. 12, Samarinda",
+    province: "Kalimantan Timur",
+    regency: "Kota Samarinda",
+    district: "Samarinda Kota",
+    village: "Pasar Pagi",
+    region_id: "region-samarinda",
+    description:
+      "Sekolah dasar yang terletak di tepian Sungai Mahakam dekat pusat kegiatan ekonomi pasar tradisional.",
+    local_characteristics:
+      "Sebagian besar orang tua murid adalah pedagang pasar, pengemudi kapal klotok, pengrajin amplang, dan nelayan sungai.",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "school-sd-pakem-sleman",
+    name: "SD Negeri Pakem 1 Sleman",
+    address: "Jl. Kaliurang Km. 17, Sleman",
+    province: "DI Yogyakarta",
+    regency: "Kabupaten Sleman",
+    district: "Pakem",
+    village: "Pakembinangun",
+    region_id: "region-sleman",
+    description: "Sekolah berwawasan lingkungan agraris di kaki Gunung Merapi.",
+    local_characteristics:
+      "Dikelilingi kebun buah salak pondoh dan peternakan sapi perah rakyat.",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+export const INITIAL_LOCAL_KNOWLEDGE: LocalKnowledgeItem[] = [
+  // Samarinda
+  {
+    id: "kb-sam-1",
+    region_id: "region-samarinda",
+    entity_category: "geography",
+    entity_name: "Sungai Mahakam",
+    description: "Sungai besar kebanggaan masyarakat Kaltim yang menjadi habitat alami pesut mahakam.",
+    suitability_notes: "Sangat cocok untuk soal jarak, lebar sungai, debit air, dan ekosistem perairan.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-sam-2",
+    region_id: "region-samarinda",
+    entity_category: "infrastructure",
+    entity_name: "Pasar Pagi Samarinda",
+    description: "Pasar tradisional tertua di tepi Mahakam tempat bertemunya pedagang sembako dan hasil tangkapan nelayan.",
+    suitability_notes: "Sangat cocok untuk soal jual beli aritmetika dan interaksi ekonomi.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-sam-3",
+    region_id: "region-samarinda",
+    entity_category: "economy",
+    entity_name: "Ikan Haruan (Gabus)",
+    description: "Komoditas perikanan air tawar utama yang banyak dijual kiloan di pasar dan diolah jadi kuliner khas.",
+    suitability_notes: "Cocok untuk soal satuan berat (kg) dan pecahan.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-sam-4",
+    region_id: "region-samarinda",
+    entity_category: "economy",
+    entity_name: "Nelayan Air Tawar",
+    description: "Profesi masyarakat bantaran sungai yang menangkap ikan menggunakan jala dan bubu tradisional.",
+    suitability_notes: "Cocok untuk karakter subjek cerita soal.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-sam-5",
+    region_id: "region-samarinda",
+    entity_category: "transportation",
+    entity_name: "Kapal Klotok",
+    description: "Perahu motor kayu khas yang melayani penyeberangan warga melintasi Sungai Mahakam.",
+    suitability_notes: "Tepat untuk soal waktu tempuh, jadwal keberangkatan, dan tarif.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-sam-6",
+    region_id: "region-samarinda",
+    entity_category: "culture",
+    entity_name: "Kain Tenun Samarinda",
+    description: "Kain tenun bermotif kotak-kotak khas (belang hatta) hasil karya perajin Samarinda Seberang.",
+    suitability_notes: "Cocok untuk materi geometri, simetri lipat, dan budaya lokal.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+
+  // Sleman
+  {
+    id: "kb-slm-1",
+    region_id: "region-sleman",
+    entity_category: "geography",
+    entity_name: "Gunung Merapi",
+    description: "Gunung berapi aktif yang memberi kesuburan bagi tanah pertanian di Kabupaten Sleman.",
+    suitability_notes: "Cocok untuk bentang alam dan pengukuran ketinggian/suhu.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-slm-2",
+    region_id: "region-sleman",
+    entity_category: "infrastructure",
+    entity_name: "Pasar Beringharjo",
+    description: "Pasar tradisional pusat kerajinan batik dan rempah-rempah di Yogyakarta.",
+    suitability_notes: "Cocok untuk soal transaksi dan perdagangan antardaerah.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-slm-3",
+    region_id: "region-sleman",
+    entity_category: "economy",
+    entity_name: "Salak Pondoh",
+    description: "Buah unggulan khas lereng Merapi yang manis dan renyah.",
+    suitability_notes: "Cocok untuk soal timbangan berat kg dan persentase keuntungan hasil panen.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-slm-4",
+    region_id: "region-sleman",
+    entity_category: "economy",
+    entity_name: "Petani Salak Pondoh",
+    description: "Pekerjaan mayoritas petani kebun di kawasan Turi dan Pakem Sleman.",
+    suitability_notes: "Sangat baik untuk nama subjek soal lokal.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-slm-5",
+    region_id: "region-sleman",
+    entity_category: "transportation",
+    entity_name: "Andong Tradisional",
+    description: "Kereta kuda beroda empat khas yang beroperasi di wilayah budaya Yogyakarta.",
+    suitability_notes: "Cocok untuk soal kecepatan, jarak tempuh ramah lingkungan.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "kb-slm-6",
+    region_id: "region-sleman",
+    entity_category: "culture",
+    entity_name: "Batik Tulis Sleman",
+    description: "Seni membatik kain dengan motif khas flora lereng Merapi seperti motif parijoto.",
+    suitability_notes: "Cocok untuk materi pola bangun datar dan pelestarian warisan budaya.",
+    verification_status: "verified",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+export const DEMO_TEACHER: Profile = {
+  id: "teacher-demo-01",
+  role: "teacher",
+  full_name: "Ibu Nurhaliza, S.Pd.",
+  avatar_url: "",
+  phone_number: "081234567890",
+  school_id: "school-sd001-samarinda",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
+export const DEMO_STUDENT: Profile = {
+  id: "student-demo-01",
+  role: "student",
+  full_name: "Budi Pratama",
+  avatar_url: "",
+  school_id: "school-sd001-samarinda",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
+export const INITIAL_CLASSES: ClassRoom[] = [
+  {
+    id: "class-5a-samarinda",
+    teacher_id: "teacher-demo-01",
+    school_id: "school-sd001-samarinda",
+    name: "Kelas 5-A Mahakam",
+    grade: 5,
+    subjects: ["Matematika", "Bahasa Indonesia", "IPS"],
+    join_code: "SD01-5A",
+    academic_year: "2026/2027",
+    is_active: true,
+    member_count: 24,
+    created_at: "2026-01-10T00:00:00Z",
+    updated_at: "2026-01-10T00:00:00Z",
+  },
+  {
+    id: "class-4b-samarinda",
+    teacher_id: "teacher-demo-01",
+    school_id: "school-sd001-samarinda",
+    name: "Kelas 4-B Pesut",
+    grade: 4,
+    subjects: ["Matematika", "Bahasa Indonesia"],
+    join_code: "SD01-4B",
+    academic_year: "2026/2027",
+    is_active: true,
+    member_count: 22,
+    created_at: "2026-01-12T00:00:00Z",
+    updated_at: "2026-01-12T00:00:00Z",
+  },
+];
+
+export const INITIAL_QUESTIONS: Question[] = [
+  {
+    id: "q-math-01",
+    teacher_id: "teacher-demo-01",
+    subject: "Matematika",
+    grade: 5,
+    topic: "Operasi Hitung Pengurangan Bilangan Cacah",
+    learning_objective: "Menyelesaikan masalah sehari-hari yang berkaitan dengan pengurangan berat komoditas",
+    question_type: "multiple_choice",
+    difficulty: "medium",
+    original_text:
+      "Seorang pedagang memiliki 24 kg beras. Sebanyak 9 kg dijual di pasar kota. Berapa kilogram sisa beras yang dimiliki pedagang tersebut?",
+    question_template:
+      "Seorang [OCCUPATION] memiliki 24 kg [COMMODITY]. Sebanyak 9 kg dijual di [MARKET]. Berapa kilogram sisa [COMMODITY] yang dimiliki [OCCUPATION] tersebut?",
+    context_variables: [
+      { key: "OCCUPATION", category: "economy", original_value: "pedagang", replaceable: true },
+      { key: "COMMODITY", category: "economy", original_value: "beras", replaceable: true },
+      { key: "MARKET", category: "infrastructure", original_value: "pasar kota", replaceable: true },
+    ],
+    options: [
+      { id: "A", text: "13 kg" },
+      { id: "B", text: "15 kg" },
+      { id: "C", text: "17 kg" },
+      { id: "D", text: "19 kg" },
+    ],
+    correct_answer: "B",
+    explanation: "Sisa = 24 kg - 9 kg = 15 kg.",
+    is_approved: true,
+    source: "ai_generated",
+    created_at: "2026-01-15T00:00:00Z",
+    updated_at: "2026-01-15T00:00:00Z",
+  },
+  {
+    id: "q-indo-01",
+    teacher_id: "teacher-demo-01",
+    subject: "Bahasa Indonesia",
+    grade: 5,
+    topic: "Teks Narasi dan Informasi Faktual",
+    learning_objective: "Menemukan ide pokok dan informasi tersurat dalam paragraf narasi deskriptif",
+    question_type: "multiple_choice",
+    difficulty: "medium",
+    original_text:
+      "Pak Joko berangkat dari dermaga pagi hari menggunakan perahu kayu menuju seberang sungai untuk mengantarkan anak-anak sekolah dan para pedagang sayur. Beliau selalu memeriksa pelampung keselamatan demi keselamatan penumpang.\n\nApa pekerjaan yang ditekuni Pak Joko pada bacaan di atas?",
+    question_template:
+      "Pak [NAME] berangkat dari [LANDMARK] pagi hari mengemudikan [TRANSPORTATION] menuju seberang sungai untuk mengantarkan anak-anak sekolah dan para pedagang sayur. Beliau selalu memeriksa pelampung keselamatan demi keselamatan penumpang.\n\nApa pekerjaan yang ditekuni Pak [NAME] pada bacaan di atas?",
+    context_variables: [
+      { key: "NAME", category: "social", original_value: "Joko", replaceable: true },
+      { key: "LANDMARK", category: "infrastructure", original_value: "dermaga", replaceable: true },
+      { key: "TRANSPORTATION", category: "transportation", original_value: "perahu kayu", replaceable: true },
+    ],
+    options: [
+      { id: "A", text: "Nahkoda kapal pesiar" },
+      { id: "B", text: "Pengemudi kapal penyeberangan sungai" },
+      { id: "C", text: "Petani sayur" },
+      { id: "D", text: "Penjaga dermaga" },
+    ],
+    correct_answer: "B",
+    explanation: "Pak Joko mengemudikan sarana transportasi air untuk mengantarkan penumpang menyeberang sungai.",
+    is_approved: true,
+    source: "ai_generated",
+    created_at: "2026-01-15T00:00:00Z",
+    updated_at: "2026-01-15T00:00:00Z",
+  },
+  {
+    id: "q-ips-01",
+    teacher_id: "teacher-demo-01",
+    subject: "IPS",
+    grade: 5,
+    topic: "Aktivitas Ekonomi Berdasarkan Kondisi Geografis",
+    learning_objective: "Mengidentifikasi keterkaitan bentang alam perairan sungai dengan jenis mata pencaharian masyarakat",
+    question_type: "essay",
+    difficulty: "medium",
+    original_text:
+      "Jelaskan bagaimana kondisi bentang alam perairan di sekitar tempat tinggalmu memengaruhi mata pencaharian masyarakat dan sebutkan 2 contoh kegiatan ekonomi yang memanfaatkan perairan tersebut!",
+    question_template:
+      "Jelaskan bagaimana kondisi bentang alam di sekitar [LANDMARK] memengaruhi mata pencaharian masyarakat dan sebutkan 2 contoh kegiatan ekonomi yang memanfaatkan lingkungan tersebut!",
+    context_variables: [
+      { key: "LANDMARK", category: "geography", original_value: "perairan sungai", replaceable: true },
+    ],
+    correct_answer:
+      "Bentang alam sungai memengaruhi mata pencaharian menjadi nelayan tangkap dan penyedia jasa transportasi air. Contoh: 1) Menangkap ikan haruan di Sungai Mahakam, 2) Jasa penyeberangan kapal klotok.",
+    rubric:
+      "Skor maksimal 10: 5 poin penjelasan keterkaitan kondisi alam dengan mata pencaharian, 5 poin untuk 2 contoh nyata yang relevan secara geografis.",
+    is_approved: true,
+    source: "manual",
+    created_at: "2026-01-15T00:00:00Z",
+    updated_at: "2026-01-15T00:00:00Z",
+  },
+];
+
+export const INITIAL_CONTEXTUALIZATIONS: QuestionContextualization[] = [
+  {
+    id: "qc-math-samarinda",
+    question_id: "q-math-01",
+    region_id: "region-samarinda",
+    contextualized_text:
+      "Seorang Nelayan Air Tawar memiliki 24 kg Ikan Haruan (Gabus). Sebanyak 9 kg dijual di Pasar Pagi Samarinda. Berapa kilogram sisa Ikan Haruan (Gabus) yang dimiliki Nelayan Air Tawar tersebut?",
+    contextualized_options: [
+      { id: "A", text: "13 kg" },
+      { id: "B", text: "15 kg" },
+      { id: "C", text: "17 kg" },
+      { id: "D", text: "19 kg" },
+    ],
+    variable_replacements: {
+      OCCUPATION: "Nelayan Air Tawar",
+      COMMODITY: "Ikan Haruan (Gabus)",
+      MARKET: "Pasar Pagi Samarinda",
+    },
+    validation_status: "verified",
+    validation_notes:
+      "Validasi Matematika: Operasi aritmetika 24 - 9 = 15 kg dipertahankan dengan tepat. Satuan kg konsisten dengan komoditas ikan air tawar lokal.",
+    teacher_edited: false,
+    is_approved: true,
+    created_at: "2026-01-16T00:00:00Z",
+    updated_at: "2026-01-16T00:00:00Z",
+  },
+  {
+    id: "qc-math-sleman",
+    question_id: "q-math-01",
+    region_id: "region-sleman",
+    contextualized_text:
+      "Seorang Petani Salak Pondoh memiliki 24 kg Salak Pondoh. Sebanyak 9 kg dijual di Pasar Beringharjo. Berapa kilogram sisa Salak Pondoh yang dimiliki Petani Salak Pondoh tersebut?",
+    contextualized_options: [
+      { id: "A", text: "13 kg" },
+      { id: "B", text: "15 kg" },
+      { id: "C", text: "17 kg" },
+      { id: "D", text: "19 kg" },
+    ],
+    variable_replacements: {
+      OCCUPATION: "Petani Salak Pondoh",
+      COMMODITY: "Salak Pondoh",
+      MARKET: "Pasar Beringharjo",
+    },
+    validation_status: "verified",
+    validation_notes:
+      "Validasi Matematika: Operasi pengurangan tetap 24 - 9 = 15 kg. Salak pondoh cocok dengan satuan kilogram panen lereng Merapi.",
+    teacher_edited: false,
+    is_approved: true,
+    created_at: "2026-01-16T00:00:00Z",
+    updated_at: "2026-01-16T00:00:00Z",
+  },
+];
+
+export const INITIAL_MATERIALS: LearningMaterial[] = [
+  {
+    id: "mat-ips-01",
+    teacher_id: "teacher-demo-01",
+    class_id: "class-5a-samarinda",
+    region_id: "region-samarinda",
+    subject: "IPS",
+    grade: 5,
+    topic: "Kenampakan Alam dan Pemanfaatannya di Sekitar Kita",
+    learning_objectives:
+      "Siswa dapat memahami keterkaitan bentang alam sungai dengan kegiatan ekonomi dan transportasi masyarakat lokal.",
+    original_content:
+      "Sungai merupakan salah satu bentang alam perairan darat yang mengalir dari hulu menuju hilir. Masyarakat di sekitar sungai memanfaatkan air untuk perikanan, jalur transportasi perahu, dan pemenuhan kebutuhan air bersih. Keberadaan sungai juga memunculkan pasar terapung atau pasar tepi sungai tempat pedagang menjajakan hasil bumi.",
+    contextualized_content:
+      "Di lingkungan tempat tinggal kita, Sungai Mahakam merupakan urat nadi kehidupan utama. Warga Samarinda memanfaatkan Sungai Mahakam untuk jalur transportasi Kapal Klotok yang menghubungkan Samarinda Kota dengan Samarinda Seberang. Para nelayan menangkap Ikan Haruan di perairan sungai, sementara pedagang menjajakan komoditas segar di tepi dermaga Pasar Pagi. Menjaga kebersihan Sungai Mahakam adalah bagian dari tanggung jawab bersama.",
+    status: "published",
+    created_at: "2026-01-18T00:00:00Z",
+    updated_at: "2026-01-18T00:00:00Z",
+  },
+];
+
+export const INITIAL_EXAMINATIONS: Examination[] = [
+  {
+    id: "exam-01-samarinda",
+    teacher_id: "teacher-demo-01",
+    class_id: "class-5a-samarinda",
+    class_name: "Kelas 5-A Mahakam",
+    title: "Penilaian Harian Matematika & IPAS Kontekstual",
+    description:
+      "Ujian kompetensi dasar operasi hitung dan aktivitas lingkungan lokal berbasis wilayah tepian Mahakam.",
+    subject: "Matematika",
+    grade: 5,
+    duration_minutes: 45,
+    start_time: "2026-01-01T08:00:00Z",
+    end_time: "2026-12-31T23:59:59Z",
+    status: "ongoing",
+    show_results_immediately: true,
+    allow_review: true,
+    question_count: 3,
+    questions: INITIAL_QUESTIONS,
+    created_at: "2026-01-20T00:00:00Z",
+    updated_at: "2026-01-20T00:00:00Z",
+  },
+];
+
+export const INITIAL_ATTEMPTS: ExaminationAttempt[] = [
+  {
+    id: "att-demo-01",
+    examination_id: "exam-01-samarinda",
+    student_id: "student-demo-01",
+    student_name: "Budi Pratama",
+    start_time: "2026-01-21T09:00:00Z",
+    submit_time: "2026-01-21T09:30:00Z",
+    score: 85,
+    status: "graded",
+  },
+];
+
+export const INITIAL_NOTIFICATIONS: Notification[] = [
+  {
+    id: "notif-01",
+    user_id: "teacher-demo-01",
+    title: "Siswa Bergabung ke Kelas",
+    message: "Budi Pratama telah berhasil bergabung ke Kelas 5-A Mahakam.",
+    link: "/teacher/classes",
+    type: "class",
+    is_read: false,
+    created_at: "10 menit yang lalu",
+  },
+  {
+    id: "notif-02",
+    user_id: "teacher-demo-01",
+    title: "Ujian Selesai Dikerjakan",
+    message: "Siswa telah mengumpulkan lembar jawaban Penilaian Harian Matematika & IPAS.",
+    link: "/teacher/examinations",
+    type: "exam",
+    is_read: false,
+    created_at: "1 jam yang lalu",
+  },
+  {
+    id: "notif-03",
+    user_id: "student-demo-01",
+    title: "Ujian Baru Tersedia",
+    message: "Ibu Nurhaliza telah menjadwalkan Penilaian Harian Matematika & IPAS Kontekstual.",
+    link: "/student/examinations",
+    type: "exam",
+    is_read: false,
+    created_at: "2 jam yang lalu",
+  },
+  {
+    id: "notif-04",
+    user_id: "student-demo-01",
+    title: "Materi Baru Diterbitkan",
+    message: "Materi 'Kenampakan Alam di Sekitar Kita' sudah dapat dibaca.",
+    link: "/student/materials",
+    type: "material",
+    is_read: true,
+    created_at: "1 hari yang lalu",
+  },
+];
