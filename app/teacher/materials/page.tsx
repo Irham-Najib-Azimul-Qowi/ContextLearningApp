@@ -1,22 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
 import {
   BookOpen,
   PlusCircle,
   Sparkles,
   CheckCircle2,
-  Users,
+  UsersRound,
   Eye,
   Send,
+  Printer,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 import { repository } from "@/lib/db/repository";
 import { LearningMaterial, QuestionSubject, ClassRoom } from "@/lib/db/types";
 
@@ -36,10 +33,12 @@ export default function MaterialsPage() {
   const [targetClassId, setTargetClassId] = useState("");
 
   useEffect(() => {
-    setMaterials(repository.getMaterials());
-    setClasses(repository.getClasses());
-    if (repository.getClasses().length > 0) {
-      setTargetClassId(repository.getClasses()[0].id);
+    const schoolId = localStorage.getItem("cl_active_school_id") || "school-sd001-samarinda";
+    setMaterials(repository.getMaterials(schoolId));
+    const cls = repository.getClasses(schoolId);
+    setClasses(cls);
+    if (cls.length > 0) {
+      setTargetClassId(cls[0].id);
     }
   }, []);
 
@@ -47,13 +46,14 @@ export default function MaterialsPage() {
     e.preventDefault();
     if (!topic.trim() || !originalContent.trim()) return;
 
-    // Provide default contextualized adaptation if empty
+    const schoolId = localStorage.getItem("cl_active_school_id") || "school-sd001-samarinda";
     const cont =
       contextualizedContent.trim() ||
-      `${originalContent}\n\nContoh Lokal (Samarinda): Di tepian Sungai Mahakam, interaksi ekonomi berlangsung setiap hari di dermaga Pasar Pagi dan aktivitas penyeberangan Kapal Klotok.`;
+      `${originalContent}\n\nContoh Lokal (Kearifan Daerah): Di tepian Sungai Mahakam, interaksi ekonomi berlangsung setiap hari di dermaga Pasar Pagi dan penyeberangan Kapal Klotok.`;
 
-    const newM = repository.createMaterial({
+    repository.createMaterial({
       teacher_id: "teacher-demo-01",
+      school_id: schoolId,
       class_id: targetClassId || undefined,
       region_id: "region-samarinda",
       subject,
@@ -65,7 +65,7 @@ export default function MaterialsPage() {
       status: "published",
     });
 
-    setMaterials(repository.getMaterials());
+    setMaterials(repository.getMaterials(schoolId));
     setShowCreateModal(false);
     setTopic("");
     setOriginalContent("");
@@ -73,238 +73,208 @@ export default function MaterialsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <Container className="py-8 sm:py-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="primary">Bahan Pembelajaran</Badge>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Materi Ajar Kontekstual
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              Susun dan terbitkan bahan bacaan yang diperkaya dengan contoh fenomena alam dan budaya sekitar siswa.
-            </p>
-          </div>
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setShowCreateModal(true)}
-            className="shadow-xs"
-          >
-            <PlusCircle className="h-4 w-4" /> Buat Materi Ajar
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+        <div>
+          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#5865D8]" />
+            Materi Ajar Kontekstual
+          </h1>
+          <p className="text-xs text-[#697386] mt-0.5">
+            Susun dan terbitkan bahan bacaan yang diperkaya dengan kearifan lokal sekitar sekolah.
+          </p>
         </div>
 
-        {/* Materials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {materials.map((m) => (
-            <Card key={m.id} className="hover:border-primary/30 transition-all flex flex-col">
-              <CardHeader className="p-5 pb-3 border-b border-border/60">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">{m.subject}</Badge>
-                  <Badge variant="neutral">Kelas {m.grade} SD</Badge>
-                </div>
-                <CardTitle className="text-base font-bold text-foreground mt-2">
-                  {m.topic}
-                </CardTitle>
-                <p className="text-xs text-muted line-clamp-1 mt-0.5">
-                  {m.learning_objectives}
-                </p>
-              </CardHeader>
-
-              <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div className="rounded-xl bg-slate-50 p-3 text-xs text-muted leading-relaxed line-clamp-4 border border-slate-200">
-                  {m.contextualized_content || m.original_content}
-                </div>
-
-                <div className="pt-2 border-t border-border/60 flex items-center justify-between">
-                  <Badge variant={m.status === "published" ? "success" : "warning"}>
-                    {m.status === "published" ? "Diterbitkan" : "Draf"}
-                  </Badge>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedMaterial(m)}
-                    className="text-xs"
-                  >
-                    <Eye className="h-3.5 w-3.5 mr-1" /> Baca Selengkapnya
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Create Material Modal */}
-        <Modal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          title="Tambah Materi Pembelajaran Kontekstual"
-          description="Tuliskan materi pembelajaran dan sertakan narasi yang relevan dengan lingkungan siswa."
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setShowCreateModal(true)}
+          className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold"
         >
-          <form onSubmit={handleCreateMaterial} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                  Mata Pelajaran
-                </label>
-                <select
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value as QuestionSubject)}
-                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="IPS">IPS</option>
-                  <option value="Matematika">Matematika</option>
-                  <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-                </select>
-              </div>
+          <PlusCircle className="w-4 h-4 mr-1.5" /> Buat Materi Ajar
+        </Button>
+      </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                  Kelas
-                </label>
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {[1, 2, 3, 4, 5, 6].map((g) => (
-                    <option key={g} value={g}>
-                      Kelas {g} SD
-                    </option>
-                  ))}
-                </select>
+      {/* Materials Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {materials.map((m) => (
+          <div key={m.id} className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
+                  {m.subject} • Kelas {m.grade}
+                </span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
+                  Diterbitkan
+                </span>
               </div>
+              <h3 className="text-base font-bold text-[#252B3A] mt-2">{m.topic}</h3>
+              <p className="text-xs text-[#697386] line-clamp-1 mt-0.5">{m.learning_objectives}</p>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                Pilih Kelas Sasaran
-              </label>
-              <select
-                value={targetClassId}
-                onChange={(e) => setTargetClassId(e.target.value)}
-                className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            <div className="rounded-lg bg-[#F7F8FC] p-3 text-xs text-[#697386] leading-relaxed line-clamp-4 border border-[#EDEFF5]">
+              {m.contextualized_content || m.original_content}
+            </div>
+
+            <div className="pt-2 border-t border-[#EDEFF5] flex items-center justify-between">
+              <span className="text-[11px] text-[#238B68] font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Siap untuk Siswa
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedMaterial(m)}
+                className="text-xs h-7 border-[#DCE0EA]"
               >
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} (Kelas {c.grade} SD)
+                <Eye className="w-3.5 h-3.5 mr-1" /> Baca Selengkapnya
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Create Material Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Tambah Materi Pembelajaran Kontekstual"
+        description="Sertakan contoh fenomena alam atau kegiatan sosial di wilayah sekolah."
+      >
+        <form onSubmit={handleCreateMaterial} className="space-y-4 text-xs">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-semibold text-[#252B3A] block mb-1">Mata Pelajaran:</label>
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value as QuestionSubject)}
+                className="w-full rounded-xl border border-[#DCE0EA] bg-white px-3 py-2"
+              >
+                <option value="IPS">IPS</option>
+                <option value="Matematika">Matematika</option>
+                <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                <option value="IPA">IPA</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="font-semibold text-[#252B3A] block mb-1">Tingkat Kelas:</label>
+              <select
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                className="w-full rounded-xl border border-[#DCE0EA] bg-white px-3 py-2"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((g) => (
+                  <option key={g} value={g}>
+                    Kelas {g}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
 
+          <div>
+            <label className="font-semibold text-[#252B3A] block mb-1">Topik Materi:</label>
             <Input
-              label="Topik Materi"
               type="text"
               required
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="Contoh: Ekosistem Sungai dan Interaksi Sosial"
             />
+          </div>
 
+          <div>
+            <label className="font-semibold text-[#252B3A] block mb-1">Tujuan Pembelajaran:</label>
             <Input
-              label="Tujuan Pembelajaran"
               type="text"
               value={objectives}
               onChange={(e) => setObjectives(e.target.value)}
               placeholder="Siswa mampu memahami kenampakan alam..."
             />
+          </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                Materi Standar
-              </label>
-              <textarea
-                rows={3}
-                required
-                value={originalContent}
-                onChange={(e) => setOriginalContent(e.target.value)}
-                placeholder="Tulis uraian materi standar..."
-                className="w-full rounded-xl border border-border bg-white p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
+          <div>
+            <label className="font-semibold text-[#252B3A] block mb-1">Uraian Materi Standar:</label>
+            <textarea
+              rows={3}
+              required
+              value={originalContent}
+              onChange={(e) => setOriginalContent(e.target.value)}
+              placeholder="Tulis uraian materi kurikulum standar..."
+              className="w-full rounded-xl border border-[#DCE0EA] bg-white p-3 text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="font-semibold text-[#5865D8] block mb-1 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" /> Uraian Kontekstual Lokal (Opsional):
+            </label>
+            <textarea
+              rows={3}
+              value={contextualizedContent}
+              onChange={(e) => setContextualizedContent(e.target.value)}
+              placeholder="Uraian yang menghubungkan konsep dengan sungai, pasar, atau budaya lokal..."
+              className="w-full rounded-xl border border-indigo-200 bg-indigo-50/30 p-3 text-xs"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowCreateModal(false)} className="text-xs">
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+              <Send className="w-3.5 h-3.5 mr-1" /> Terbitkan ke Kelas
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Detail Modal */}
+      {selectedMaterial && (
+        <Modal
+          isOpen={Boolean(selectedMaterial)}
+          onClose={() => setSelectedMaterial(null)}
+          title={selectedMaterial.topic}
+          description={`${selectedMaterial.subject} • Kelas ${selectedMaterial.grade}`}
+        >
+          <div className="space-y-4 text-xs">
+            <div>
+              <span className="font-bold text-[#697386] block mb-1 uppercase tracking-wider">
+                Tujuan Pembelajaran:
+              </span>
+              <p className="text-[#252B3A] font-medium">{selectedMaterial.learning_objectives}</p>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5" /> Penjelasan Kontekstual Lokal (Opsional / AI)
-              </label>
-              <textarea
-                rows={3}
-                value={contextualizedContent}
-                onChange={(e) => setContextualizedContent(e.target.value)}
-                placeholder="Uraian yang menghubungkan konsep dengan sungai, pasar, atau komoditas lokal sekitar sekolah..."
-                className="w-full rounded-xl border border-indigo-200 bg-indigo-50/30 p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/60">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                Batal
-              </Button>
-              <Button type="submit" variant="primary" size="sm">
-                <Send className="h-4 w-4" /> Terbitkan ke Kelas
-              </Button>
-            </div>
-          </form>
-        </Modal>
-
-        {/* Detail Modal */}
-        {selectedMaterial && (
-          <Modal
-            isOpen={Boolean(selectedMaterial)}
-            onClose={() => setSelectedMaterial(null)}
-            title={selectedMaterial.topic}
-            description={`${selectedMaterial.subject} • Kelas ${selectedMaterial.grade} SD`}
-          >
-            <div className="space-y-4">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">
-                  Tujuan Pembelajaran:
+            {selectedMaterial.contextualized_content && (
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 space-y-1">
+                <span className="font-bold text-[#5865D8] flex items-center gap-1 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" /> Uraian Kontekstual Wilayah:
                 </span>
-                <p className="text-xs text-foreground font-medium">{selectedMaterial.learning_objectives}</p>
-              </div>
-
-              {selectedMaterial.contextualized_content && (
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 space-y-1.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4" /> Uraian Kontekstual Wilayah:
-                  </span>
-                  <p className="text-xs text-foreground leading-relaxed whitespace-pre-line">
-                    {selectedMaterial.contextualized_content}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">
-                  Naskah Materi Inti:
-                </span>
-                <p className="text-xs text-muted leading-relaxed whitespace-pre-line">
-                  {selectedMaterial.original_content}
+                <p className="text-[#252B3A] leading-relaxed whitespace-pre-line">
+                  {selectedMaterial.contextualized_content}
                 </p>
               </div>
+            )}
 
-              <div className="pt-4 border-t border-border/60 text-right">
-                <Button variant="outline" size="sm" onClick={() => setSelectedMaterial(null)}>
-                  Tutup
-                </Button>
-              </div>
+            <div>
+              <span className="font-bold text-[#697386] block mb-1 uppercase tracking-wider">
+                Naskah Materi Pokok:
+              </span>
+              <p className="text-[#697386] leading-relaxed whitespace-pre-line">
+                {selectedMaterial.original_content}
+              </p>
             </div>
-          </Modal>
-        )}
-      </Container>
+
+            <div className="pt-3 border-t border-[#DCE0EA] text-right">
+              <Button variant="outline" size="sm" onClick={() => setSelectedMaterial(null)} className="text-xs">
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

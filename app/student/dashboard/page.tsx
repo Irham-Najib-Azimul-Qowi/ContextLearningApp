@@ -2,21 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   GraduationCap,
   ClipboardList,
   BookOpen,
-  Users,
+  UsersRound,
   Clock,
   ArrowRight,
   Award,
   CheckCircle2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { repository } from "@/lib/db/repository";
 import { ClassRoom, Examination, LearningMaterial, ExaminationAttempt } from "@/lib/db/types";
 
@@ -36,177 +32,158 @@ export default function StudentDashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <Container className="py-8 sm:py-10">
-        {/* Welcome Banner */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="primary">Ruang Siswa</Badge>
-              <span className="text-xs text-muted">SD Negeri 001 Samarinda Kota</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Semangat Belajar, Budi Pratama!
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              Kelas 5-A Mahakam • Pembelajaran yang dekat dengan lingkungan sehari-hari.
-            </p>
+    <div className="space-y-6">
+      {/* Welcome Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#5865D8]/10 text-[#5865D8]">
+              Ruang Belajar Siswa
+            </span>
+            <span className="text-xs text-[#697386]">Kelas 5-A Mahakam</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Link href="/student/classes">
-              <Button variant="outline" size="sm">
-                <Users className="h-4 w-4 mr-1" /> Gabung Kelas
-              </Button>
-            </Link>
-            <Link href="/student/examinations">
-              <Button variant="primary" size="sm" className="shadow-xs">
-                <ClipboardList className="h-4 w-4 mr-1" /> Lihat Semua Ujian
-              </Button>
-            </Link>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#252B3A] tracking-tight">
+            Semangat Belajar, Budi Pratama!
+          </h1>
+          <p className="text-xs text-[#697386] mt-0.5">
+            Pelajari materi dan kerjakan tugas yang disesuaikan dengan lingkungan tempat tinggalmu.
+          </p>
         </div>
 
-        {/* 2-Column Student Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Column: Active Examinations & Learning Materials */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Active Examination Card */}
-            <Card className="border-indigo-100 ring-1 ring-indigo-50 shadow-sm">
-              <CardHeader className="p-5 pb-3 border-b border-border/60 flex flex-row items-center justify-between bg-indigo-50/20">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base font-bold text-foreground">
-                    Ujian yang Tersedia
-                  </CardTitle>
-                </div>
-                <Badge variant="warning">Harap Dikerjakan</Badge>
-              </CardHeader>
+        <div className="flex items-center gap-2">
+          <Link href="/student/classes">
+            <Button variant="outline" size="sm" className="text-xs border-[#DCE0EA]">
+              <UsersRound className="w-3.5 h-3.5 mr-1 text-[#5865D8]" /> Gabung Kelas Lain
+            </Button>
+          </Link>
+          <Link href="/student/examinations">
+            <Button variant="primary" size="sm" className="bg-[#5865D8] hover:bg-[#4753C4] text-xs">
+              <ClipboardList className="w-3.5 h-3.5 mr-1" /> Lembar Ujian
+            </Button>
+          </Link>
+        </div>
+      </div>
 
-              <CardContent className="p-5 space-y-4">
-                {exams.slice(0, 1).map((ex) => (
-                  <div key={ex.id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-base font-bold text-foreground">{ex.title}</h4>
-                      <Badge variant="secondary">{ex.subject}</Badge>
-                    </div>
+      {/* 2-Column Student Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Column: Active Examinations & Learning Materials */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Active Examination Card */}
+          <div className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#EDEFF5] pb-3">
+              <h3 className="text-sm font-bold text-[#252B3A] flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-[#5865D8]" /> Ujian yang Harus Dikerjakan
+              </h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-[#C68A28]">
+                Batas Waktu: Hari Ini
+              </span>
+            </div>
 
-                    <p className="text-xs text-muted leading-relaxed">
-                      {ex.description || "Ujian evaluasi materi kontekstual lingkungan sekitar sekolah."}
-                    </p>
-
-                    <div className="flex items-center gap-4 text-xs text-muted">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-primary" /> Durasi: {ex.duration_minutes} Menit
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <GraduationCap className="h-3.5 w-3.5 text-secondary" /> Kelas {ex.grade} SD
-                      </span>
-                    </div>
-
-                    <div className="pt-2 flex items-center justify-end">
-                      <Link href={`/student/examinations/${ex.id}/session`}>
-                        <Button variant="primary" size="md" className="shadow-xs">
-                          Mulai Kerjakan Ujian <ArrowRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Published Learning Materials */}
-            <Card>
-              <CardHeader className="p-5 pb-3 border-b border-border/60 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-secondary" />
-                  <CardTitle className="text-base font-bold text-foreground">
-                    Materi Belajar Terbaru
-                  </CardTitle>
-                </div>
-                <Link href="/student/materials" className="text-xs font-semibold text-primary hover:underline">
-                  Lihat Semua
-                </Link>
-              </CardHeader>
-
-              <CardContent className="p-5 divide-y divide-border/60">
-                {materials.map((m) => (
-                  <div key={m.id} className="py-3.5 first:pt-0 last:pb-0 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary">{m.subject}</Badge>
-                      <span className="text-xs text-muted">Kelas {m.grade} SD</span>
-                    </div>
-                    <h4 className="text-sm font-semibold text-foreground">{m.topic}</h4>
-                    <p className="text-xs text-muted line-clamp-2 leading-relaxed">
-                      {m.contextualized_content || m.original_content}
-                    </p>
-                    <div>
-                      <Link href="/student/materials">
-                        <span className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                          Baca Materi <ArrowRight className="h-3 w-3" />
-                        </span>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar Column: Score Card & Active Classes */}
-          <div className="space-y-6">
-            {/* Published Score Card */}
-            <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50/30 to-white">
-              <CardHeader className="py-4">
-                <CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-800">
-                  <Award className="h-4 w-4 text-success" /> Nilai Ujian Terakhir
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 space-y-3">
+            {exams.slice(0, 1).map((ex) => (
+              <div key={ex.id} className="space-y-3 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted font-medium">Penilaian Harian Matematika:</span>
-                  <span className="text-2xl font-black text-emerald-700">85 / 100</span>
+                  <h4 className="text-sm font-bold text-[#252B3A]">{ex.title}</h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
+                    {ex.subject}
+                  </span>
                 </div>
-                <p className="text-xs text-muted leading-relaxed">
-                  Status: <strong>Nilai Telah Dirilis Guru</strong>. Anda dapat meninjau pembahasan jawaban yang benar.
+
+                <p className="text-[#697386] leading-relaxed">
+                  {ex.description || "Ujian evaluasi kompetensi kontekstual berbasis wilayah sekitar."}
                 </p>
-                <div className="pt-2">
-                  <Link href="/student/examinations/exam-01-samarinda/results">
-                    <Button variant="outline" size="sm" className="w-full text-xs bg-white">
-                      Lihat Pembahasan Jawaban
+
+                <div className="flex items-center gap-4 text-[#697386]">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-[#5865D8]" /> Durasi: {ex.duration_minutes} Menit
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <GraduationCap className="w-3.5 h-3.5 text-[#238B68]" /> Kelas {ex.grade} SD
+                  </span>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Link href={`/student/examinations/${ex.id}/session`}>
+                    <Button variant="primary" size="sm" className="bg-[#5865D8] hover:bg-[#4753C4] text-xs">
+                      Mulai Kerjakan Ujian <ArrowRight className="w-3.5 h-3.5 ml-1" />
                     </Button>
                   </Link>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            ))}
+          </div>
 
-            {/* My Classes Card */}
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" /> Kelas yang Diikuti
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 space-y-3">
-                {classes.map((c) => (
-                  <div key={c.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <h5 className="text-xs font-bold text-foreground">{c.name}</h5>
-                    <p className="text-[11px] text-muted mt-0.5">Wali Kelas: Ibu Nurhaliza, S.Pd.</p>
+          {/* Published Learning Materials */}
+          <div className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDEFF5] pb-3">
+              <h3 className="text-sm font-bold text-[#252B3A] flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-[#238B68]" /> Materi Belajar Kontekstual
+              </h3>
+              <Link href="/student/materials" className="text-xs font-semibold text-[#5865D8] hover:underline">
+                Lihat Semua
+              </Link>
+            </div>
+
+            <div className="divide-y divide-[#EDEFF5]">
+              {materials.map((m) => (
+                <div key={m.id} className="py-3 space-y-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
+                      {m.subject}
+                    </span>
+                    <span className="text-[11px] text-[#697386]">Kelas {m.grade} SD</span>
                   </div>
-                ))}
-                <Link href="/student/classes" className="block pt-1">
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    + Masukkan Kode Kelas Lain
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                  <h4 className="font-bold text-[#252B3A] text-sm mt-1">{m.topic}</h4>
+                  <p className="text-[#697386] line-clamp-2 leading-relaxed">
+                    {m.contextualized_content || m.original_content}
+                  </p>
+                  <div className="pt-1">
+                    <Link href="/student/materials" className="text-xs font-semibold text-[#5865D8] hover:underline flex items-center gap-1">
+                      Baca Materi Lengkap <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </Container>
+
+        {/* Right Column: Score Card & Active Classes */}
+        <div className="space-y-6">
+          {/* Latest Grade Card */}
+          <div className="bg-white rounded-xl border border-emerald-200 p-5 shadow-xs bg-gradient-to-br from-emerald-50/20 to-white space-y-3 text-xs">
+            <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+              <Award className="w-4 h-4 text-[#238B68]" /> Nilai Ujian Terakhir
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[#697386]">Matematika Kontekstual:</span>
+              <span className="text-2xl font-black text-[#238B68] font-mono">85 / 100</span>
+            </div>
+            <p className="text-[#697386] leading-relaxed">
+              Nilai telah dirilis oleh Ibu Nurhaliza, S.Pd. Pembahasan soal sudah dapat kamu pelajari.
+            </p>
+            <div className="pt-1">
+              <Link href="/student/examinations/exam-01-samarinda/results">
+                <Button variant="outline" size="sm" className="w-full text-xs border-[#DCE0EA] bg-white">
+                  Lihat Pembahasan Jawaban
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Classes Enrolled */}
+          <div className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs space-y-3 text-xs">
+            <h3 className="text-sm font-bold text-[#252B3A] flex items-center gap-2">
+              <UsersRound className="w-4 h-4 text-[#5865D8]" /> Kelas yang Diikuti
+            </h3>
+            {classes.map((c) => (
+              <div key={c.id} className="p-3 rounded-lg bg-[#F7F8FC] border border-[#EDEFF5]">
+                <h5 className="font-bold text-[#252B3A]">{c.name}</h5>
+                <p className="text-[11px] text-[#697386] mt-0.5">Wali Kelas: Ibu Nurhaliza, S.Pd.</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

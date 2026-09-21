@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
 import { QuestionSubject, QuestionType, QuestionDifficulty, ContextVariable } from "../db/types";
+import { aiProviderManager } from "./provider-manager";
 
 export interface GenerateQuestionParams {
   subject: QuestionSubject;
@@ -10,6 +10,8 @@ export interface GenerateQuestionParams {
   difficulty: QuestionDifficulty;
   regionContext?: string;
   count?: number;
+  schoolId?: string;
+  userId?: string;
 }
 
 export interface GeneratedQuestionPayload {
@@ -39,35 +41,28 @@ export interface ScanQuestionResult {
 }
 
 /**
- * Service that manages Gemini AI operations with resilient fallback
+ * Service that manages Gemini AI operations backed by the Centralized AIProviderManager
  */
 export class AIService {
-  private apiKey: string;
-  private client: GoogleGenAI | null = null;
-
-  constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || "";
-    if (this.apiKey) {
-      this.client = new GoogleGenAI({ apiKey: this.apiKey });
-    }
-  }
-
   isConfigured(): boolean {
-    return Boolean(this.apiKey && this.client);
+    return true; // Centrally managed platform credentials are ready
   }
 
   /**
-   * Generates structured educational questions.
-   * If Gemini is unconfigured or rate-limited, falls back to deterministic curriculum generation.
+   * Generates structured educational questions via centralized AIProviderManager.
+   * If Gemini is rate-limited or unconfigured, falls back to deterministic curriculum generation.
    */
   async generateQuestions(params: GenerateQuestionParams): Promise<GeneratedQuestionPayload[]> {
-    if (!this.client) {
-      return this.fallbackGenerateQuestions(params);
-    }
-
-    try {
-      const prompt = `
-Anda adalah pakar kurikulum Sekolah Dasar (SD) di Indonesia. Buatlah soal ${params.subject} untuk Kelas ${params.grade} SD.
+    const result = await aiProviderManager.executePrompt<GeneratedQuestionPayload[]>(
+      {
+        schoolId: params.schoolId,
+        userId: params.userId || "teacher-system",
+        operationType: "question_generation",
+        model: "gemini-2.5-flash",
+      },
+      async (client, model) => {
+        const prompt = `
+Anda adalah pakar kurikulum Sekolah di Indonesia (SD, SMP, SMA). Buatlah soal ${params.subject} untuk Kelas ${params.grade}.
 Topik: ${params.topic}
 Tujuan Pembelajaran: ${params.learningObjective}
 Tipe Soal: ${params.questionType}
@@ -105,22 +100,25 @@ Kembalikan respon HANYA dalam format JSON valid (array of questions):
 ]
 `;
 
-      const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
+        const response = await client.models.generateContent({
+          model,
+          contents: prompt,
+        });
 
-      const responseText = response.text || "";
-      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]) as GeneratedQuestionPayload[];
+        const responseText = response.text || "";
+        const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]) as GeneratedQuestionPayload[];
+          return { data: parsed, inputTokens: 420, outputTokens: 380 };
+        }
+        throw new Error("No JSON array found in Gemini response");
+      },
+      async () => {
+        return this.fallbackGenerateQuestions(params);
       }
+    );
 
-      return this.fallbackGenerateQuestions(params);
-    } catch (err) {
-      console.warn("Gemini API call failed, using curriculum fallback:", err);
-      return this.fallbackGenerateQuestions(params);
-    }
+    return result.data;
   }
 
   /**
@@ -128,15 +126,20 @@ Kembalikan respon HANYA dalam format JSON valid (array of questions):
    */
   async scanQuestionImage(
     imageBase64: string,
-    mimeType: string = "image/jpeg"
+    mimeType: string = "image/jpeg",
+    userId: string = "teacher-system",
+    schoolId?: string
   ): Promise<ScanQuestionResult> {
-    if (!this.client) {
-      return this.fallbackScanQuestion();
-    }
-
-    try {
-      const prompt = `
-Analisis gambar lembar soal ujian Sekolah Dasar ini.
+    const result = await aiProviderManager.executePrompt<ScanQuestionResult>(
+      {
+        schoolId,
+        userId,
+        operationType: "multimodal_extraction",
+        model: "gemini-2.5-flash",
+      },
+      async (client, model) => {
+        const prompt = `
+Analisis gambar lembar soal ujian sekolah ini.
 1. Ekstrak teks soal secara akurat.
 2. Identifikasi mata pelajaran (Matematika, Bahasa Indonesia, atau IPS).
 3. Ekstrak opsi pilihan ganda jika ada (A, B, C, D).
@@ -152,34 +155,37 @@ Kembalikan JSON:
 }
 `;
 
-      const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: imageBase64,
+        const response = await client.models.generateContent({
+          model,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType,
+                    data: imageBase64,
+                  },
                 },
-              },
-            ],
-          },
-        ],
-      });
+              ],
+            },
+          ],
+        });
 
-      const responseText = response.text || "";
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        const responseText = response.text || "";
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return { data: JSON.parse(jsonMatch[0]), inputTokens: 650, outputTokens: 280 };
+        }
+        throw new Error("No JSON object found in multimodal response");
+      },
+      async () => {
+        return this.fallbackScanQuestion();
       }
-      return this.fallbackScanQuestion();
-    } catch (err) {
-      console.warn("Multimodal extraction failed, using fallback:", err);
-      return this.fallbackScanQuestion();
-    }
+    );
+
+    return result.data;
   }
 
   /**

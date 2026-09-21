@@ -1,25 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import Link from "next/link";
 import {
   ClipboardList,
   PlusCircle,
   Clock,
-  Users,
+  UsersRound,
   CheckCircle2,
   Eye,
   Award,
   Calendar,
+  Printer,
+  ScanLine,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { repository } from "@/lib/db/repository";
-import { Examination, Question, ClassRoom, ExaminationAttempt, QuestionSubject } from "@/lib/db/types";
+import { Examination, Question, ClassRoom, QuestionSubject } from "@/lib/db/types";
 
 export default function TeacherExaminationsPage() {
   const [exams, setExams] = useState<Examination[]>([]);
@@ -40,16 +39,18 @@ export default function TeacherExaminationsPage() {
   // Essay grading state
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [essayScore, setEssayScore] = useState("10");
-  const [essayFeedback, setEssayFeedback] = useState("Jawaban sangat baik dan tepat menyebutkan konteks lingkungan sekitar.");
+  const [essayFeedback, setEssayFeedback] = useState(
+    "Jawaban sangat baik dan tepat menyebutkan konteks lingkungan sekitar."
+  );
 
   useEffect(() => {
-    setExams(repository.getExaminations());
-    const cList = repository.getClasses();
+    const schoolId = localStorage.getItem("cl_active_school_id") || "school-sd001-samarinda";
+    setExams(repository.getExaminations(schoolId));
+    const cList = repository.getClasses(schoolId);
     setClasses(cList);
     if (cList.length > 0) setClassId(cList[0].id);
-    const qList = repository.getQuestions();
+    const qList = repository.getQuestions(schoolId);
     setQuestions(qList);
-    // Auto-select approved questions
     setSelectedQuestionIds(qList.map((q) => q.id));
   }, []);
 
@@ -57,11 +58,13 @@ export default function TeacherExaminationsPage() {
     e.preventDefault();
     if (!title.trim() || !classId) return;
 
+    const schoolId = localStorage.getItem("cl_active_school_id") || "school-sd001-samarinda";
     const targetClass = classes.find((c) => c.id === classId);
 
-    const newExam = repository.createExamination(
+    repository.createExamination(
       {
         teacher_id: "teacher-demo-01",
+        school_id: schoolId,
         class_id: classId,
         class_name: targetClass?.name || "Kelas 5",
         title,
@@ -78,7 +81,7 @@ export default function TeacherExaminationsPage() {
       selectedQuestionIds
     );
 
-    setExams(repository.getExaminations());
+    setExams(repository.getExaminations(schoolId));
     setShowCreateModal(false);
     setTitle("");
     setDescription("");
@@ -86,294 +89,285 @@ export default function TeacherExaminationsPage() {
 
   const handleGradeEssaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate updating essay answer
     alert("Penilaian essay berhasil disimpan dan skor akhir telah dipublikasikan ke siswa!");
     setReviewModalOpen(false);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+        <div>
+          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-[#5865D8]" />
+            Ruang Ujian & Penilaian Siswa
+          </h1>
+          <p className="text-xs text-[#697386] mt-0.5">
+            Jadwalkan penilaian kontekstual, cetak LJK, koreksi lembar jawaban scan, dan review hasil evaluasi.
+          </p>
+        </div>
 
-      <Container className="py-8 sm:py-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="primary">Evaluasi &amp; Ujian</Badge>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Ruang Ujian &amp; Penilaian Siswa
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              Jadwalkan penilaian kontekstual, pantau pengumpulan lembar ujian siswa, dan review hasil evaluasi.
-            </p>
-          </div>
-
+        <div className="flex flex-wrap gap-2">
+          <Link href="/teacher/examinations/scan-correction">
+            <Button variant="outline" size="sm" className="text-xs border-[#238B68] text-[#238B68] bg-emerald-50/50">
+              <ScanLine className="w-3.5 h-3.5 mr-1" /> Koreksi Scan LJK
+            </Button>
+          </Link>
           <Button
             variant="primary"
             size="sm"
             onClick={() => setShowCreateModal(true)}
-            className="shadow-xs"
+            className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold"
           >
-            <PlusCircle className="h-4 w-4" /> Buat Ruang Ujian Baru
+            <PlusCircle className="w-4 h-4 mr-1.5" /> Buat Ruang Ujian
           </Button>
         </div>
+      </div>
 
-        {/* Exams Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exams.map((exam) => {
-            const attempt = repository.getAttempt(exam.id, "student-demo-01");
-            return (
-              <Card key={exam.id} className="hover:border-primary/30 transition-all flex flex-col">
-                <CardHeader className="p-5 pb-3 border-b border-border/60">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{exam.subject}</Badge>
-                    <Badge variant="success">Sedang Berlangsung</Badge>
-                  </div>
-                  <CardTitle className="text-base font-bold text-foreground mt-2">
-                    {exam.title}
-                  </CardTitle>
-                  <p className="text-xs text-muted flex items-center gap-1.5 mt-1">
-                    <Users className="h-3.5 w-3.5 text-primary" /> {exam.class_name || "Kelas 5 SD"}
-                    <span className="text-slate-300">•</span>
-                    <Clock className="h-3.5 w-3.5 text-muted" /> {exam.duration_minutes} Menit
-                  </p>
-                </CardHeader>
+      {/* Exams Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {exams.map((exam) => (
+          <div key={exam.id} className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
+                  {exam.subject} • Kelas {exam.grade}
+                </span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
+                  Berlangsung
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-[#252B3A] mt-2">{exam.title}</h3>
+              <p className="text-xs text-[#697386] flex items-center gap-1.5 mt-0.5">
+                <UsersRound className="w-3.5 h-3.5 text-[#5865D8]" /> {exam.class_name || "Kelas 5 SD"}
+                <span className="text-slate-300">•</span>
+                <Clock className="w-3.5 h-3.5 text-[#697386]" /> {exam.duration_minutes} Menit
+              </p>
+            </div>
 
-                <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <p className="text-xs text-muted leading-relaxed line-clamp-2">
-                    {exam.description || "Ujian evaluasi kompetensi kontekstual berbasis lingkungan sekolah."}
-                  </p>
+            <p className="text-xs text-[#697386] leading-relaxed line-clamp-2">
+              {exam.description || "Ujian evaluasi kompetensi kontekstual berbasis lingkungan sekolah."}
+            </p>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5 text-xs text-muted">
-                    <div className="flex items-center justify-between">
-                      <span>Jumlah Butir Soal:</span>
-                      <strong className="text-foreground">{exam.question_count || exam.questions?.length || 3} Butir</strong>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Status Pengumpulan:</span>
-                      <strong className="text-emerald-700">1 Terkumpul (Budi Pratama)</strong>
-                    </div>
-                  </div>
+            <div className="rounded-lg border border-[#EDEFF5] bg-[#F7F8FC] p-3 space-y-1 text-xs text-[#697386]">
+              <div className="flex items-center justify-between">
+                <span>Jumlah Butir Soal:</span>
+                <strong className="text-[#252B3A]">{exam.question_count || exam.questions?.length || 3} Butir</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Status Pengumpulan:</span>
+                <strong className="text-[#238B68]">1 Terkumpul (Budi Pratama)</strong>
+              </div>
+            </div>
 
-                  <div className="pt-2 border-t border-border/60 flex items-center justify-between">
-                    <button
-                      onClick={() => setReviewModalOpen(true)}
-                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-                    >
-                      <Award className="h-3.5 w-3.5" /> Review Jawaban &amp; Essay
-                    </button>
+            <div className="pt-2 border-t border-[#EDEFF5] flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setReviewModalOpen(true)}
+                className="text-xs font-semibold text-[#5865D8] hover:underline flex items-center gap-1"
+              >
+                <Award className="w-3.5 h-3.5" /> Review Essay
+              </button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedExam(exam)}
-                      className="text-xs"
-                    >
-                      <Eye className="h-3.5 w-3.5 mr-1" /> Naskah Soal
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+              <div className="flex items-center gap-1">
+                <Link href="/teacher/print">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-[#697386]" title="Cetak Naskah">
+                    <Printer className="w-3.5 h-3.5" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedExam(exam)}
+                  className="text-xs h-7 border-[#DCE0EA]"
+                >
+                  <Eye className="w-3.5 h-3.5 mr-1" /> Naskah
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-        {/* Create Exam Modal */}
-        <Modal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          title="Jadwalkan Ruang Ujian Baru"
-          description="Pilih kelas dan butir soal yang telah disetujui dari Bank Soal."
-        >
-          <form onSubmit={handleCreateExam} className="space-y-4">
+      {/* Create Exam Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Jadwalkan Ruang Ujian Baru"
+        description="Pilih kelas dan butir soal yang telah disetujui dari Bank Soal."
+      >
+        <form onSubmit={handleCreateExam} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-[#252B3A] block mb-1">Judul Ujian / Penilaian:</label>
             <Input
-              label="Judul Penilaian / Ujian"
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Contoh: Penilaian Harian Matematika Kontekstual"
             />
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                  Kelas Sasaran
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-semibold text-[#252B3A] block mb-1">Kelas Sasaran:</label>
+              <select
+                value={classId}
+                onChange={(e) => setClassId(e.target.value)}
+                className="w-full rounded-xl border border-[#DCE0EA] bg-white px-3 py-2 text-xs"
+              >
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="font-semibold text-[#252B3A] block mb-1">Durasi Ujian (Menit):</label>
+              <Input
+                type="number"
+                min={10}
+                max={180}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="font-semibold text-[#252B3A] block mb-1">
+              Pilih Soal dari Bank Soal ({selectedQuestionIds.length} Soal Terpilih):
+            </label>
+            <div className="max-h-48 overflow-y-auto rounded-xl border border-[#DCE0EA] bg-[#F7F8FC] p-2 divide-y divide-[#EDEFF5]">
+              {questions.map((q) => (
+                <label key={q.id} className="py-2 px-2 flex items-start gap-2.5 cursor-pointer hover:bg-white rounded-lg">
+                  <input
+                    type="checkbox"
+                    checked={selectedQuestionIds.includes(q.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedQuestionIds([...selectedQuestionIds, q.id]);
+                      } else {
+                        setSelectedQuestionIds(selectedQuestionIds.filter((id) => id !== q.id));
+                      }
+                    }}
+                    className="mt-0.5 rounded text-[#5865D8]"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-[#252B3A]">
+                      [{q.subject}] {q.topic}
+                    </span>
+                    <p className="text-[#697386] line-clamp-1 mt-0.5">{q.original_text}</p>
+                  </div>
                 </label>
-                <select
-                  value={classId}
-                  onChange={(e) => setClassId(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowCreateModal(false)} className="text-xs">
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+              Terbitkan Ruang Ujian
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Essay Review Modal */}
+      {reviewModalOpen && (
+        <Modal
+          isOpen={reviewModalOpen}
+          onClose={() => setReviewModalOpen(false)}
+          title="Review Jawaban Siswa: Budi Pratama"
+          description="Evaluasi Jawaban Lembar Ujian Kontekstual"
+        >
+          <form onSubmit={handleGradeEssaySubmit} className="space-y-4 text-xs">
+            <div className="rounded-xl border border-[#DCE0EA] bg-[#F7F8FC] p-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[#697386]">Skor Pilihan Ganda (Otomatis Deterministik):</span>
+                <strong className="text-[#238B68] font-bold">100 / 100 (2/2 Benar)</strong>
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t border-[#DCE0EA] pt-3">
+              <span className="font-bold text-[#5865D8] block uppercase tracking-wider">
+                Soal Uraian / Essay:
+              </span>
+              <p className="font-medium text-[#252B3A] bg-[#F7F8FC] p-2.5 rounded-lg border border-[#DCE0EA]">
+                Jelaskan bagaimana kondisi bentang alam perairan Sungai Mahakam memengaruhi mata pencaharian masyarakat!
+              </p>
+
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-[#697386] uppercase">Jawaban Siswa:</span>
+                <p className="text-[#252B3A] p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/40 leading-relaxed">
+                  &quot;Karena kami tinggal di dekat Sungai Mahakam, warga banyak yang menjadi nelayan ikan haruan dan pengemudi perahu klotok untuk mengantar orang ke Pasar Pagi.&quot;
+                </p>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                  Durasi Ujian (Menit)
-                </label>
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <Input
+                  label="Nilai Essay (0–10)"
                   type="number"
-                  min={10}
-                  max={180}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
+                  min={0}
+                  max={10}
+                  value={essayScore}
+                  onChange={(e) => setEssayScore(e.target.value)}
+                />
+                <div className="text-[11px] text-[#697386] self-end pb-2">
+                  Skor Maksimal: 10 Poin
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#252B3A] block mb-1">Catatan Umpan Balik Guru:</label>
+                <textarea
+                  rows={2}
+                  value={essayFeedback}
+                  onChange={(e) => setEssayFeedback(e.target.value)}
+                  className="w-full rounded-xl border border-[#DCE0EA] bg-white p-2 text-xs"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                Pilih Soal dari Bank Soal ({selectedQuestionIds.length} Soal Terpilih)
-              </label>
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-border bg-slate-50/50 p-2 divide-y divide-border/60">
-                {questions.map((q) => (
-                  <label key={q.id} className="py-2 px-2 flex items-start gap-2.5 cursor-pointer hover:bg-white rounded-lg">
-                    <input
-                      type="checkbox"
-                      checked={selectedQuestionIds.includes(q.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedQuestionIds([...selectedQuestionIds, q.id]);
-                        } else {
-                          setSelectedQuestionIds(selectedQuestionIds.filter((id) => id !== q.id));
-                        }
-                      }}
-                      className="mt-0.5 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <div className="text-xs">
-                      <span className="font-semibold text-foreground">[{q.subject}] {q.topic}</span>
-                      <p className="text-muted line-clamp-1 mt-0.5">{q.original_text}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/60">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                Batal
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+              <Button type="button" variant="outline" size="sm" onClick={() => setReviewModalOpen(false)} className="text-xs">
+                Tutup
               </Button>
-              <Button type="submit" variant="primary" size="sm">
-                Terbitkan Ruang Ujian
+              <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+                Simpan &amp; Rilis Nilai ke Siswa
               </Button>
             </div>
           </form>
         </Modal>
+      )}
 
-        {/* Essay Review Modal */}
-        {reviewModalOpen && (
-          <Modal
-            isOpen={reviewModalOpen}
-            onClose={() => setReviewModalOpen(false)}
-            title="Review Jawaban Siswa: Budi Pratama"
-            description="Penilaian Lembar Jawaban Ujian Matematika & IPAS Kontekstual"
-          >
-            <form onSubmit={handleGradeEssaySubmit} className="space-y-4">
-              <div className="rounded-xl border border-border bg-slate-50 p-3 space-y-1 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted">Skor Pilihan Ganda (Otomatis Server):</span>
-                  <strong className="text-success font-bold">100 / 100 (2/2 Benar)</strong>
-                </div>
-                <p className="text-[11px] text-muted italic">
-                  * Multiple choice dinilai deterministik di server tanpa biaya API AI.
-                </p>
+      {/* View Question Paper Modal */}
+      {selectedExam && (
+        <Modal
+          isOpen={Boolean(selectedExam)}
+          onClose={() => setSelectedExam(null)}
+          title={selectedExam.title}
+          description={`Naskah Ujian • Durasi: ${selectedExam.duration_minutes} Menit`}
+        >
+          <div className="space-y-4 divide-y divide-[#EDEFF5] text-xs">
+            {repository.getQuestions().map((q, i) => (
+              <div key={q.id} className="pt-3 first:pt-0 space-y-1">
+                <span className="font-bold text-[#5865D8]">Nomor {i + 1} ({q.subject})</span>
+                <p className="text-[#252B3A] leading-relaxed">{q.original_text}</p>
               </div>
-
-              <div className="space-y-2 border-t border-border/60 pt-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary block">
-                  Soal Uraian / Essay:
-                </span>
-                <p className="text-xs font-medium text-foreground bg-slate-50 p-2.5 rounded-lg border border-border">
-                  Jelaskan bagaimana kondisi bentang alam perairan Sungai Mahakam memengaruhi mata pencaharian masyarakat!
-                </p>
-
-                <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-muted uppercase">Jawaban Siswa (Budi Pratama):</span>
-                  <p className="text-xs text-foreground p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/40 leading-relaxed">
-                    &quot;Karena kami tinggal di dekat Sungai Mahakam, warga banyak yang menjadi nelayan ikan haruan dan pengemudi perahu klotok untuk mengantar orang ke Pasar Pagi.&quot;
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <Input
-                    label="Nilai Essay (0–10)"
-                    type="number"
-                    min={0}
-                    max={10}
-                    value={essayScore}
-                    onChange={(e) => setEssayScore(e.target.value)}
-                  />
-                  <div className="text-[11px] text-muted self-end pb-2">
-                    Skor Maksimal: 10 Poin
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
-                    Catatan Umpan Balik Guru
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={essayFeedback}
-                    onChange={(e) => setEssayFeedback(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-white p-2.5 text-xs focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setReviewModalOpen(false)}
-                >
-                  Tutup
-                </Button>
-                <Button type="submit" variant="primary" size="sm">
-                  Simpan &amp; Rilis Nilai ke Siswa
-                </Button>
-              </div>
-            </form>
-          </Modal>
-        )}
-
-        {/* View Question Paper Modal */}
-        {selectedExam && (
-          <Modal
-            isOpen={Boolean(selectedExam)}
-            onClose={() => setSelectedExam(null)}
-            title={selectedExam.title}
-            description={`Naskah Ujian • Durasi: ${selectedExam.duration_minutes} Menit`}
-          >
-            <div className="space-y-4 divide-y divide-border/60">
-              {repository.getQuestions().map((q, i) => (
-                <div key={q.id} className="pt-3 first:pt-0 space-y-1.5">
-                  <span className="text-xs font-bold text-primary">Nomor {i + 1} ({q.subject})</span>
-                  <p className="text-xs text-foreground leading-relaxed">{q.original_text}</p>
-                </div>
-              ))}
-            </div>
-            <div className="pt-4 border-t border-border/60 text-right">
-              <Button variant="outline" size="sm" onClick={() => setSelectedExam(null)}>
-                Tutup
-              </Button>
-            </div>
-          </Modal>
-        )}
-      </Container>
+            ))}
+          </div>
+          <div className="pt-3 border-t border-[#DCE0EA] text-right">
+            <Button variant="outline" size="sm" onClick={() => setSelectedExam(null)} className="text-xs">
+              Tutup
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

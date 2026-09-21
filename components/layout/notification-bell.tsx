@@ -14,7 +14,13 @@ export interface NotificationItem {
   created_at: string;
 }
 
-export function NotificationBell({ initialNotifications = [] }: { initialNotifications?: NotificationItem[] }) {
+export function NotificationBell({
+  initialNotifications = [],
+  userId,
+}: {
+  initialNotifications?: NotificationItem[];
+  userId?: string;
+}) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

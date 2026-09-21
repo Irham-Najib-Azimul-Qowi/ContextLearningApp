@@ -1,21 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
 import {
-  Users,
+  UsersRound,
   PlusCircle,
   CheckCircle2,
   AlertCircle,
   GraduationCap,
   Calendar,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { repository } from "@/lib/db/repository";
 import { ClassRoom } from "@/lib/db/types";
 
@@ -71,85 +67,81 @@ export default function StudentClassesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <Container className="py-8 sm:py-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="primary">Kelas Belajar</Badge>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Daftar Kelas Saya
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              Lihat seluruh kelas yang Anda ikuti dan masukkan kode kelas baru dari guru Anda.
-            </p>
-          </div>
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setShowJoinModal(true)}
-            className="shadow-xs"
-          >
-            <PlusCircle className="h-4 w-4 mr-1" /> Gabung Kelas dengan Kode
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+        <div>
+          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
+            <UsersRound className="w-5 h-5 text-[#5865D8]" />
+            Daftar Kelas Saya
+          </h1>
+          <p className="text-xs text-[#697386] mt-0.5">
+            Rombongan belajar yang Anda ikuti dan opsi bergabung dengan kode kelas guru.
+          </p>
         </div>
 
-        {/* Classes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {classes.map((cls) => (
-            <Card key={cls.id} className="hover:border-primary/30 transition-all flex flex-col">
-              <CardHeader className="p-5 pb-3 border-b border-border/60">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Kelas {cls.grade} SD</Badge>
-                  <Badge variant="success">Terdaftar</Badge>
-                </div>
-                <CardTitle className="text-base font-bold text-foreground mt-2">
-                  {cls.name}
-                </CardTitle>
-                <p className="text-xs text-muted flex items-center gap-1 mt-1">
-                  <Calendar className="h-3.5 w-3.5" /> Tahun Ajaran {cls.academic_year}
-                </p>
-              </CardHeader>
-
-              <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div>
-                  <span className="text-[10px] font-semibold text-muted uppercase tracking-wider block mb-1.5">
-                    Mata Pelajaran:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {cls.subjects.map((sub) => (
-                      <span
-                        key={sub}
-                        className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-medium text-foreground"
-                      >
-                        {sub}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-border/60 text-xs text-muted">
-                  Wali Kelas: <strong>Ibu Nurhaliza, S.Pd.</strong>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Join Class Modal */}
-        <Modal
-          isOpen={showJoinModal}
-          onClose={() => setShowJoinModal(false)}
-          title="Gabung ke Kelas Guru"
-          description="Masukkan 6-8 digit kode kelas yang diberikan oleh guru Anda."
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setShowJoinModal(true)}
+          className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold"
         >
-          <form onSubmit={handleJoinClass} className="space-y-4">
+          <PlusCircle className="w-4 h-4 mr-1.5" /> Gabung Kelas dengan Kode
+        </Button>
+      </div>
+
+      {/* Classes Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {classes.map((cls) => (
+          <div key={cls.id} className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
+                  Kelas {cls.grade} SD
+                </span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
+                  Terdaftar
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-[#252B3A] mt-2">{cls.name}</h3>
+              <p className="text-xs text-[#697386] flex items-center gap-1 mt-0.5">
+                <Calendar className="w-3.5 h-3.5" /> Tahun Ajaran {cls.academic_year}
+              </p>
+            </div>
+
+            <div>
+              <span className="text-[10px] font-semibold text-[#697386] uppercase tracking-wider block mb-1">
+                Mata Pelajaran:
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {cls.subjects.map((sub) => (
+                  <span
+                    key={sub}
+                    className="px-2 py-0.5 rounded bg-[#F1F3F9] text-[11px] font-medium text-[#252B3A]"
+                  >
+                    {sub}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[#EDEFF5] text-xs text-[#697386]">
+              Wali Kelas: <strong className="text-[#252B3A]">Ibu Nurhaliza, S.Pd.</strong>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Join Class Modal */}
+      <Modal
+        isOpen={showJoinModal}
+        onClose={() => setShowJoinModal(false)}
+        title="Gabung ke Kelas Guru"
+        description="Masukkan kode kelas yang diberikan oleh guru Anda."
+      >
+        <form onSubmit={handleJoinClass} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-[#252B3A] block mb-1">Kode Gabung Kelas:</label>
             <Input
-              label="Kode Gabung Kelas"
               type="text"
               required
               value={joinCode}
@@ -157,45 +149,47 @@ export default function StudentClassesPage() {
               placeholder="Contoh: SD01-5A"
               className="font-mono uppercase tracking-wider text-base"
             />
+          </div>
 
-            {feedback && (
-              <div
-                className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                  feedback.type === "success"
-                    ? "bg-emerald-50 text-success border border-emerald-200"
-                    : "bg-red-50 text-error border border-red-200"
-                }`}
-              >
-                {feedback.type === "success" ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                )}
-                {feedback.msg}
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowJoinModal(false)}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                isLoading={isSubmitting}
-              >
-                Gabung Sekarang
-              </Button>
+          {feedback && (
+            <div
+              className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                feedback.type === "success"
+                  ? "bg-emerald-50 text-[#238B68] border border-emerald-200"
+                  : "bg-red-50 text-[#C94F58] border border-red-200"
+              }`}
+            >
+              {feedback.type === "success" ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
+              {feedback.msg}
             </div>
-          </form>
-        </Modal>
-      </Container>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowJoinModal(false)}
+              className="text-xs"
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+              className="bg-[#5865D8] text-xs"
+            >
+              {isSubmitting ? "Memproses..." : "Gabung Sekarang"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
