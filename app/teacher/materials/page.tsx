@@ -132,6 +132,68 @@ export default function MaterialsPage() {
             </div>
           </div>
         ))}
+
+        {/* Quick Inspiration Card (Balances layout on screens with single material item) */}
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-5 flex flex-col justify-between space-y-4 hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-semibold border border-indigo-100">
+              <Sparkles className="w-3 h-3 text-indigo-600" />
+              <span>Inspirasi Konteks</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mt-2">
+              Bahan Ajar Tematik Daerah
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Integrasikan kekayaan ekosistem alam dan mata pencaharian lokal ke dalam modul ajar sains, matematika, atau IPS.
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-white/90 p-3 text-xs text-slate-600 border border-slate-200/80 space-y-1">
+            <span className="font-semibold text-slate-700 block text-[11px]">Ide Eksplorasi Topik:</span>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              • Ekosistem Sungai &amp; Rawa Daerah<br/>
+              • Perhitungan Volume Kayu &amp; Perdagangan Tradisional<br/>
+              • Kearifan Lokal &amp; Pelestarian Budaya Pesisir
+            </p>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+            className="w-full text-xs font-semibold"
+          >
+            <PlusCircle className="w-3.5 h-3.5 mr-1 text-primary" /> Susun Bahan Ajar Baru
+          </Button>
+        </div>
+
+        {/* Contextual Standard Guidance Card */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs flex flex-col justify-between space-y-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-100">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>Pedoman Pahami</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mt-2">
+              Standar Kontekstualisasi
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Setiap materi kontekstual terhubung dengan data profil wilayah sekolah agar soal ujian dapat dibuat relevan secara otomatis.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1">
+            <p className="font-semibold text-[11px] text-slate-700">Tips Pengajaran:</p>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Gunakan nama objek lokal nyata di sekitar murid untuk mempermudah abstraksi konsep teoritis.
+            </p>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Kurikulum Merdeka 2026</span>
+            <span className="text-indigo-600 font-semibold">Tersinkronisasi</span>
+          </div>
+        </div>
       </div>
 
       {/* Create Material Modal */}
