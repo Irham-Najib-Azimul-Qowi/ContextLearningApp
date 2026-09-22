@@ -84,37 +84,34 @@ export function TeacherWorkspaceShell({ children }: TeacherWorkspaceShellProps) 
       )}
 
       {/* 3. MAIN WORKSPACE AREA */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative bg-slate-50/50">
-        {/* Floating Top Controls Row — No background bar, no bottom border, pure floating card */}
-        <div className="flex items-center justify-between md:justify-end px-4 sm:px-6 pt-3.5 pb-2 shrink-0 z-20">
-          {/* Mobile Brand + Hamburger */}
-          <div className="flex items-center gap-2 md:hidden">
-            <button
-              type="button"
-              onClick={() => setMobileNavOpen(true)}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 shadow-xs hover:bg-slate-50 cursor-pointer"
-              aria-label="Buka navigasi"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-              <span className="font-extrabold text-sm text-slate-900">Pahami</span>
-            </div>
-          </div>
-
-          {/* Floating Control Card: [ School | Notifications | Settings | Profile ] */}
+      <div className="flex-1 min-w-0 h-screen overflow-hidden relative bg-slate-50/50">
+        {/* Floating Top-Right Controls — Absolute overlay so it doesn't take vertical space or cut/push the page */}
+        <div className="absolute top-3.5 right-4 sm:top-4 sm:right-6 lg:right-8 z-30 pointer-events-auto">
           <GlobalControls
             currentSchoolId={selectedSchoolId}
             onSchoolChange={(id) => setSelectedSchoolId(id)}
           />
         </div>
 
-        {/* Main Content Workspace Surface (Adapts width automatically) */}
+        {/* Mobile Hamburger Trigger */}
+        <div className="absolute top-3.5 left-4 z-30 md:hidden pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="flex items-center gap-1.5 p-1.5 pr-2.5 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-700 shadow-xs hover:bg-slate-50 cursor-pointer"
+            aria-label="Buka navigasi"
+          >
+            <Menu className="w-4 h-4" />
+            <div className="w-5 h-5 rounded-md bg-indigo-600 text-white flex items-center justify-center">
+              <Sparkles className="w-3 h-3" />
+            </div>
+            <span className="font-extrabold text-xs text-slate-900">Pahami</span>
+          </button>
+        </div>
+
+        {/* Main Content Workspace Surface (Uses full height directly without reserved top row) */}
         <main
-          className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-8"
+          className="w-full h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6"
           role="main"
         >
           <div className="max-w-7xl w-full mx-auto">{children}</div>
