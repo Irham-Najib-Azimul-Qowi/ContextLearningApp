@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { WorkspaceRail } from "./workspace-rail";
 import { MainSidebar } from "./main-sidebar";
 import { NotificationBell } from "./notification-bell";
 import { Menu, X } from "lucide-react";
@@ -18,11 +17,10 @@ export function TeacherWorkspaceShell({ children }: TeacherWorkspaceShellProps) 
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* Desktop Navigation */}
       <div className="hidden md:flex shrink-0">
-        <WorkspaceRail
+        <MainSidebar
           currentSchoolId={selectedSchoolId}
           onSchoolChange={(id) => setSelectedSchoolId(id)}
         />
-        <MainSidebar currentSchoolId={selectedSchoolId} />
       </div>
 
       {/* Mobile Drawer Backdrop & Navigation */}
@@ -33,27 +31,24 @@ export function TeacherWorkspaceShell({ children }: TeacherWorkspaceShellProps) 
             onClick={() => setMobileNavOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative z-10 flex h-full shadow-2xl">
-            <WorkspaceRail
+          <div className="relative z-10 flex flex-col h-full bg-sidebar shadow-2xl">
+            <div className="p-2 flex justify-end border-b border-border">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                className="p-1 rounded-md text-secondary-text hover:text-foreground cursor-pointer"
+                aria-label="Tutup navigasi"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <MainSidebar
               currentSchoolId={selectedSchoolId}
               onSchoolChange={(id) => {
                 setSelectedSchoolId(id);
                 setMobileNavOpen(false);
               }}
             />
-            <div className="flex flex-col h-full bg-sidebar">
-              <div className="p-2 flex justify-end border-b border-border">
-                <button
-                  type="button"
-                  onClick={() => setMobileNavOpen(false)}
-                  className="p-1 rounded-md text-secondary-text hover:text-foreground"
-                  aria-label="Tutup navigasi"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <MainSidebar currentSchoolId={selectedSchoolId} />
-            </div>
           </div>
         </div>
       )}
