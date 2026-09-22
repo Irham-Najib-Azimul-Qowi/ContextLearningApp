@@ -161,56 +161,56 @@ export default function AdminOverviewPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-secondary">Total Sekolah</span>
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <School className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold text-secondary">Total Sekolah</span>
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-primary border border-indigo-100 flex items-center justify-center shrink-0">
+              <School className="w-5 h-5" />
             </div>
           </div>
-          <p className="mt-1.5 text-2xl font-bold text-foreground font-mono">{stats.totalSchools}</p>
-          <span className="text-[11px] text-success font-medium flex items-center gap-1 mt-0.5">
-            <CheckCircle2 className="w-3 h-3" /> {verifiedCount} Terverifikasi
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{stats.totalSchools}</p>
+          <span className="text-xs text-success font-medium flex items-center gap-1.5 mt-1">
+            <CheckCircle2 className="w-3.5 h-3.5" /> {verifiedCount} Terverifikasi
           </span>
         </div>
 
         <div
-          className={`p-4 rounded-xl border shadow-2xs ${
-            pendingCount > 0 ? "bg-amber-50/60 border-amber-200" : "bg-surface border-border"
+          className={`p-4 sm:p-5 rounded-xl border shadow-2xs ${
+            pendingCount > 0 ? "bg-amber-50/70 border-amber-300" : "bg-surface border-border"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs text-secondary font-medium">Permohonan Baru</span>
-            <div className="w-7 h-7 rounded-lg bg-warning-subtle text-warning flex items-center justify-center">
-              <AlertTriangle className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold text-secondary">Permohonan Baru</span>
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
-          <p className="mt-1.5 text-2xl font-bold text-foreground font-mono">{pendingCount}</p>
-          <span className="text-[11px] text-warning font-medium block mt-0.5">
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{pendingCount}</p>
+          <span className="text-xs text-amber-800 font-medium block mt-1">
             Menunggu Verifikasi
           </span>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-secondary">Pendidik Terdaftar</span>
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <UsersRound className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold text-secondary">Pendidik Terdaftar</span>
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shrink-0">
+              <UsersRound className="w-5 h-5" />
             </div>
           </div>
-          <p className="mt-1.5 text-2xl font-bold text-foreground font-mono">{stats.totalTeachers}</p>
-          <span className="text-[11px] text-secondary block mt-0.5">Koordinator Sekolah</span>
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{stats.totalTeachers}</p>
+          <span className="text-xs text-secondary block mt-1">Koordinator Sekolah</span>
         </div>
 
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-secondary">Siswa Terdaftar</span>
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <GraduationCap className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold text-secondary">Siswa Terdaftar</span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+              <GraduationCap className="w-5 h-5" />
             </div>
           </div>
-          <p className="mt-1.5 text-2xl font-bold text-foreground font-mono">{stats.totalStudents}</p>
-          <span className="text-[11px] text-secondary block mt-0.5">Akun Multi-Tenant</span>
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{stats.totalStudents}</p>
+          <span className="text-xs text-secondary block mt-1">Akun Multi-Tenant</span>
         </div>
       </div>
 
@@ -277,13 +277,13 @@ export default function AdminOverviewPage() {
         {/* Filter Toolbar */}
         <div className="p-3.5 border-b border-border bg-surface-subtle/50 flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-muted absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Cari nama sekolah, NPSN, atau kota..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-border bg-surface text-foreground placeholder:text-muted focus:border-primary focus:outline-none"
+              className="w-full text-xs pl-9 pr-3 py-1.5 rounded-lg border border-border bg-surface text-foreground placeholder:text-muted focus:border-primary focus:outline-none"
             />
           </div>
 
@@ -394,10 +394,10 @@ export default function AdminOverviewPage() {
                           <button
                             type="button"
                             onClick={() => setSelectedSchool(sch)}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-secondary hover:text-foreground hover:bg-workspace text-xs transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border text-secondary hover:text-foreground hover:bg-workspace text-xs transition-colors"
                             title="Lihat Detail Berkas"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-4 h-4" />
                             <span>Detail</span>
                           </button>
 
@@ -405,10 +405,10 @@ export default function AdminOverviewPage() {
                             <button
                               type="button"
                               onClick={() => handleUpdateStatus(sch.id, "verified")}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#18764F] hover:bg-[#135E3E] text-white text-xs font-medium transition-colors shadow-2xs"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#18764F] hover:bg-[#135E3E] text-white text-xs font-semibold transition-colors shadow-2xs"
                               title="Setujui Permohonan"
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <Check className="w-4 h-4" />
                               <span>Setujui</span>
                             </button>
                           )}
@@ -417,10 +417,10 @@ export default function AdminOverviewPage() {
                             <button
                               type="button"
                               onClick={() => handleUpdateStatus(sch.id, "rejected")}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-red-200 text-[#B42336] hover:bg-red-50 text-xs transition-colors"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-red-200 text-[#B42336] hover:bg-red-50 text-xs transition-colors font-medium"
                               title="Tolak / Minta Revisi"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-4 h-4" />
                               <span>Tolak</span>
                             </button>
                           )}
