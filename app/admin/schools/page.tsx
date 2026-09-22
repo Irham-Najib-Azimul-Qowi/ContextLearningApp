@@ -19,6 +19,7 @@ export default function AdminSchoolsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
   const refresh = useCallback(() => {
     setSchools([...repository.getSchools()]);
@@ -31,23 +32,42 @@ export default function AdminSchoolsPage() {
   const handleVerify = (schoolId: string, status: "verified" | "rejected") => {
     repository.updateSchoolVerification(schoolId, status, "admin-platform-01");
     refresh();
+    const sch = schools.find((s) => s.id === schoolId);
+    setFeedbackMessage(`${sch?.name || "Sekolah"} berhasil diverifikasi.`);
+    setTimeout(() => setFeedbackMessage(""), 3500);
   };
 
   const handleToggleStatus = (school: School) => {
     const nextStatus: SchoolStatus = school.status === "active" ? "suspended" : "active";
     repository.updateSchoolStatus(school.id, nextStatus, "admin-platform-01");
     refresh();
+    setFeedbackMessage(
+      `Status tenant ${school.name} diubah menjadi ${nextStatus === "active" ? "Aktif" : "Ditangguhkan"}.`
+    );
+    setTimeout(() => setFeedbackMessage(""), 3500);
   };
 
-  const filtered = schools.filter((s) => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.regency.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === "ALL" || s.educational_level === levelFilter;
-    const matchesStatus = statusFilter === "ALL" || s.status === statusFilter;
-    return matchesSearch && matchesLevel && matchesStatus;
-  });
+  const filtered = schools
+    .filter((s) => {
+      const matchesSearch =
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.regency.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.district.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesLevel = levelFilter === "ALL" || s.educational_level === levelFilter;
+      const matchesStatus = statusFilter === "ALL" || s.status === statusFilter;
+      return matchesSearch && matchesLevel && matchesStatus;
+    })
+    .sort((a, b) => {
+      // 1. Yang sedang mengajukan permohonan (pending_verification) auto di paling atas
+      const aPending = a.verification_status === "pending_verification";
+      const bPending = b.verification_status === "pending_verification";
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
+
+      // 2. Jika sama-sama mengajukan atau sama-sama selesai, urutkan pendaftaran terbaru
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="space-y-6">
@@ -66,11 +86,18 @@ export default function AdminSchoolsPage() {
         <button
           type="button"
           onClick={refresh}
-          className="text-xs text-foreground-secondary hover:text-foreground flex items-center gap-1.5 self-start sm:self-center px-3 py-1.5 rounded-lg border border-border bg-surface-secondary"
+          className="text-xs text-foreground-secondary hover:text-foreground flex items-center gap-1.5 self-start sm:self-center px-3 py-1.5 rounded-lg border border-border bg-surface-secondary cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Segarkan Data
         </button>
       </div>
+
+      {feedbackMessage && (
+        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-medium flex items-center gap-2 animate-in fade-in duration-150">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{feedbackMessage}</span>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-surface p-4 rounded-xl border border-border shadow-xs flex flex-col sm:flex-row gap-3">
@@ -88,7 +115,7 @@ export default function AdminSchoolsPage() {
         <select
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value)}
-          className="text-xs px-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="text-xs px-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
         >
           <option value="ALL">Semua Jenjang</option>
           <option value="SD">SD</option>
@@ -99,7 +126,7 @@ export default function AdminSchoolsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-xs px-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="text-xs px-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
         >
           <option value="ALL">Semua Status</option>
           <option value="active">Aktif</option>
@@ -163,26 +190,30 @@ export default function AdminSchoolsPage() {
                       {sch.status === "active" ? "Aktif" : "Ditangguhkan"}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right space-x-2">
-                    {sch.verification_status === "pending_verification" && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleVerify(sch.id, "verified")}
-                        className="h-6 text-[10px] bg-success hover:bg-success/90 px-2 font-semibold"
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {sch.verification_status === "pending_verification" && (
+                        <button
+                          type="button"
+                          onClick={() => handleVerify(sch.id, "verified")}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#18764F] hover:bg-[#135E3E] text-white text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Setujui</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(sch)}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer ${
+                          sch.status === "active"
+                            ? "bg-[#B42336] hover:bg-[#961726] text-white"
+                            : "bg-[#18764F] hover:bg-[#135E3E] text-white"
+                        }`}
                       >
-                        Setujui
-                      </Button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(sch)}
-                      className={`text-xs hover:underline font-medium ${
-                        sch.status === "active" ? "text-error" : "text-success"
-                      }`}
-                    >
-                      {sch.status === "active" ? "Tangguhkan" : "Aktifkan"}
-                    </button>
+                        {sch.status === "active" ? "Tangguhkan" : "Aktifkan"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

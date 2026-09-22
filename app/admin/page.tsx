@@ -106,21 +106,30 @@ export default function AdminOverviewPage() {
   };
 
   const filteredSchools = useMemo(() => {
-    return schools.filter((s) => {
-      const matchesStatus = statusTab === "ALL" || s.verification_status === statusTab;
-      const matchesLevel = levelFilter === "ALL" || s.educational_level === levelFilter;
-      const coordinator = s.created_by ? COORDINATOR_LOOKUP[s.created_by] : null;
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        (s.npsn && s.npsn.includes(q)) ||
-        s.regency.toLowerCase().includes(q) ||
-        s.district.toLowerCase().includes(q) ||
-        (coordinator && coordinator.name.toLowerCase().includes(q));
+    return schools
+      .filter((s) => {
+        const matchesStatus = statusTab === "ALL" || s.verification_status === statusTab;
+        const matchesLevel = levelFilter === "ALL" || s.educational_level === levelFilter;
+        const coordinator = s.created_by ? COORDINATOR_LOOKUP[s.created_by] : null;
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          !q ||
+          s.name.toLowerCase().includes(q) ||
+          (s.npsn && s.npsn.includes(q)) ||
+          s.regency.toLowerCase().includes(q) ||
+          s.district.toLowerCase().includes(q) ||
+          (coordinator && coordinator.name.toLowerCase().includes(q));
 
-      return matchesStatus && matchesLevel && matchesSearch;
-    });
+        return matchesStatus && matchesLevel && matchesSearch;
+      })
+      .sort((a, b) => {
+        // Pending verification auto di paling atas
+        const aPending = a.verification_status === "pending_verification";
+        const bPending = b.verification_status === "pending_verification";
+        if (aPending && !bPending) return -1;
+        if (!aPending && bPending) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
   }, [schools, statusTab, levelFilter, searchQuery]);
 
   const pendingCount = useMemo(
