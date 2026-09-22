@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
 import { School } from "@/lib/db/types";
+import { NotificationBell } from "./notification-bell";
 
 interface MainSidebarProps {
   currentSchoolId?: string;
@@ -151,6 +152,7 @@ export function MainSidebar({ currentSchoolId, onSchoolChange }: MainSidebarProp
             <span className="text-[10px] text-slate-500 font-medium">Ruang Kerja Guru</span>
           </div>
         </Link>
+        <NotificationBell userId="teacher-demo-01" />
       </div>
 
       {/* School Header & Workspace Selector Dropdown */}
