@@ -82,14 +82,14 @@ export function IconNavigationRail({
                 aria-hidden="true"
               />
 
-              {/* Icon Button */}
+              {/* Icon Button (Circular for menu items) */}
               <button
                 type="button"
                 onClick={() => handleGroupClick(group)}
-                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150 relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-150 relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
                   isHighlighted
                     ? "bg-indigo-600 text-white shadow-xs font-semibold"
-                    : "bg-white text-slate-600 hover:text-slate-950 hover:bg-slate-100/90 border border-slate-200/80"
+                    : "bg-white text-slate-600 hover:text-slate-950 hover:bg-slate-100/90 border border-slate-200/80 shadow-2xs"
                 }`}
                 aria-label={group.label}
                 aria-expanded={group.hasSubmenu ? isSubmenuOpen : undefined}

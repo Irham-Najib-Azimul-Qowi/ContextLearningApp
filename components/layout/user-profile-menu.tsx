@@ -85,7 +85,7 @@ export function UserProfileMenu({ userId = "teacher-demo-01" }: UserProfileMenuP
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+          className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100/90 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
           aria-haspopup="true"
           aria-expanded={isOpen}
           aria-label={`Menu profil ${profile?.full_name || "Guru"}`}
@@ -95,10 +95,10 @@ export function UserProfileMenu({ userId = "teacher-demo-01" }: UserProfileMenuP
             <img
               src={profile.avatar_url}
               alt={profile.full_name}
-              className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+              className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
             />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
               {initials}
             </div>
           )}

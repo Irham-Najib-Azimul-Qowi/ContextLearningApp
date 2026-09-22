@@ -17,9 +17,11 @@ export interface NotificationItem {
 export function NotificationBell({
   initialNotifications = [],
   userId,
+  className,
 }: {
   initialNotifications?: NotificationItem[];
   userId?: string;
+  className?: string;
 }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [isOpen, setIsOpen] = useState(false);
@@ -81,11 +83,14 @@ export function NotificationBell({
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Lihat notifikasi"
-        className="relative rounded-xl border border-border bg-white p-2.5 text-muted hover:text-foreground hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className={
+          className ||
+          "relative rounded-xl border border-border bg-white p-2.5 text-muted hover:text-foreground hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+        }
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-4.5 w-4.5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-error text-[10px] font-bold text-white shadow-xs">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

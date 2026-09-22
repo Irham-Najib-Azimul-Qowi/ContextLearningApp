@@ -100,7 +100,7 @@ export function SchoolWorkspaceSwitcher({
       <button
         type="button"
         onClick={() => hasMultipleSchools && setIsOpen(!isOpen)}
-        className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+        className={`group flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
           hasMultipleSchools
             ? "hover:bg-slate-100/90 cursor-pointer text-slate-800"
             : "cursor-default text-slate-800"
@@ -110,8 +110,8 @@ export function SchoolWorkspaceSwitcher({
         aria-expanded={hasMultipleSchools ? isOpen : undefined}
         aria-label={`Sekolah aktif: ${activeSchool?.name || "Memuat..."}`}
       >
-        <div className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-          <Building2 className="w-3 h-3" />
+        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+          <Building2 className="w-3.5 h-3.5" />
         </div>
         <div className="text-left flex flex-col min-w-0 max-w-[140px] sm:max-w-[200px]">
           <span className="font-semibold text-xs text-slate-900 truncate leading-tight">
