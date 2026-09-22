@@ -3,15 +3,11 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Container from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import {
   Sparkles,
   GraduationCap,
-  ArrowRight,
   ShieldCheck,
-  Building,
-  CheckCircle2,
   Lock,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
@@ -68,53 +64,50 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EDEFF5] flex flex-col justify-between">
-      {/* Top Simple Header */}
-      <header className="h-16 px-6 border-b border-[#DCE0EA] bg-white flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#5865D8] flex items-center justify-center text-white font-bold">
+    <div className="min-h-screen bg-background flex flex-col justify-between">
+      {/* Header */}
+      <header className="h-16 px-6 border-b border-border bg-surface flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold">
             <Sparkles className="w-4 h-4" />
           </div>
-          <span className="font-bold text-base text-[#252B3A]">ContextLearning</span>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#5865D8]/10 text-[#5865D8] ml-1">
-            V2
-          </span>
-        </div>
+          <span className="font-bold text-base text-foreground">ContextLearning</span>
+        </Link>
 
         <Link
           href="/admin/login"
-          className="text-xs font-semibold text-[#697386] hover:text-[#252B3A] flex items-center gap-1"
+          className="text-xs font-semibold text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
         >
-          <ShieldCheck className="w-3.5 h-3.5" /> Login Admin
+          <ShieldCheck className="w-4 h-4 text-muted" /> Login Admin
         </Link>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-md space-y-6">
           {/* Main Card */}
-          <div className="bg-white rounded-2xl border border-[#DCE0EA] p-6 sm:p-8 shadow-sm">
+          <div className="bg-surface rounded-xl border border-border p-6 sm:p-8 shadow-2xs">
             <div className="text-center mb-6">
-              <h1 className="text-xl sm:text-2xl font-bold text-[#252B3A]">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                 Masuk ke ContextLearning
               </h1>
-              <p className="text-xs text-[#697386] mt-1.5">
-                Platform Pembelajaran Kontekstual Multi-Sekolah (SD, SMP, SMA)
+              <p className="text-xs text-secondary mt-1.5">
+                Platform Pembelajaran Kontekstual Multi-Sekolah
               </p>
             </div>
 
             {/* Teacher Google Authentication Section */}
             <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-[#F7F8FC] border border-[#DCE0EA] space-y-2">
+              <div className="p-4 rounded-xl bg-surface-subtle border border-border space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#252B3A] flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4 text-[#5865D8]" /> Akses Guru & Pengajar
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-primary" /> Akses Guru &amp; Pengajar
                   </span>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-[#238B68]">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-success-subtle text-success border border-emerald-200">
                     Google OAuth
                   </span>
                 </div>
-                <p className="text-[11px] text-[#697386] leading-relaxed">
-                  Pendidik wajib menggunakan akun Google resmi untuk verifikasi identitas dan pengelolaan ruang kerja sekolah.
+                <p className="text-xs text-secondary leading-relaxed">
+                  Pendidik menggunakan akun Google terverifikasi untuk mengelola ruang kerja dan bank soal sekolah.
                 </p>
 
                 {/* Google Sign In Button */}
@@ -122,9 +115,8 @@ export default function LoginPage() {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
-                  className="w-full mt-2 flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-[#CBD5E1] bg-white hover:bg-[#F8FAFC] text-[#252B3A] font-semibold text-xs transition-all shadow-2xs hover:shadow-xs active:scale-[0.99] disabled:opacity-60"
+                  className="w-full mt-2 flex items-center justify-center gap-3 py-2.5 px-4 rounded-lg border border-border-strong bg-surface hover:bg-surface-subtle text-foreground font-semibold text-xs transition-colors shadow-2xs disabled:opacity-60"
                 >
-                  {/* Google G SVG */}
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
@@ -149,15 +141,15 @@ export default function LoginPage() {
 
               {/* Divider */}
               <div className="relative flex items-center justify-center my-4">
-                <div className="w-full border-t border-[#DCE0EA]" />
-                <span className="bg-white px-2 text-[10px] uppercase font-bold text-[#697386] absolute">
+                <div className="w-full border-t border-border" />
+                <span className="bg-surface px-2 text-[10px] uppercase font-bold text-muted absolute">
                   Portal Siswa
                 </span>
               </div>
 
               {/* Student Portal Lookup */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#252B3A] block">
+                <label className="text-xs font-semibold text-foreground block">
                   Cari Portal Sekolah Anda:
                 </label>
                 <form onSubmit={handleStudentPortalRedirect} className="space-y-2">
@@ -170,30 +162,30 @@ export default function LoginPage() {
                         setSchoolSlug(e.target.value);
                         setStudentLookupError("");
                       }}
-                      className="flex-1 text-xs px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5865D8]"
+                      className="flex-1 text-xs px-3 py-2 rounded-lg border border-border bg-surface text-foreground placeholder:text-muted focus:border-primary focus:outline-none"
                     />
-                    <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] hover:bg-[#4753C4] text-xs">
+                    <Button type="submit" variant="primary" size="sm" className="text-xs">
                       Buka
                     </Button>
                   </div>
                   {studentLookupError && (
-                    <p className="text-[11px] text-[#C94F58] font-medium">{studentLookupError}</p>
+                    <p className="text-xs text-error font-medium">{studentLookupError}</p>
                   )}
                 </form>
 
-                {/* Quick School Links for Demo */}
+                {/* Quick School Links */}
                 <div className="pt-2">
-                  <span className="text-[10px] text-[#697386] block mb-1">Sekolah Percontohan Cepat:</span>
+                  <span className="text-[11px] text-muted block mb-1">Sekolah Percontohan Cepat:</span>
                   <div className="flex flex-wrap gap-1.5">
                     <Link
                       href="/login/sd-001-samarinda"
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-[#EDEFF5] hover:bg-[#DCE0EA] text-[#252B3A] transition-colors"
+                      className="text-xs font-medium px-2.5 py-1 rounded-md bg-surface-subtle hover:bg-workspace text-foreground border border-border transition-colors"
                     >
                       SDN 001 Samarinda
                     </Link>
                     <Link
                       href="/login/smp-01-samarinda"
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-[#EDEFF5] hover:bg-[#DCE0EA] text-[#252B3A] transition-colors"
+                      className="text-xs font-medium px-2.5 py-1 rounded-md bg-surface-subtle hover:bg-workspace text-foreground border border-border transition-colors"
                     >
                       SMPN 1 Samarinda
                     </Link>
@@ -204,10 +196,10 @@ export default function LoginPage() {
           </div>
 
           {/* Security & Multi-tenancy note */}
-          <div className="text-center text-[11px] text-[#697386] space-y-1">
-            <p className="flex items-center justify-center gap-1">
-              <Lock className="w-3 h-3 text-[#238B68]" />
-              Multi-tenant terisolasi • Akun siswa dibuat oleh guru yang berwenang
+          <div className="text-center text-xs text-secondary space-y-1">
+            <p className="flex items-center justify-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-success" />
+              Multi-tenant terisolasi • Akun siswa diprovisi oleh guru sekolah
             </p>
           </div>
         </div>

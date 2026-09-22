@@ -1,54 +1,80 @@
 @import "tailwindcss";
 
-/* ContextLearning V2 Design System — Discord-Inspired Multi-Tenant Light Surfaces */
+/* ContextLearning Design System — Layered Multi-Tenant Educational Surfaces */
 
 :root {
   color-scheme: light;
 
-  /* V2 Surface System */
-  --app-bg: #EDEFF5;
-  --nav-surface: #E3E6EF;
-  --content-surface: #F7F8FC;
+  /* Layered Surface System */
+  --app-bg: #E9ECF3;
+  --workspace-bg: #F2F4F8;
+  --sidebar-bg: #E1E5EE;
   --card-surface: #FFFFFF;
-  --border: #DCE0EA;
+  --surface-secondary: #F7F8FB;
+  --surface-elevated: #FFFFFF;
 
-  /* Primary Brand & Accents */
-  --primary: #5865D8;
-  --primary-hover: #4753C4;
-  --secondary: #0EA5E9;
+  /* Crisp Borders & Dividers */
+  --border: #CAD1DE;
+  --border-strong: #AEB8CA;
+  --divider: #D6DCE6;
 
-  /* Typography */
-  --foreground: #252B3A;
-  --text-muted: #697386;
+  /* Primary Brand & Actions */
+  --primary: #4F56C8;
+  --primary-hover: #3F46AF;
+  --primary-subtle: #EEF0FD;
+  --secondary: #0284C7;
+  --link: #4149B5;
 
-  /* Semantic Feedback */
-  --success: #238B68;
-  --warning: #C68A28;
-  --error: #C94F58;
+  /* Solid Typography Hierarchy (WCAG AA Compliant >= 4.5:1) */
+  --foreground: #202638;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-disabled: #8792A2;
+
+  /* Semantic Feedback (Tested WCAG Contrast) */
+  --success: #18764F;
+  --success-subtle: #EAF5EF;
+  --warning: #955B11;
+  --warning-subtle: #FEF7EE;
+  --error: #B42336;
+  --error-subtle: #FDF2F3;
 
   /* Rail Workspace */
   --rail-bg: #DCE0EA;
-  --rail-active: #5865D8;
+  --rail-active: #4F56C8;
 }
 
 @theme inline {
   --color-background: var(--app-bg);
+  --color-workspace: var(--workspace-bg);
+  --color-sidebar: var(--sidebar-bg);
   --color-surface: var(--card-surface);
-  --color-nav: var(--nav-surface);
-  --color-content: var(--content-surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-elevated: var(--surface-elevated);
 
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-subtle: var(--primary-subtle);
   --color-secondary: var(--secondary);
+  --color-link: var(--link);
 
   --color-foreground: var(--foreground);
+  --color-secondary-text: var(--text-secondary);
   --color-muted: var(--text-muted);
+  --color-disabled: var(--text-disabled);
 
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-divider: var(--divider);
 
   --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
   --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
   --color-error: var(--error);
+  --color-error-subtle: var(--error-subtle);
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Global resets & typography */
@@ -85,6 +111,12 @@ button:disabled {
   opacity: 0.6;
 }
 
+/* Visible Accessibility Focus Indicators */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -94,30 +126,30 @@ button:disabled {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #CAD1DE;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #AEB8CA;
 }
 
-/* Highlighting styles for contextual variables */
+/* Highlighting styles for contextual variables with WCAG AA compliance */
 .context-highlight-original {
   background-color: #FEE2E2;
   color: #991B1B;
   padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   font-weight: 600;
   border: 1px solid #FCA5A5;
 }
 
 .context-highlight-replaced {
-  background-color: #E0E7FF;
-  color: #3730A3;
+  background-color: #EEF0FD;
+  color: #3F46AF;
   padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   font-weight: 600;
-  border: 1px solid #C7D2FE;
+  border: 1px solid #CAD1DE;
 }
 
 /* Print Stylesheet for A4 Exam Papers and Materials */

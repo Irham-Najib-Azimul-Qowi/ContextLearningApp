@@ -3,19 +3,14 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Save,
   Sparkles,
   ArrowRight,
-  Layers,
-  CheckCircle2,
-  PlusCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
 import { extractContextVariables } from "@/lib/context-engine/variable-extractor";
@@ -93,24 +88,30 @@ export default function ManualQuestionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <Container className="py-8 sm:py-10">
-        <div className="mb-8">
+    <div className="space-y-6">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface p-5 rounded-xl border border-border shadow-2xs">
+        <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="primary">Editor Soal Manual</Badge>
-            <span className="text-xs text-muted">Bekerja Offline & Tanpa Ketergantungan API AI</span>
+            <Link
+              href="/teacher/questions"
+              className="text-xs font-semibold text-secondary-text hover:text-foreground flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Bank Soal
+            </Link>
+            <span className="text-border">/</span>
+            <span className="text-xs font-semibold text-primary">Input Manual</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Input Soal Mandiri & Ekstraksi Variabel
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Input Soal Mandiri &amp; Ekstraksi Variabel
           </h1>
-          <p className="text-sm text-muted mt-1">
+          <p className="text-xs text-secondary-text mt-1">
             Tulis soal kurikulum standar, tandai variabel yang dapat dikontekstualisasikan, dan adaptasikan ke lingkungan siswa.
           </p>
         </div>
+      </div>
 
-        <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Metadata Card */}
             <div className="lg:col-span-1 space-y-6">
@@ -365,7 +366,6 @@ export default function ManualQuestionPage() {
             </div>
           </div>
         </form>
-      </Container>
     </div>
   );
 }

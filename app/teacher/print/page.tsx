@@ -56,13 +56,13 @@ export default function TeacherPrintPage() {
   return (
     <div className="space-y-6">
       {/* Control Panel — Hidden during Print */}
-      <div className="no-print bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="no-print bg-surface p-5 rounded-xl border border-border shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
-            <Printer className="w-5 h-5 text-[#5865D8]" />
+          <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <Printer className="w-5 h-5 text-primary" />
             Pusat Cetak Dokumen Pembelajaran (Format A4)
           </h1>
-          <p className="text-xs text-[#697386] mt-0.5">
+          <p className="text-xs text-foreground-secondary mt-0.5">
             Cetak lembar ujian siswa, kunci jawaban guru, atau materi ajar terkontekstualisasi siap pakai.
           </p>
         </div>
@@ -71,31 +71,31 @@ export default function TeacherPrintPage() {
           variant="primary"
           size="sm"
           onClick={handlePrint}
-          className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold print-include"
+          className="bg-primary hover:bg-primary-hover text-xs font-semibold print-include"
         >
           <Printer className="w-4 h-4 mr-1.5" /> Cetak Sekarang (PDF / Print)
         </Button>
       </div>
 
       {/* Configuration Options — Hidden during Print */}
-      <div className="no-print bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs space-y-4 text-xs">
-        <h2 className="text-sm font-bold text-[#252B3A] flex items-center gap-2">
-          <Settings className="w-4 h-4 text-[#5865D8]" /> Pengaturan Tata Letak Cetak
+      <div className="no-print bg-surface p-5 rounded-xl border border-border shadow-xs space-y-4 text-xs">
+        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <Settings className="w-4 h-4 text-primary" /> Pengaturan Tata Letak Cetak
         </h2>
 
         {/* Print Mode Selector */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             type="button"
             onClick={() => setPrintMode("student_exam")}
             className={`p-3 rounded-xl border text-left transition-all ${
               printMode === "student_exam"
-                ? "bg-[#5865D8]/10 border-[#5865D8] text-[#5865D8] font-bold"
-                : "bg-[#F7F8FC] border-[#DCE0EA] text-[#252B3A]"
+                ? "bg-primary/10 border-primary text-primary font-bold"
+                : "bg-surface-secondary border-border text-foreground hover:border-border-strong"
             }`}
           >
-            <span className="block text-xs">Lembar Ujian Siswa</span>
-            <span className="text-[10px] text-[#697386] font-normal">
+            <span className="block text-xs font-semibold">Lembar Ujian Siswa</span>
+            <span className="text-[11px] text-foreground-secondary font-normal mt-0.5 block">
               Soal + Ruang Jawaban (Tanpa Kunci)
             </span>
           </button>
@@ -105,12 +105,12 @@ export default function TeacherPrintPage() {
             onClick={() => setPrintMode("teacher_key")}
             className={`p-3 rounded-xl border text-left transition-all ${
               printMode === "teacher_key"
-                ? "bg-amber-50 border-amber-500 text-amber-800 font-bold"
-                : "bg-[#F7F8FC] border-[#DCE0EA] text-[#252B3A]"
+                ? "bg-amber-50 border-amber-500 text-amber-900 font-bold"
+                : "bg-surface-secondary border-border text-foreground hover:border-border-strong"
             }`}
           >
-            <span className="block text-xs">Kunci Jawaban Guru</span>
-            <span className="text-[10px] text-[#697386] font-normal">
+            <span className="block text-xs font-semibold">Kunci Jawaban Guru</span>
+            <span className="text-[11px] text-foreground-secondary font-normal mt-0.5 block">
               Kunci Opsi, Pembahasan, & Rubrik
             </span>
           </button>
@@ -120,12 +120,12 @@ export default function TeacherPrintPage() {
             onClick={() => setPrintMode("learning_material")}
             className={`p-3 rounded-xl border text-left transition-all ${
               printMode === "learning_material"
-                ? "bg-emerald-50 border-[#238B68] text-[#238B68] font-bold"
-                : "bg-[#F7F8FC] border-[#DCE0EA] text-[#252B3A]"
+                ? "bg-emerald-50 border-success text-success font-bold"
+                : "bg-surface-secondary border-border text-foreground hover:border-border-strong"
             }`}
           >
-            <span className="block text-xs">Materi Ajar Kontekstual</span>
-            <span className="text-[10px] text-[#697386] font-normal">
+            <span className="block text-xs font-semibold">Materi Ajar Kontekstual</span>
+            <span className="text-[11px] text-foreground-secondary font-normal mt-0.5 block">
               Bahan Bacaan & Karakteristik Lokal
             </span>
           </button>
@@ -135,11 +135,11 @@ export default function TeacherPrintPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           {printMode !== "learning_material" ? (
             <div>
-              <label className="font-semibold text-[#252B3A] block mb-1">Pilih Dokumen Ujian:</label>
+              <label className="font-semibold text-foreground block mb-1">Pilih Dokumen Ujian:</label>
               <select
                 value={selectedExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {exams.map((ex) => (
                   <option key={ex.id} value={ex.id}>
@@ -150,11 +150,11 @@ export default function TeacherPrintPage() {
             </div>
           ) : (
             <div>
-              <label className="font-semibold text-[#252B3A] block mb-1">Pilih Dokumen Materi:</label>
+              <label className="font-semibold text-foreground block mb-1">Pilih Dokumen Materi:</label>
               <select
                 value={selectedMaterialId}
                 onChange={(e) => setSelectedMaterialId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {materials.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -166,23 +166,23 @@ export default function TeacherPrintPage() {
           )}
 
           <div className="flex items-center gap-4 pt-4">
-            <label className="flex items-center gap-1.5 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer text-foreground-secondary hover:text-foreground">
               <input
                 type="checkbox"
                 checked={includeSchoolHeader}
                 onChange={(e) => setIncludeSchoolHeader(e.target.checked)}
-                className="rounded text-[#5865D8]"
+                className="rounded text-primary focus:ring-primary"
               />
               <span>Kop Surat Resmi Sekolah</span>
             </label>
 
             {printMode === "student_exam" && (
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-1.5 cursor-pointer text-foreground-secondary hover:text-foreground">
                 <input
                   type="checkbox"
                   checked={includeStudentField}
                   onChange={(e) => setIncludeStudentField(e.target.checked)}
-                  className="rounded text-[#5865D8]"
+                  className="rounded text-primary focus:ring-primary"
                 />
                 <span>Kolom Identitas Siswa</span>
               </label>
@@ -192,7 +192,7 @@ export default function TeacherPrintPage() {
       </div>
 
       {/* A4 PRINT PREVIEW CONTAINER */}
-      <div className="bg-white rounded-xl border border-[#DCE0EA] p-8 sm:p-12 shadow-sm max-w-4xl mx-auto print-page">
+      <div className="bg-white rounded-xl border border-border p-8 sm:p-12 shadow-sm max-w-4xl mx-auto print-page">
         {/* Kop Surat Sekolah */}
         {includeSchoolHeader && (
           <div className="border-b-2 border-black pb-4 mb-6 text-center space-y-0.5">

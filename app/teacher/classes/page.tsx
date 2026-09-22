@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,6 @@ import {
   Copy,
   CheckCircle2,
   Calendar,
-  GraduationCap,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
 import { ClassRoom, QuestionSubject, EducationLevel } from "@/lib/db/types";
@@ -35,6 +33,8 @@ export default function ClassesPage() {
 
   useEffect(() => {
     const schoolId = localStorage.getItem("cl_active_school_id") || "school-sd001-samarinda";
+    const sch = repository.getSchoolById(schoolId);
+    if (sch) setLevel(sch.educational_level);
     setClasses(repository.getClasses(schoolId));
   }, []);
 
@@ -82,14 +82,14 @@ export default function ClassesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface p-5 rounded-xl border border-border shadow-2xs">
         <div>
-          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
-            <UsersRound className="w-5 h-5 text-[#5865D8]" />
-            Kelas & Rombongan Belajar
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <UsersRound className="w-5 h-5 text-primary" />
+            Rombongan Belajar / Kelas
           </h1>
-          <p className="text-xs text-[#697386] mt-0.5">
-            Kelola kelas untuk jenjang SD (1-6), SMP (7-9), dan SMA (10-12) di ruang kerja sekolah Anda.
+          <p className="text-xs text-secondary-text mt-1">
+            Kelola kelas aktif, kode masuk siswa, dan mata pelajaran yang diampu di ruang kerja sekolah.
           </p>
         </div>
 
@@ -97,7 +97,7 @@ export default function ClassesPage() {
           variant="primary"
           size="sm"
           onClick={() => setShowCreateModal(true)}
-          className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold"
+          className="text-xs font-semibold"
         >
           <PlusCircle className="w-4 h-4 mr-1.5" /> Buat Kelas Baru
         </Button>
@@ -108,29 +108,29 @@ export default function ClassesPage() {
         {classes.map((cls) => {
           const members = repository.getClassMembers(cls.id);
           return (
-            <div key={cls.id} className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs flex flex-col justify-between space-y-4">
+            <div key={cls.id} className="bg-surface rounded-xl border border-border p-5 shadow-2xs flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
-                    Kelas {cls.grade} {cls.educational_level || "SD"}
-                  </span>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
+                  <Badge variant="primary">
+                    Tingkat Kelas {cls.grade}
+                  </Badge>
+                  <Badge variant="success">
                     Aktif
-                  </span>
+                  </Badge>
                 </div>
-                <h3 className="text-base font-bold text-[#252B3A] mt-2">{cls.name}</h3>
-                <p className="text-xs text-[#697386] flex items-center gap-1 mt-0.5">
-                  <Calendar className="w-3.5 h-3.5" /> Tahun Ajaran {cls.academic_year}
+                <h3 className="text-base font-bold text-foreground mt-2">{cls.name}</h3>
+                <p className="text-xs text-secondary-text flex items-center gap-1 mt-0.5">
+                  <Calendar className="w-3.5 h-3.5 text-primary" /> Tahun Ajaran {cls.academic_year}
                 </p>
               </div>
 
               <div>
-                <span className="text-[10px] font-semibold text-[#697386] uppercase tracking-wider block mb-1">
+                <span className="text-[11px] font-semibold text-secondary-text block mb-1">
                   Mata Pelajaran:
                 </span>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {cls.subjects.map((sub) => (
-                    <span key={sub} className="px-2 py-0.5 rounded bg-[#F1F3F9] text-[11px] font-medium text-[#252B3A]">
+                    <span key={sub} className="px-2 py-0.5 rounded-md bg-[#F2F4F8] text-[11px] font-medium text-foreground border border-border">
                       {sub}
                     </span>
                   ))}
@@ -138,21 +138,22 @@ export default function ClassesPage() {
               </div>
 
               {/* Join Code Box */}
-              <div className="rounded-xl border border-indigo-100 bg-[#5865D8]/5 p-3 flex items-center justify-between">
+              <div className="rounded-lg border border-primary/20 bg-primary-subtle p-3 flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#5865D8] block">
+                  <span className="text-[10px] font-semibold text-primary block">
                     Kode Masuk Siswa:
                   </span>
-                  <span className="font-mono text-sm font-bold text-[#252B3A]">{cls.join_code}</span>
+                  <span className="font-mono text-sm font-bold text-foreground">{cls.join_code}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleCopyCode(cls.join_code)}
-                  className="flex items-center gap-1 rounded-lg border border-[#CBD5E1] bg-white px-2.5 py-1 text-xs font-semibold text-[#5865D8] hover:bg-[#F8FAFC]"
+                  className="flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-[#F2F4F8] cursor-pointer"
                 >
                   {copiedCode === cls.join_code ? (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#238B68]" /> Tersalin!
+                      <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                      <span className="text-success">Tersalin!</span>
                     </>
                   ) : (
                     <>
@@ -162,14 +163,14 @@ export default function ClassesPage() {
                 </button>
               </div>
 
-              <div className="pt-2 border-t border-[#EDEFF5] flex items-center justify-between text-xs text-[#697386]">
+              <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-secondary-text">
                 <span className="flex items-center gap-1 font-medium">
-                  <UsersRound className="w-3.5 h-3.5 text-[#5865D8]" /> {members.length} Siswa Terdaftar
+                  <UsersRound className="w-3.5 h-3.5 text-primary" /> {members.length} Siswa Terdaftar
                 </span>
                 <button
                   type="button"
                   onClick={() => setSelectedClass(cls)}
-                  className="text-xs font-semibold text-[#5865D8] hover:underline"
+                  className="text-xs font-semibold text-link hover:underline cursor-pointer"
                 >
                   Lihat Anggota
                 </button>
@@ -184,11 +185,11 @@ export default function ClassesPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Buat Rombongan Belajar / Kelas Baru"
-        description="Pilih jenjang SD, SMP, atau SMA dan tentukan mata pelajaran yang diampu."
+        description="Tentukan nama kelas, tingkat jenjang, dan mata pelajaran yang diampu."
       >
         <form onSubmit={handleCreateClass} className="space-y-4 text-xs">
           <div>
-            <label className="font-semibold text-[#252B3A] block mb-1">Nama Kelas:</label>
+            <label className="font-semibold text-foreground block mb-1">Nama Kelas:</label>
             <Input
               type="text"
               required
@@ -200,7 +201,7 @@ export default function ClassesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-semibold text-[#252B3A] block mb-1">Jenjang Pendidikan:</label>
+              <label className="font-semibold text-foreground block mb-1">Jenjang Pendidikan:</label>
               <select
                 value={level}
                 onChange={(e) => {
@@ -209,7 +210,7 @@ export default function ClassesPage() {
                   const firstGrade = getAvailableGrades(newLvl)[0];
                   setGrade(String(firstGrade));
                 }}
-                className="w-full rounded-xl border border-[#DCE0EA] bg-white px-3 py-2 text-xs"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
               >
                 <option value="SD">SD (Sekolah Dasar)</option>
                 <option value="SMP">SMP (Sekolah Menengah Pertama)</option>
@@ -218,11 +219,11 @@ export default function ClassesPage() {
             </div>
 
             <div>
-              <label className="font-semibold text-[#252B3A] block mb-1">Tingkat Kelas:</label>
+              <label className="font-semibold text-foreground block mb-1">Tingkat Kelas:</label>
               <select
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
-                className="w-full rounded-xl border border-[#DCE0EA] bg-white px-3 py-2 text-xs"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
               >
                 {getAvailableGrades(level).map((g) => (
                   <option key={g} value={g}>
@@ -234,10 +235,10 @@ export default function ClassesPage() {
           </div>
 
           <div>
-            <label className="font-semibold text-[#252B3A] block mb-1.5">Mata Pelajaran:</label>
+            <label className="font-semibold text-foreground block mb-1.5">Mata Pelajaran:</label>
             <div className="flex flex-wrap gap-3 text-xs font-medium">
               {(["Matematika", "Bahasa Indonesia", "IPS", "IPA", "Bahasa Inggris"] as QuestionSubject[]).map((sub) => (
-                <label key={sub} className="flex items-center gap-1.5 cursor-pointer">
+                <label key={sub} className="flex items-center gap-1.5 cursor-pointer text-foreground">
                   <input
                     type="checkbox"
                     checked={subjects.includes(sub)}
@@ -248,7 +249,7 @@ export default function ClassesPage() {
                         setSubjects(subjects.filter((s) => s !== sub));
                       }
                     }}
-                    className="rounded text-[#5865D8]"
+                    className="rounded text-primary focus:ring-primary"
                   />
                   {sub}
                 </label>
@@ -256,11 +257,11 @@ export default function ClassesPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
             <Button type="button" variant="outline" size="sm" onClick={() => setShowCreateModal(false)} className="text-xs">
               Batal
             </Button>
-            <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+            <Button type="submit" variant="primary" size="sm" className="text-xs">
               Simpan & Terbitkan Kelas
             </Button>
           </div>
@@ -275,28 +276,26 @@ export default function ClassesPage() {
           title={`Anggota ${selectedClass.name}`}
           description={`Siswa yang terdaftar di kelas dengan kode ${selectedClass.join_code}`}
         >
-          <div className="divide-y divide-[#EDEFF5] text-xs">
+          <div className="divide-y divide-border text-xs">
             {repository.getClassMembers(selectedClass.id).length === 0 ? (
-              <p className="py-6 text-center text-[#697386]">
+              <p className="py-6 text-center text-secondary-text">
                 Belum ada siswa di kelas ini. Tambahkan siswa di menu Kelola Siswa atau bagikan kode kelas.
               </p>
             ) : (
               repository.getClassMembers(selectedClass.id).map((m, i) => (
                 <div key={m.id} className="py-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-[#F1F3F9] text-[11px] font-bold text-[#697386] flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-md bg-primary-subtle text-[11px] font-bold text-primary flex items-center justify-center">
                       {i + 1}
                     </span>
-                    <span className="font-semibold text-[#252B3A]">{m.student_name || "Siswa"}</span>
+                    <span className="font-semibold text-foreground">{m.student_name || "Siswa"}</span>
                   </div>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-[#238B68]">
-                    Aktif
-                  </span>
+                  <Badge variant="success">Aktif</Badge>
                 </div>
               ))
             )}
           </div>
-          <div className="pt-3 border-t border-[#DCE0EA] text-right">
+          <div className="pt-3 border-t border-border text-right">
             <Button variant="outline" size="sm" onClick={() => setSelectedClass(null)} className="text-xs">
               Tutup
             </Button>

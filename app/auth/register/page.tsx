@@ -56,18 +56,18 @@ export default function RegisterPage() {
       <Container className="py-12 sm:py-16">
         <div className="mx-auto max-w-lg">
           <div className="text-center mb-8">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-primary mb-4 shadow-xs">
-              <Sparkles className="h-6 w-6" />
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+              <Sparkles className="h-5 w-5" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Pendaftaran Akun Guru
             </h1>
-            <p className="text-sm text-muted mt-2">
+            <p className="text-xs sm:text-sm text-secondary mt-1.5">
               Mulai buat soal dan materi kontekstual yang relevan dengan lingkungan sekolah Anda.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-2xs">
             <form onSubmit={handleRegister} className="space-y-4">
               <Input
                 label="Nama Lengkap Beserta Gelar"
@@ -96,11 +96,11 @@ export default function RegisterPage() {
                 placeholder="Minimal 8 karakter"
               />
 
-              <div className="pt-2 border-t border-border/60">
+              <div className="pt-2 border-t border-border">
                 <div className="flex items-center gap-2 mb-3">
                   <School className="h-4 w-4 text-primary" />
                   <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                    Profil Sekolah & Wilayah
+                    Profil Sekolah &amp; Wilayah
                   </span>
                 </div>
 
@@ -147,11 +147,11 @@ export default function RegisterPage() {
                 className="w-full mt-4"
                 isLoading={isLoading}
               >
-                Daftar & Masuk ke Dashboard <ArrowRight className="h-4 w-4 ml-1" />
+                Daftar &amp; Masuk ke Dashboard <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-xs text-muted border-t border-border/60 pt-4">
+            <div className="mt-6 text-center text-xs text-secondary border-t border-border pt-4">
               Sudah memiliki akun?{" "}
               <Link href="/auth/login" className="font-semibold text-primary hover:underline">
                 Masuk di sini

@@ -13,22 +13,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-muted">
+          <label htmlFor={inputId} className="block text-xs font-semibold text-foreground">
             {label}
           </label>
         )}
         <input
           ref={ref}
           id={inputId}
-          className={`w-full rounded-xl border px-3.5 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 ${
+          className={`w-full rounded-lg border px-3.5 py-2 text-sm text-foreground placeholder:text-disabled transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 ${
             error
-              ? "border-error focus:border-error focus:ring-error/20 bg-red-50/30"
-              : "border-border bg-white focus:border-primary focus:ring-primary/20"
+              ? "border-error bg-error-subtle focus:border-error focus:ring-error/20"
+              : "border-border bg-surface hover:border-border-strong focus:border-primary"
           } ${className}`}
           {...props}
         />
         {error && <p className="text-xs text-error font-medium">{error}</p>}
-        {helperText && !error && <p className="text-xs text-muted">{helperText}</p>}
+        {helperText && !error && <p className="text-xs text-secondary-text">{helperText}</p>}
       </div>
     );
   }

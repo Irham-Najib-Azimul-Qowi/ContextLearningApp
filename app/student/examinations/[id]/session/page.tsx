@@ -3,9 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -17,7 +15,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Send,
-  Save,
   Check,
 } from "lucide-react";
 
@@ -162,11 +159,8 @@ export default function ExamSessionPage({ params }: PageProps) {
 
   if (!exam || questions.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <Container className="py-20 text-center">
-          <p className="text-sm text-muted">Mempersiapkan lembar ujian kontekstual...</p>
-        </Container>
+      <div className="py-20 text-center">
+        <p className="text-sm text-foreground-muted">Mempersiapkan lembar ujian kontekstual...</p>
       </div>
     );
   }
@@ -183,53 +177,51 @@ export default function ExamSessionPage({ params }: PageProps) {
     .padStart(2, "0")}`;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <Container className="py-6 sm:py-8">
-        {/* Exam Header Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-border bg-white p-4 sm:p-5 shadow-xs">
-          <div>
-            <span className="text-xs font-semibold text-primary uppercase tracking-wider block">
-              Lembar Ujian Aktif
-            </span>
-            <h1 className="text-lg font-bold text-foreground mt-0.5">{exam.title}</h1>
-            <p className="text-xs text-muted">
-              {exam.subject} • Kelas {exam.grade} SD • Peserta: <strong>{studentName}</strong>
-            </p>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Exam Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border bg-surface p-5 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="primary">Lembar Ujian Aktif</Badge>
+            <span className="text-xs text-foreground-secondary">{exam.subject} • Kelas {exam.grade}</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            {/* Countdown Clock */}
-            <div
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-mono font-bold shadow-2xs ${
-                secondsRemaining < 300
-                  ? "bg-red-50 text-error border border-red-200 animate-pulse"
-                  : "bg-slate-100 text-foreground border border-slate-200"
-              }`}
-            >
-              <Clock className="h-4 w-4 text-muted" />
-              <span>Sisa Waktu: {timeFormatted}</span>
-            </div>
-
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setShowSubmitModal(true)}
-              className="shadow-xs"
-            >
-              <Send className="h-4 w-4 mr-1" /> Kumpulkan Ujian
-            </Button>
-          </div>
+          <h1 className="text-lg sm:text-xl font-bold text-foreground mt-0.5">{exam.title}</h1>
+          <p className="text-xs text-foreground-secondary mt-0.5">
+            Peserta: <strong className="text-foreground">{studentName}</strong> • {answeredCount} dari {questions.length} soal dijawab
+          </p>
         </div>
+
+        <div className="flex items-center gap-3">
+          {/* Countdown Clock */}
+          <div
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-mono font-bold ${
+              secondsRemaining < 300
+                ? "bg-red-50 text-error border border-red-200 animate-pulse"
+                : "bg-surface-secondary text-foreground border border-border"
+            }`}
+          >
+            <Clock className="h-4 w-4 text-foreground-secondary" />
+            <span>{timeFormatted}</span>
+          </div>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowSubmitModal(true)}
+            className="bg-primary hover:bg-primary-hover text-xs font-semibold shadow-xs"
+          >
+            <Send className="h-4 w-4 mr-1.5" /> Kumpulkan Ujian
+          </Button>
+        </div>
+      </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Question Area (3 cols) */}
           <div className="lg:col-span-3 space-y-6">
-            <Card className="shadow-xs">
-              <CardHeader className="p-5 pb-3 border-b border-border/60 flex flex-row items-center justify-between">
+            <Card className="shadow-xs border-border bg-surface">
+              <CardHeader className="p-5 pb-3 border-b border-border flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-white text-xs font-bold shadow-xs">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white text-xs font-bold shadow-xs">
                     {currentIdx + 1}
                   </span>
                   <span className="text-sm font-bold text-foreground">
@@ -237,33 +229,33 @@ export default function ExamSessionPage({ params }: PageProps) {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-muted">
+                <div className="flex items-center gap-2 text-xs text-foreground-secondary">
                   {isSaving ? (
-                    <span className="text-primary animate-pulse">Menyimpan jawaban...</span>
+                    <span className="text-primary animate-pulse font-medium">Menyimpan...</span>
                   ) : lastSavedTime ? (
-                    <span className="flex items-center gap-1 text-success">
-                      <CheckCircle2 className="h-3 w-3" /> Tersimpan {lastSavedTime}
+                    <span className="flex items-center gap-1 text-success font-medium">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Tersimpan {lastSavedTime}
                     </span>
                   ) : null}
                 </div>
               </CardHeader>
 
               <CardContent className="p-6 space-y-6">
-                {/* Question Prompt */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
-                  <p className="text-base text-foreground font-medium leading-relaxed whitespace-pre-line">
+                {/* Question Prompt (16-18px readable) */}
+                <div className="rounded-xl border border-border bg-surface-secondary p-5">
+                  <div className="text-base sm:text-lg text-foreground font-medium leading-relaxed whitespace-pre-line">
                     <FormattedTextWithMath text={currentQ.original_text} />
-                  </p>
+                  </div>
                 </div>
 
                 {/* Multiple Choice Answers */}
                 {currentQ.question_type === "multiple_choice" && currentQ.options ? (
                   <div className="space-y-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted block">
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground-secondary block">
                       Pilih Jawaban yang Paling Tepat:
                     </span>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {currentQ.options.map((opt: any) => {
                         const isSelected = answers[currentQ.id]?.option === opt.id;
                         return (
@@ -271,24 +263,24 @@ export default function ExamSessionPage({ params }: PageProps) {
                             key={opt.id}
                             type="button"
                             onClick={() => handleSelectOption(currentQ.id, opt.id)}
-                            className={`w-full text-left rounded-2xl border p-4 transition-all flex items-center gap-3 ${
+                            className={`w-full text-left rounded-xl border-2 p-4 transition-all flex items-center gap-3.5 ${
                               isSelected
-                                ? "border-primary bg-indigo-50/60 ring-2 ring-primary/20 text-foreground"
-                                : "border-border bg-white hover:bg-slate-50 text-muted"
+                                ? "border-primary bg-primary/5 ring-2 ring-primary/20 text-foreground"
+                                : "border-border bg-surface hover:bg-surface-secondary hover:border-border-strong text-foreground"
                             }`}
                           >
                             <span
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
                                 isSelected
                                   ? "bg-primary text-white shadow-xs"
-                                  : "border border-slate-300 bg-slate-100 text-foreground"
+                                  : "border border-border-strong bg-surface-secondary text-foreground"
                               }`}
                             >
                               {opt.id}
                             </span>
-                            <span className="text-sm font-medium text-foreground">{opt.text}</span>
+                            <span className="text-sm sm:text-base font-medium text-foreground">{opt.text}</span>
                             {isSelected && (
-                              <Check className="h-4 w-4 text-primary ml-auto shrink-0" />
+                              <Check className="h-5 w-5 text-primary ml-auto shrink-0" />
                             )}
                           </button>
                         );
@@ -298,30 +290,31 @@ export default function ExamSessionPage({ params }: PageProps) {
                 ) : (
                   /* Essay Input */
                   <div className="space-y-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted block">
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground-secondary block">
                       Lembar Jawaban Uraian / Penjelasan:
                     </span>
                     <textarea
-                      rows={6}
+                      rows={7}
                       value={answers[currentQ.id]?.essay || ""}
                       onChange={(e) => handleEssayChange(currentQ.id, e.target.value)}
                       onBlur={() => handleEssayBlur(currentQ.id)}
                       placeholder="Ketikkan jawaban lengkap beserta penjelasan Anda di sini..."
-                      className="w-full rounded-2xl border border-border bg-white p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed"
+                      className="w-full rounded-xl border border-border bg-surface p-4 text-sm font-normal text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary leading-relaxed"
                     />
-                    <p className="text-[11px] text-muted italic">
+                    <p className="text-[11px] text-foreground-secondary italic">
                       * Jawaban otomatis tersimpan saat Anda berpindah nomor soal.
                     </p>
                   </div>
                 )}
 
                 {/* Navigation Buttons */}
-                <div className="pt-4 border-t border-border/60 flex items-center justify-between">
+                <div className="pt-4 border-t border-border flex items-center justify-between">
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={currentIdx === 0}
                     onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
+                    className="border-border text-foreground hover:bg-surface-secondary"
                   >
                     <ArrowLeft className="h-4 w-4 mr-1" /> Soal Sebelumnya
                   </Button>
@@ -331,6 +324,7 @@ export default function ExamSessionPage({ params }: PageProps) {
                       variant="primary"
                       size="sm"
                       onClick={() => setCurrentIdx((prev) => Math.min(questions.length - 1, prev + 1))}
+                      className="bg-primary hover:bg-primary-hover font-semibold"
                     >
                       Soal Berikutnya <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
@@ -339,6 +333,7 @@ export default function ExamSessionPage({ params }: PageProps) {
                       variant="primary"
                       size="sm"
                       onClick={() => setShowSubmitModal(true)}
+                      className="bg-success hover:bg-success/90 font-semibold"
                     >
                       Selesai &amp; Kumpulkan <Send className="h-4 w-4 ml-1" />
                     </Button>
@@ -350,14 +345,14 @@ export default function ExamSessionPage({ params }: PageProps) {
 
           {/* Sidebar Area: Question Number Roster (1 col) */}
           <div className="lg:col-span-1 space-y-6">
-            <Card>
-              <CardHeader className="py-4 border-b border-border/60">
-                <CardTitle className="text-sm font-bold flex items-center justify-between">
+            <Card className="border-border bg-surface shadow-xs">
+              <CardHeader className="py-4 border-b border-border">
+                <div className="text-sm font-bold text-foreground flex items-center justify-between">
                   <span>Nomor Soal</span>
-                  <span className="text-xs text-muted font-normal">
-                    {answeredCount} dari {questions.length} dijawab
+                  <span className="text-xs text-foreground-secondary font-normal">
+                    {answeredCount} / {questions.length} dijawab
                   </span>
-                </CardTitle>
+                </div>
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">
@@ -373,34 +368,34 @@ export default function ExamSessionPage({ params }: PageProps) {
                         key={q.id}
                         type="button"
                         onClick={() => setCurrentIdx(idx)}
-                        className={`h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center relative ${
+                        className={`h-11 rounded-lg text-xs font-bold transition-all flex items-center justify-center relative ${
                           isCurrent
                             ? "ring-2 ring-primary ring-offset-2 bg-primary text-white shadow-xs"
                             : isAnswered
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold"
-                            : "bg-slate-100 text-muted hover:bg-slate-200"
+                            ? "bg-emerald-50 text-success border border-emerald-300 font-semibold"
+                            : "bg-surface-secondary text-foreground-secondary hover:bg-border/60 border border-border"
                         }`}
                       >
                         {idx + 1}
                         {isAnswered && !isCurrent && (
-                          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-success" />
+                          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface" />
                         )}
                       </button>
                     );
                   })}
                 </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-border/60 text-[11px] text-muted">
+                <div className="space-y-1.5 pt-3 border-t border-border text-[11px] text-foreground-secondary">
                   <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-md bg-emerald-50 border border-emerald-300" />
+                    <span className="h-3 w-3 rounded bg-emerald-50 border border-emerald-300" />
                     <span>Sudah dijawab</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-md bg-slate-100" />
+                    <span className="h-3 w-3 rounded bg-surface-secondary border border-border" />
                     <span>Belum dijawab</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-md bg-primary" />
+                    <span className="h-3 w-3 rounded bg-primary" />
                     <span>Nomor saat ini</span>
                   </div>
                 </div>
@@ -417,9 +412,9 @@ export default function ExamSessionPage({ params }: PageProps) {
           description="Apakah Anda yakin ingin mengumpulkan seluruh lembar jawaban?"
         >
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-xs">
+            <div className="rounded-xl border border-border bg-surface-secondary p-4 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted">Total Soal Terjawab:</span>
+                <span className="text-foreground-secondary">Total Soal Terjawab:</span>
                 <strong className="text-foreground font-bold">
                   {answeredCount} dari {questions.length} Butir Soal
                 </strong>
@@ -432,17 +427,18 @@ export default function ExamSessionPage({ params }: PageProps) {
               )}
             </div>
 
-            <p className="text-xs text-muted leading-relaxed">
+            <p className="text-xs text-foreground-secondary leading-relaxed">
               Setelah dikumpulkan, jawaban Anda akan diperiksa dan dinilai secara otomatis oleh server. Anda tidak dapat mengubah jawaban setelah menekan tombol konfirmasi.
             </p>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 disabled={isSubmitting}
                 onClick={() => setShowSubmitModal(false)}
+                className="border-border text-foreground hover:bg-surface-secondary"
               >
                 Kembali Periksa
               </Button>
@@ -452,14 +448,13 @@ export default function ExamSessionPage({ params }: PageProps) {
                 size="sm"
                 isLoading={isSubmitting}
                 onClick={handleSubmitFinal}
-                className="shadow-xs"
+                className="bg-primary hover:bg-primary-hover font-semibold shadow-xs"
               >
                 Ya, Kumpulkan Sekarang
               </Button>
             </div>
           </div>
         </Modal>
-      </Container>
     </div>
   );
 }

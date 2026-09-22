@@ -7,13 +7,10 @@ import {
   Save,
   PlusCircle,
   CheckCircle2,
-  Sparkles,
   Compass,
-  Building,
-  AlertCircle,
-  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { repository } from "@/lib/db/repository";
 import { Region, School, LocalKnowledgeItem, EntityCategory } from "@/lib/db/types";
 
@@ -130,20 +127,20 @@ export default function SchoolProfilePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-surface p-5 rounded-xl border border-border shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-[#5865D8]" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
             Lokasi Sekolah & Konteks Wilayah
           </h1>
-          <p className="text-xs text-[#697386] mt-0.5">
+          <p className="text-xs text-secondary-text mt-1">
             Pengaturan geolokasi dan basis kearifan lokal yang digunakan Context Engine untuk adaptasi materi dan soal.
           </p>
         </div>
       </div>
 
       {saveSuccess && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-xs text-[#238B68] font-medium">
+        <div className="flex items-center gap-2 rounded-xl bg-success-subtle border border-emerald-200 p-4 text-xs text-success font-semibold">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>Pengaturan lokasi dan profil sekolah berhasil disimpan!</span>
         </div>
@@ -152,61 +149,61 @@ export default function SchoolProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: School Information & GPS Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs space-y-4">
-            <h3 className="text-sm font-bold text-[#252B3A] flex items-center gap-2">
-              <SchoolIcon className="w-4 h-4 text-[#5865D8]" /> Pengaturan Instansi Sekolah
+          <div className="bg-surface p-5 rounded-xl border border-border shadow-2xs space-y-4">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <SchoolIcon className="w-4 h-4 text-primary" /> Profil Instansi Sekolah
             </h3>
 
             <form onSubmit={handleSaveSchool} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-[#252B3A] block mb-1">Nama Sekolah:</label>
+                <label className="font-semibold text-foreground block mb-1">Nama Sekolah:</label>
                 <input
                   type="text"
                   required
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-[#252B3A] block mb-1">Provinsi:</label>
+                <label className="font-semibold text-foreground block mb-1">Provinsi:</label>
                 <input
                   type="text"
                   required
                   value={province}
                   onChange={(e) => setProvince(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-[#252B3A] block mb-1">Kabupaten / Kota:</label>
+                <label className="font-semibold text-foreground block mb-1">Kabupaten / Kota:</label>
                 <input
                   type="text"
                   required
                   value={regency}
                   onChange={(e) => setRegency(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-[#252B3A] block mb-1">Kecamatan:</label>
+                <label className="font-semibold text-foreground block mb-1">Kecamatan:</label>
                 <input
                   type="text"
                   required
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               {/* GPS Geolocation Box */}
-              <div className="p-3 rounded-xl bg-[#F7F8FC] border border-[#DCE0EA] space-y-2">
+              <div className="p-3 rounded-lg bg-[#F2F4F8] border border-border space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-[#252B3A] flex items-center gap-1.5">
-                    <Compass className="w-4 h-4 text-[#5865D8]" /> Sinkronisasi GPS
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    <Compass className="w-4 h-4 text-primary" /> Koordinat GPS
                   </span>
                   <Button
                     type="button"
@@ -214,99 +211,78 @@ export default function SchoolProfilePage() {
                     size="sm"
                     onClick={handleGetGPS}
                     disabled={gpsLoading}
-                    className="text-[11px] h-7 border-[#CBD5E1]"
+                    className="text-[11px] h-7"
                   >
                     {gpsLoading ? "Mendeteksi..." : "Ambil GPS"}
                   </Button>
                 </div>
-                <p className="text-[11px] text-[#697386]">
-                  {latitude && longitude
-                    ? `Koordinat: ${latitude}, ${longitude}`
-                    : "Belum disinkronkan dengan sensor lokasi perangkat."}
-                </p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-secondary-text">
+                  <div>Lat: {latitude ? latitude.toFixed(6) : "Belum diatur"}</div>
+                  <div>Long: {longitude ? longitude.toFixed(6) : "Belum diatur"}</div>
+                </div>
               </div>
 
               <div>
-                <label className="font-semibold text-[#252B3A] block mb-1">Karakteristik Lingkungan Siswa:</label>
+                <label className="font-semibold text-foreground block mb-1">Alamat Lengkap:</label>
+                <textarea
+                  rows={2}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-foreground block mb-1">
+                  Karakteristik Wilayah Sekitar:
+                </label>
                 <textarea
                   rows={3}
                   value={localCharacteristics}
                   onChange={(e) => setLocalCharacteristics(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC] text-xs"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
-              <Button type="submit" variant="primary" size="sm" className="w-full bg-[#5865D8] hover:bg-[#4753C4] text-xs">
-                <Save className="w-3.5 h-3.5 mr-1" /> Simpan Perubahan Lokasi
+              <Button type="submit" variant="primary" size="sm" className="w-full text-xs">
+                <Save className="w-3.5 h-3.5 mr-1" /> Simpan Profil Sekolah
               </Button>
             </form>
           </div>
         </div>
 
-        {/* Right Column: Hierarchical Context Engine & Knowledge Items */}
+        {/* Right Column: Local Knowledge Entities Panel */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Hierarchical Context Fallback Banner */}
-          <div className="bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
-            <h3 className="text-sm font-bold text-[#252B3A] flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-[#5865D8]" />
-              Hierarki Adaptasi Context Engine
-            </h3>
-            <p className="text-xs text-[#697386] mb-3 leading-relaxed">
-              Jika entitas tingkat kecamatan tidak tersedia, Context Engine secara bertingkat mengambil entitas kabupaten/kota, provinsi, hingga konteks nasional.
-            </p>
-
-            <div className="grid grid-cols-4 gap-2 text-center text-xs">
-              <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-                <span className="font-bold text-[#5865D8] block">1. Kecamatan</span>
-                <span className="text-[10px] text-blue-700">{district}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
-                <span className="font-bold text-indigo-700 block">2. Kabupaten/Kota</span>
-                <span className="text-[10px] text-indigo-800">{regency}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="font-bold text-slate-700 block">3. Provinsi</span>
-                <span className="text-[10px] text-slate-600">{province}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="font-bold text-slate-700 block">4. Nasional</span>
-                <span className="text-[10px] text-slate-600">Indonesia</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Local Knowledge Base Catalog */}
-          <div className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-surface p-5 rounded-xl border border-border shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-3">
               <div>
-                <h3 className="text-sm font-bold text-[#252B3A]">Entitas Kearifan Lokal Wilayah Terdaftar</h3>
-                <p className="text-xs text-[#697386]">Objek nyata yang diintegrasikan ke dalam bank soal</p>
+                <h3 className="text-sm font-semibold text-foreground">Basis Pengetahuan Lokal Terdaftar</h3>
+                <p className="text-xs text-secondary-text mt-0.5">
+                  Entitas yang aktif digunakan dalam transformasi variabel soal untuk wilayah {school?.regency || "Samarinda"}
+                </p>
               </div>
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddModal(true)}
-                className="text-xs border-[#DCE0EA]"
+                className="text-xs"
               >
-                <PlusCircle className="w-3.5 h-3.5 mr-1 text-[#5865D8]" /> Tambah Entitas Guru
+                <PlusCircle className="w-3.5 h-3.5 mr-1 text-primary" /> Tambah Entitas Guru
               </Button>
             </div>
 
-            <div className="divide-y divide-[#EDEFF5]">
+            <div className="divide-y divide-border">
               {knowledgeItems.map((item) => (
                 <div key={item.id} className="py-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-[#252B3A]">{item.entity_name}</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
-                        {item.entity_category}
-                      </span>
+                      <span className="font-semibold text-xs text-foreground">{item.entity_name}</span>
+                      <Badge variant="neutral">{item.entity_category}</Badge>
                     </div>
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
-                      Terverifikasi
-                    </span>
+                    <Badge variant="success">Terverifikasi</Badge>
                   </div>
-                  <p className="text-xs text-[#697386] leading-relaxed">{item.description}</p>
+                  <p className="text-xs text-secondary-text leading-relaxed font-normal">{item.description}</p>
                 </div>
               ))}
             </div>
@@ -316,55 +292,57 @@ export default function SchoolProfilePage() {
 
       {/* Modal Add Entity */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#DCE0EA] space-y-4">
-            <h2 className="text-base font-bold text-[#252B3A]">Tambah Entitas Kearifan Lokal</h2>
-            <form onSubmit={handleAddEntity} className="space-y-3">
+        <div className="fixed inset-0 bg-[#202638]/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-surface rounded-xl max-w-md w-full p-5 sm:p-6 shadow-xl border border-border-strong space-y-4">
+            <div className="border-b border-border pb-3">
+              <h2 className="text-base font-bold text-foreground">Tambah Entitas Kearifan Lokal</h2>
+              <p className="text-xs text-secondary-text mt-0.5">Daftarkan entitas geografi, komoditas, atau budaya lokal</p>
+            </div>
+            <form onSubmit={handleAddEntity} className="space-y-3 text-xs">
               <div>
-                <label className="text-xs font-semibold text-[#252B3A] block mb-1">Kategori Entitas:</label>
+                <label className="font-semibold text-foreground block mb-1">Kategori Entitas:</label>
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as EntityCategory)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 >
                   <option value="geography">Geografi (Sungai, Danau, Gunung)</option>
-                  <option value="infrastructure">Infrastruktur (Pasar, Pelabuhan, Jembatan)</option>
-                  <option value="economy">Ekonomi (Komoditas, Nelayan, Petani)</option>
-                  <option value="transportation">Transportasi (Perahu, Klotok, Andong)</option>
-                  <option value="social">Sosial (Gotong Royong, Ronda)</option>
-                  <option value="culture">Budaya (Kain Tenun, Batik, Tarian)</option>
+                  <option value="economy">Ekonomi & Pasar (Komoditas, Mata Pencaharian)</option>
+                  <option value="culture">Budaya & Tradisi (Kain, Kesenian, Bangunan)</option>
+                  <option value="flora_fauna">Flora & Fauna Lokal</option>
+                  <option value="transportation">Transportasi Lokal</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#252B3A] block mb-1">Nama Entitas:</label>
+                <label className="font-semibold text-foreground block mb-1">Nama Entitas:</label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Pasar Segiri / Petani Kakao"
+                  placeholder="Contoh: Ikan Haruan / Kapal Klotok"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#252B3A] block mb-1">Deskripsi Kontekstual:</label>
+                <label className="font-semibold text-foreground block mb-1">Deskripsi Konteks:</label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Jelaskan peran objek/profesi ini dalam kehidupan lokal..."
+                  placeholder="Jelaskan peran atau keberadaan entitas ini dalam kehidupan masyarakat sekitar..."
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC]"
+                  className="w-full text-xs p-2.5 rounded-lg border border-border bg-surface text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-[#DCE0EA]">
+              <div className="flex justify-end gap-2 pt-3 border-t border-border">
                 <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddModal(false)} className="text-xs">
                   Batal
                 </Button>
-                <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+                <Button type="submit" variant="primary" size="sm" className="text-xs">
                   Simpan Entitas
                 </Button>
               </div>

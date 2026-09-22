@@ -49,7 +49,7 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-[#202638]/50 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -58,26 +58,26 @@ export function Modal({
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${maxWidthClasses[maxWidth]} rounded-2xl border border-border bg-white shadow-xl transition-all z-10 overflow-hidden`}
+        className={`relative w-full ${maxWidthClasses[maxWidth]} rounded-xl border border-border-strong bg-surface shadow-xl transition-all z-10 overflow-hidden`}
       >
-        <div className="flex items-start justify-between border-b border-border/60 p-6 pb-4">
+        <div className="flex items-start justify-between border-b border-border p-4 sm:p-5">
           <div>
             {title && (
-              <h2 className="text-lg font-bold text-foreground">{title}</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">{title}</h2>
             )}
             {description && (
-              <p className="mt-1 text-sm text-muted">{description}</p>
+              <p className="mt-0.5 text-xs sm:text-sm text-secondary-text leading-relaxed">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
             aria-label="Tutup dialog"
-            className="rounded-lg p-1.5 text-muted hover:bg-slate-100 hover:text-foreground transition-colors"
+            className="rounded-lg p-1.5 text-secondary-text hover:bg-[#F2F4F8] hover:text-foreground transition-colors cursor-pointer"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="p-6 max-h-[80vh] overflow-y-auto">{children}</div>
+        <div className="p-4 sm:p-5 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
     </div>
   );

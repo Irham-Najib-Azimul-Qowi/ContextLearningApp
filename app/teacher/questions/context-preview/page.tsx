@@ -3,8 +3,6 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,19 +13,15 @@ import {
   Layers,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
   Edit3,
   RotateCcw,
-  Save,
   MapPin,
-  HelpCircle,
   Check,
+  ArrowLeft,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
 import { executeContextualization, ContextualizationResult } from "@/lib/context-engine";
 import { Question, Region, LocalKnowledgeItem } from "@/lib/db/types";
-
-
 
 function ContextPreviewInner() {
   const searchParams = useSearchParams();
@@ -111,48 +105,53 @@ function ContextPreviewInner() {
     setTimeout(() => {
       setSaveAlert(false);
       router.push("/teacher/questions");
-    }, 1500);
+    }, 1200);
   };
 
   if (!question || !contextResult) {
     return (
-      <Container className="py-20 text-center">
-        <p className="text-sm text-muted">Memuat pratinjau kontekstualisasi...</p>
-      </Container>
+      <div className="py-20 text-center">
+        <p className="text-xs text-secondary-text">Memuat pratinjau kontekstualisasi...</p>
+      </div>
     );
   }
 
-  const currentRegion = regions.find((r) => r.id === selectedRegionId);
   const regionalEntities = repository.getLocalKnowledge(selectedRegionId);
 
   return (
-    <Container className="py-8 sm:py-10">
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface p-5 rounded-xl border border-border shadow-2xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="primary">Flagship Feature</Badge>
-            <span className="text-xs text-muted">Pipeline Kontekstualisasi Cerdas</span>
+            <Link
+              href="/teacher/questions"
+              className="text-xs font-semibold text-secondary-text hover:text-foreground flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Bank Soal
+            </Link>
+            <span className="text-border">/</span>
+            <span className="text-xs font-semibold text-primary">Pratinjau Kontekstual</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Pratinjau &amp; Komparasi Kontekstualisasi Soal
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Komparasi Kontekstualisasi Soal
           </h1>
-          <p className="text-sm text-muted mt-1">
-            Bandingkan naskah soal kurikulum nasional dengan hasil adaptasi karakteristik lingkungan sekitar sekolah.
+          <p className="text-xs text-secondary-text mt-1">
+            Bandingkan naskah kurikulum nasional dengan hasil adaptasi karakteristik lingkungan sekitar sekolah.
           </p>
         </div>
 
         {/* Region Switcher Bar */}
-        <div className="flex items-center gap-2 bg-white border border-border p-2 rounded-2xl shadow-xs">
-          <MapPin className="h-4 w-4 text-primary ml-1" />
-          <span className="text-xs font-semibold text-foreground">Wilayah:</span>
+        <div className="flex items-center gap-2 bg-[#F2F4F8] border border-border p-2 rounded-lg">
+          <MapPin className="h-4 w-4 text-primary shrink-0 ml-1" />
+          <span className="text-xs font-semibold text-foreground">Target Wilayah:</span>
           <select
             value={selectedRegionId}
             onChange={(e) => {
               setSelectedRegionId(e.target.value);
               setManualOverrides({});
             }}
-            className="rounded-xl border-none bg-slate-100 px-3 py-1.5 text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary/20"
+            className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-foreground focus:border-primary focus:outline-none cursor-pointer"
           >
             {regions.map((r) => (
               <option key={r.id} value={r.id}>
@@ -164,128 +163,130 @@ function ContextPreviewInner() {
       </div>
 
       {saveAlert && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-success font-semibold">
-          <CheckCircle2 className="h-5 w-5 shrink-0" />
-          Soal kontekstual berhasil disetujui dan disimpan ke Bank Soal!
+        <div className="flex items-center gap-2 rounded-xl bg-success-subtle border border-emerald-200 p-4 text-xs font-semibold text-success">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Soal kontekstual berhasil disetujui dan disimpan ke Bank Soal! Mengalihkan...
         </div>
       )}
 
-      {/* Flagship Side-by-Side Comparison Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Left: Original Question Card */}
-        <Card className="border-border">
-          <CardHeader className="py-4 border-b border-border/60 bg-slate-50/50 flex flex-row items-center justify-between">
+      {/* Side-by-Side Comparison Container */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Original Question Card (Neutral Surface) */}
+        <div className="rounded-xl border border-border bg-[#F7F8FB] overflow-hidden flex flex-col shadow-2xs">
+          <div className="py-3 px-4 border-b border-border bg-[#ECEFF5] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-3 w-3 rounded-full bg-slate-400" />
-              <CardTitle className="text-base font-bold text-foreground">
-                Soal Asli (Kurikulum Umum)
-              </CardTitle>
+              <span className="w-2.5 h-2.5 rounded-full bg-secondary-text" />
+              <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Naskah Asli (Kurikulum Nasional)
+              </span>
             </div>
             <Badge variant="neutral">Sebelum Adaptasi</Badge>
-          </CardHeader>
+          </div>
 
-          <CardContent className="p-6 space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 min-h-[140px]">
-              <p className="text-sm leading-relaxed text-slate-800 font-medium">
-                <FormattedTextWithMath text={question.original_text} />
-              </p>
+          <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border bg-surface p-4 min-h-[120px]">
+                <p className="text-sm leading-relaxed text-foreground font-normal">
+                  <FormattedTextWithMath text={question.original_text} />
+                </p>
+              </div>
+
+              {/* Original Options */}
+              {question.options && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-semibold text-secondary-text block">
+                    Opsi Jawaban Kurikulum:
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {question.options.map((opt) => (
+                      <div
+                        key={opt.id}
+                        className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground flex items-center gap-2"
+                      >
+                        <span className="font-bold text-secondary-text">{opt.id}.</span> {opt.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Original Options */}
-            {question.options && (
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
-                  Opsi Jawaban Asli:
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {question.options.map((opt) => (
-                    <div
-                      key={opt.id}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 flex items-center gap-2"
-                    >
-                      <span className="font-bold text-muted">{opt.id}.</span> {opt.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="text-[11px] text-muted space-y-1 pt-2 border-t border-border/40">
+            <div className="text-[11px] text-secondary-text space-y-0.5 pt-3 border-t border-border">
               <p>
-                <strong>Mata Pelajaran:</strong> {question.subject} • Kelas {question.grade} SD
+                <strong>Mata Pelajaran:</strong> {question.subject} • Kelas {question.grade}
               </p>
               <p>
                 <strong>Kompetensi Dasar:</strong> {question.learning_objective}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Right: Contextualized Question Card */}
-        <Card className="border-indigo-200 shadow-sm ring-1 ring-indigo-100">
-          <CardHeader className="py-4 border-b border-indigo-100 bg-indigo-50/40 flex flex-row items-center justify-between">
+        {/* Right: Contextualized Question Card (Highlighted Active Surface) */}
+        <div className="rounded-xl border-2 border-primary/30 bg-surface overflow-hidden flex flex-col shadow-2xs">
+          <div className="py-3 px-4 border-b border-primary/20 bg-primary-subtle flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-3 w-3 rounded-full bg-primary animate-pulse" />
-              <CardTitle className="text-base font-bold text-primary">
-                Soal Kontekstual ({contextResult.region_name})
-              </CardTitle>
+              <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                Hasil Kontekstualisasi ({contextResult.region_name})
+              </span>
             </div>
-            <Badge variant="primary">Hasil Pemrosesan Context Engine</Badge>
-          </CardHeader>
+            <Badge variant="primary">Context Engine Pipeline</Badge>
+          </div>
 
-          <CardContent className="p-6 space-y-4">
-            {isEditingManually ? (
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                  Edit Naskah Manual Guru:
-                </span>
-                <textarea
-                  rows={4}
-                  value={editedText}
-                  onChange={(e) => setEditedText(e.target.value)}
-                  className="w-full rounded-xl border border-primary/40 bg-white p-3.5 text-sm font-medium focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            ) : (
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4 min-h-[140px]">
-                <p className="text-sm leading-relaxed text-foreground font-medium">
-                  <FormattedTextWithMath text={contextResult.contextualized_text} />
-                </p>
-              </div>
-            )}
-
-            {/* Contextualized Options */}
-            {contextResult.options && (
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                  Opsi Jawaban Disesuaikan:
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {contextResult.options.map((opt: { id: string; text: string }) => (
-                    <div
-                      key={opt.id}
-                      className={`rounded-lg border px-3 py-2 text-xs font-medium flex items-center gap-2 ${
-                        opt.id === question.correct_answer
-                          ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                          : "border-indigo-100 bg-white text-foreground"
-                      }`}
-                    >
-                      <span className="font-bold text-primary">{opt.id}.</span> {opt.text}
-                      {opt.id === question.correct_answer && (
-                        <span className="ml-auto text-[9px] font-bold text-success uppercase">
-                          Kunci
-                        </span>
-                      )}
-                    </div>
-                  ))}
+          <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+            <div className="space-y-3">
+              {isEditingManually ? (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-primary block">
+                    Edit Teks Manual:
+                  </span>
+                  <textarea
+                    rows={4}
+                    value={editedText}
+                    onChange={(e) => setEditedText(e.target.value)}
+                    className="w-full rounded-lg border border-primary/50 bg-surface p-3 text-sm font-medium text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                  />
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-lg border border-primary/25 bg-primary-subtle/40 p-4 min-h-[120px]">
+                  <p className="text-sm leading-relaxed text-foreground font-normal">
+                    <FormattedTextWithMath text={contextResult.contextualized_text} />
+                  </p>
+                </div>
+              )}
 
-            {/* Educational Validation Status Badge */}
-            <div className="pt-2 border-t border-border/60">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted">Status Validasi Pendidikan:</span>
+              {/* Contextualized Options */}
+              {contextResult.options && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-primary block">
+                    Opsi Jawaban Disesuaikan:
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {contextResult.options.map((opt: { id: string; text: string }) => (
+                      <div
+                        key={opt.id}
+                        className={`rounded-lg border px-3 py-2 text-xs font-medium flex items-center gap-2 ${
+                          opt.id === question.correct_answer
+                            ? "border-emerald-300 bg-success-subtle text-foreground font-semibold"
+                            : "border-border bg-[#F7F8FB] text-foreground"
+                        }`}
+                      >
+                        <span className="font-bold text-primary">{opt.id}.</span> {opt.text}
+                        {opt.id === question.correct_answer && (
+                          <span className="ml-auto text-[9px] font-bold text-success uppercase">
+                            Kunci
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Status Badge */}
+              <div className="pt-2 border-t border-border flex items-center justify-between">
+                <span className="text-xs font-semibold text-secondary-text">Status Validasi Pendidikan:</span>
                 <Badge
                   variant={
                     contextResult.validation.status === "verified"
@@ -298,113 +299,114 @@ function ContextPreviewInner() {
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   {contextResult.validation.status === "verified"
                     ? "Konteks Terverifikasi & Presisi"
-                    : "Perlu Ditinjau Guru"}
+                    : "Perlu Tinjauan Nilai Matematika"}
                 </Badge>
               </div>
 
-              {/* Validation Notes */}
-              <div className="mt-2 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-muted">
-                {contextResult.validation.notes.map((n: string, i: number) => (
-                  <p key={i} className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                    {n}
-                  </p>
-                ))}
-              </div>
+              {contextResult.validation.notes.length > 0 && (
+                <div className="rounded-lg bg-[#F2F4F8] border border-border p-2.5 text-xs text-secondary-text space-y-1">
+                  {contextResult.validation.notes.map((n: string, i: number) => (
+                    <div key={i} className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>{n}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Interactive Control Buttons */}
-            <div className="pt-3 border-t border-border/60 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+            {/* Approval & Action Bar */}
+            <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditingManually(!isEditingManually)}
                   className="text-xs"
                 >
-                  <Edit3 className="h-3.5 w-3.5 mr-1" />
-                  {isEditingManually ? "Gunakan Hasil Otomatis" : "Edit Teks Manual"}
+                  <Edit3 className="h-3.5 w-3.5 mr-1 text-primary" />
+                  {isEditingManually ? "Batal Edit" : "Edit Teks Manual"}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleReset}
-                  className="text-xs text-muted hover:text-foreground"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
-                </Button>
+                {Object.keys(manualOverrides).length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs">
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset Pilihan
+                  </Button>
+                )}
               </div>
 
               <Button
                 variant="primary"
                 size="sm"
                 onClick={handleApproveAndPublish}
-                className="shadow-xs"
+                className="text-xs font-semibold"
               >
-                <Check className="h-4 w-4 mr-1" /> Setujui &amp; Simpan Soal
+                <Check className="h-3.5 w-3.5 mr-1" /> Setujui & Simpan ke Bank Soal
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Alternative Local Entity Selector Box */}
+      {/* Local Context Variables Breakdown Panel */}
       <Card>
-        <CardHeader className="py-4 border-b border-border/60">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" /> Pemetaan Variabel Kontekstual &amp; Pilihan Alternatif Lokal
+        <CardHeader className="py-3.5 border-b border-border">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+            <Layers className="h-4 w-4 text-primary" /> Pemetaan Entitas Lingkungan Lokal Wilayah
           </CardTitle>
-          <p className="text-xs text-muted mt-0.5">
-            Guru memiliki kendali penuh untuk memilih entitas lokal lain yang lebih familiar bagi siswa di sekolah.
+          <p className="text-xs text-secondary-text mt-0.5">
+            Pilih alternatif entitas pengetahuan lokal di bawah untuk mengganti kata/variabel kontekstual secara langsung.
           </p>
         </CardHeader>
-
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {(Object.entries(contextResult.variable_replacements) as [string, string][]).map(([varKey, currentVal]) => {
-
-              // Get category for this variable
-              const matchingVar = question.context_variables.find((v) => v.key === varKey);
-              const category = matchingVar ? matchingVar.category : "economy";
-              const candidateEntities = regionalEntities.filter((e) => e.entity_category === category);
+        <CardContent className="space-y-4 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {((question.context_variables as any[]) || []).map((cv: any) => {
+              const replacedWith = contextResult.variable_replacements?.[cv.key] || cv.original_value;
+              const alternatives = regionalEntities.filter(
+                (item: LocalKnowledgeItem) =>
+                  item.entity_category?.toLowerCase() === cv.category?.toLowerCase()
+              );
 
               return (
-                <div key={varKey} className="rounded-2xl border border-border bg-slate-50/50 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-primary bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
-                      [{varKey}]
-                    </span>
-                    <span className="text-[10px] uppercase font-bold text-muted">
-                      Kategori: {category}
-                    </span>
+                <div
+                  key={cv.key}
+                  className="rounded-lg border border-border bg-surface p-3.5 space-y-2.5 shadow-2xs"
+                >
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <span className="font-mono text-xs font-bold text-primary">[{cv.key}]</span>
+                    <Badge variant="neutral">{cv.category}</Badge>
                   </div>
 
-                  <div>
-                    <span className="text-[11px] text-muted block">Entitas Terpilih Saat Ini:</span>
-                    <p className="text-sm font-bold text-foreground mt-0.5">{currentVal}</p>
-                  </div>
-
-                  {candidateEntities.length > 1 && (
-                    <div className="space-y-1.5 pt-2 border-t border-border/60">
-                      <span className="text-[10px] font-semibold text-muted uppercase tracking-wider block">
-                        Pilih Entitas Alternatif:
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center justify-between text-secondary-text">
+                      <span>Naskah Asli:</span>
+                      <span className="font-medium text-foreground line-through decoration-red-400">
+                        {cv.original_value}
                       </span>
-                      <div className="space-y-1">
-                        {candidateEntities.map((cand) => (
+                    </div>
+                    <div className="flex items-center justify-between text-secondary-text">
+                      <span>Pengganti Lokal:</span>
+                      <span className="font-bold text-primary">{replacedWith}</span>
+                    </div>
+                  </div>
+
+                  {alternatives.length > 1 && (
+                    <div className="pt-2 border-t border-border">
+                      <span className="text-[10px] font-semibold text-secondary-text block mb-1">
+                        Pilihan Alternatif di {contextResult.region_name}:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {alternatives.map((alt: LocalKnowledgeItem) => (
                           <button
-                            key={cand.id}
+                            key={alt.id}
                             type="button"
-                            onClick={() => handleSelectAlternative(varKey, cand.entity_name)}
-                            className={`w-full text-left rounded-xl p-2 text-xs transition-all flex items-center justify-between ${
-                              cand.entity_name === currentVal
-                                ? "bg-primary text-white font-semibold shadow-xs"
-                                : "bg-white border border-border text-foreground hover:bg-slate-100"
+                            onClick={() => handleSelectAlternative(cv.key, alt.entity_name)}
+                            className={`rounded-md px-2 py-1 text-[11px] font-medium border transition-colors cursor-pointer ${
+                              replacedWith === alt.entity_name
+                                ? "bg-primary text-white border-primary"
+                                : "bg-[#F2F4F8] border-border text-foreground hover:bg-white hover:border-primary/50"
                             }`}
                           >
-                            <span className="truncate">{cand.entity_name}</span>
-                            {cand.entity_name === currentVal && (
-                              <Check className="h-3 w-3 shrink-0 ml-1" />
-                            )}
+                            {alt.entity_name}
                           </button>
                         ))}
                       </div>
@@ -416,17 +418,14 @@ function ContextPreviewInner() {
           </div>
         </CardContent>
       </Card>
-    </Container>
+    </div>
   );
 }
 
 export default function ContextPreviewPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <Suspense fallback={<div className="py-20 text-center text-sm text-muted">Memuat...</div>}>
-        <ContextPreviewInner />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="py-20 text-center text-xs text-secondary-text">Memuat...</div>}>
+      <ContextPreviewInner />
+    </Suspense>
   );
 }

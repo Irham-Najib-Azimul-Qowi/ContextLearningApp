@@ -12,14 +12,14 @@ export default function FeatureCard({
   description,
 }: FeatureCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/20">
-      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-primary">
+    <div className="rounded-xl border border-border bg-surface p-5 sm:p-6 transition-all hover:border-border-strong hover:shadow-xs">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-subtle text-primary">
         {icon}
       </div>
-      <h3 className="mb-3 text-lg font-semibold text-foreground">
+      <h3 className="mb-2 text-base font-semibold text-foreground">
         {title}
       </h3>
-      <p className="text-sm leading-7 text-muted">
+      <p className="text-sm leading-relaxed text-secondary-text">
         {description}
       </p>
     </div>

@@ -28,18 +28,16 @@ export default function Navbar() {
   const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
-    // Check authentication from session/localStorage
     try {
       const storedRole = localStorage.getItem("contextlearning_role") as "teacher" | "student" | null;
       const storedName = localStorage.getItem("contextlearning_name");
       if (storedRole) {
         setUserRole(storedRole);
-        setUserName(storedName || (storedRole === "teacher" ? "Bapak Guru" : "Siswa"));
+        setUserName(storedName || (storedRole === "teacher" ? "Bapak/Ibu Guru" : "Siswa"));
       } else {
-        // Pathname heuristics for demonstration / direct route viewing
         if (pathname?.startsWith("/teacher")) {
           setUserRole("teacher");
-          setUserName("Ibu Guru Nurhaliza");
+          setUserName("Ibu Nurhaliza, S.Pd.");
         } else if (pathname?.startsWith("/student")) {
           setUserRole("student");
           setUserName("Budi Pratama");
@@ -68,20 +66,23 @@ export default function Navbar() {
   const isStudent = userRole === "student" || pathname?.startsWith("/student");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur-md">
       <Container>
-        <nav className="flex h-18 items-center justify-between">
+        <nav className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href={isTeacher ? "/teacher/dashboard" : isStudent ? "/student/dashboard" : "/"} className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-xs">
-              <Sparkles className="h-5 w-5" />
+          <Link
+            href={isTeacher ? "/teacher/dashboard" : isStudent ? "/student/dashboard" : "/"}
+            className="flex items-center gap-2.5 group"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-2xs group-hover:bg-primary-hover transition-colors">
+              <Sparkles className="h-4.5 w-4.5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold tracking-tight text-foreground leading-none">
+              <span className="text-base font-bold tracking-tight text-foreground leading-none">
                 Context<span className="text-primary">Learning</span>
               </span>
-              <span className="text-[10px] font-medium text-muted mt-0.5 tracking-wider uppercase">
-                POLNES Prototype
+              <span className="text-[10px] font-medium text-secondary-text mt-0.5 tracking-wide">
+                Pembelajaran Kontekstual
               </span>
             </div>
           </Link>
@@ -93,28 +94,28 @@ export default function Navbar() {
                 <Link
                   href="/"
                   className={`text-sm font-medium transition-colors ${
-                    pathname === "/" ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname === "/" ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   Beranda
                 </Link>
                 <Link
                   href="/#fitur"
-                  className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                  className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors"
                 >
                   Fitur Utama
                 </Link>
                 <Link
                   href="/#kontekstual"
-                  className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                  className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors"
                 >
-                  Inovasi Konteks
+                  Mesin Konteks
                 </Link>
                 <Link
-                  href="/#tentang"
-                  className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                  href="/#kurikulum"
+                  className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors"
                 >
-                  Tentang
+                  Kurikulum & Wilayah
                 </Link>
               </>
             ) : isTeacher ? (
@@ -122,7 +123,7 @@ export default function Navbar() {
                 <Link
                   href="/teacher/dashboard"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname === "/teacher/dashboard" ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname === "/teacher/dashboard" ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -131,7 +132,7 @@ export default function Navbar() {
                 <Link
                   href="/teacher/questions"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/teacher/questions") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/teacher/questions") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <FileQuestion className="h-4 w-4" />
@@ -140,7 +141,7 @@ export default function Navbar() {
                 <Link
                   href="/teacher/materials"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/teacher/materials") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/teacher/materials") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <BookOpen className="h-4 w-4" />
@@ -149,7 +150,7 @@ export default function Navbar() {
                 <Link
                   href="/teacher/classes"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/teacher/classes") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/teacher/classes") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <Users className="h-4 w-4" />
@@ -158,20 +159,11 @@ export default function Navbar() {
                 <Link
                   href="/teacher/examinations"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/teacher/examinations") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/teacher/examinations") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <ClipboardList className="h-4 w-4" />
                   Ujian
-                </Link>
-                <Link
-                  href="/teacher/school"
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/teacher/school") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
-                  }`}
-                >
-                  <School className="h-4 w-4" />
-                  Profil Wilayah
                 </Link>
               </>
             ) : (
@@ -179,7 +171,7 @@ export default function Navbar() {
                 <Link
                   href="/student/dashboard"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname === "/student/dashboard" ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname === "/student/dashboard" ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -188,7 +180,7 @@ export default function Navbar() {
                 <Link
                   href="/student/classes"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/student/classes") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/student/classes") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <Users className="h-4 w-4" />
@@ -197,7 +189,7 @@ export default function Navbar() {
                 <Link
                   href="/student/materials"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/student/materials") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/student/materials") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <BookOpen className="h-4 w-4" />
@@ -206,54 +198,54 @@ export default function Navbar() {
                 <Link
                   href="/student/examinations"
                   className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/student/examinations") ? "text-primary font-semibold" : "text-muted hover:text-foreground"
+                    pathname.startsWith("/student/examinations") ? "text-primary font-semibold" : "text-secondary-text hover:text-foreground"
                   }`}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  Daftar Ujian
+                  Ujian & Hasil
                 </Link>
               </>
             )}
           </div>
 
-          {/* Actions & User state */}
+          {/* Actions & User State */}
           <div className="hidden items-center gap-3 lg:flex">
             {isTeacher || isStudent ? (
               <>
                 <NotificationBell />
                 <div className="flex items-center gap-2 pl-2 border-l border-border">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-primary font-semibold text-xs">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-subtle text-primary font-semibold text-xs">
                     <UserRound className="h-4 w-4" />
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="text-xs font-semibold text-foreground truncate max-w-[120px]">
+                    <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
                       {userName || (isTeacher ? "Guru" : "Siswa")}
                     </span>
-                    <span className="text-[10px] text-muted capitalize">
-                      {isTeacher ? "Guru SD" : "Siswa"}
+                    <span className="text-[10px] text-secondary-text capitalize">
+                      {isTeacher ? "Pengajar" : "Siswa"}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
                   title="Keluar"
-                  className="rounded-xl border border-border bg-white p-2 text-muted hover:text-error hover:border-red-200 transition-colors"
+                  className="rounded-lg border border-border bg-surface p-2 text-secondary-text hover:text-error hover:border-error hover:bg-error-subtle transition-colors cursor-pointer"
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <Link
                   href="/auth/login"
-                  className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-[#F2F4F8] hover:border-border-strong transition-colors"
                 >
                   <LogIn className="h-3.5 w-3.5" />
                   Masuk
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover shadow-xs transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover shadow-2xs transition-colors"
                 >
                   Daftar Guru
                 </Link>
@@ -266,7 +258,7 @@ export default function Navbar() {
             {(isTeacher || isStudent) && <NotificationBell />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-xl border border-border p-2 text-muted hover:bg-slate-50 hover:text-foreground"
+              className="rounded-lg border border-border p-2 text-secondary-text hover:bg-[#F2F4F8] hover:text-foreground"
               aria-label="Toggle navigation"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -277,43 +269,43 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="border-b border-border bg-white p-4 lg:hidden animate-in slide-in-from-top-2 duration-150">
-          <div className="flex flex-col gap-2">
+        <div className="border-b border-border bg-surface p-4 lg:hidden animate-in slide-in-from-top-2 duration-150">
+          <div className="flex flex-col gap-1.5">
             {!isTeacher && !isStudent ? (
               <>
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   Beranda
                 </Link>
                 <Link
                   href="/#fitur"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   Fitur Utama
                 </Link>
                 <Link
                   href="/#kontekstual"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
-                  Inovasi Konteks
+                  Mesin Konteks
                 </Link>
                 <div className="mt-2 flex flex-col gap-2 pt-2 border-t border-border">
                   <Link
                     href="/auth/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-semibold text-foreground"
+                    className="flex items-center justify-center gap-2 rounded-lg border border-border py-2 text-xs font-semibold text-foreground"
                   >
                     <LogIn className="h-4 w-4" /> Masuk
                   </Link>
                   <Link
                     href="/auth/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white"
+                    className="flex items-center justify-center gap-2 rounded-lg bg-primary py-2 text-xs font-semibold text-white"
                   >
                     Daftar Guru
                   </Link>
@@ -324,51 +316,44 @@ export default function Navbar() {
                 <Link
                   href="/teacher/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard
                 </Link>
                 <Link
                   href="/teacher/questions"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <FileQuestion className="h-4 w-4 text-primary" /> Bank Soal
                 </Link>
                 <Link
                   href="/teacher/materials"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <BookOpen className="h-4 w-4 text-primary" /> Materi
                 </Link>
                 <Link
                   href="/teacher/classes"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <Users className="h-4 w-4 text-primary" /> Kelas
                 </Link>
                 <Link
                   href="/teacher/examinations"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <ClipboardList className="h-4 w-4 text-primary" /> Ujian
-                </Link>
-                <Link
-                  href="/teacher/school"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
-                >
-                  <School className="h-4 w-4 text-primary" /> Profil Wilayah
                 </Link>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     handleLogout();
                   }}
-                  className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-error"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-error/30 py-2 text-xs font-semibold text-error hover:bg-error-subtle"
                 >
                   <LogOut className="h-4 w-4" /> Keluar
                 </button>
@@ -378,37 +363,37 @@ export default function Navbar() {
                 <Link
                   href="/student/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard
                 </Link>
                 <Link
                   href="/student/classes"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <Users className="h-4 w-4 text-primary" /> Kelas Saya
                 </Link>
                 <Link
                   href="/student/materials"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
                   <BookOpen className="h-4 w-4 text-primary" /> Materi Belajar
                 </Link>
                 <Link
                   href="/student/examinations"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-[#F2F4F8]"
                 >
-                  <ClipboardList className="h-4 w-4 text-primary" /> Daftar Ujian
+                  <ClipboardList className="h-4 w-4 text-primary" /> Ujian & Hasil
                 </Link>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     handleLogout();
                   }}
-                  className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-error"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-error/30 py-2 text-xs font-semibold text-error hover:bg-error-subtle"
                 >
                   <LogOut className="h-4 w-4" /> Keluar
                 </button>

@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   School as SchoolIcon,
   Search,
   CheckCircle2,
   AlertTriangle,
-  Ban,
   RefreshCw,
   MapPin,
-  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { repository } from "@/lib/db/repository";
-import { School, EducationLevel, SchoolStatus } from "@/lib/db/types";
+import { School, SchoolStatus } from "@/lib/db/types";
 
 export default function AdminSchoolsPage() {
   const [schools, setSchools] = useState<School[]>([]);
@@ -21,13 +20,13 @@ export default function AdminSchoolsPage() {
   const [levelFilter, setLevelFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  useEffect(() => {
-    refresh();
+  const refresh = useCallback(() => {
+    setSchools([...repository.getSchools()]);
   }, []);
 
-  const refresh = () => {
-    setSchools([...repository.getSchools()]);
-  };
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const handleVerify = (schoolId: string, status: "verified" | "rejected") => {
     repository.updateSchoolVerification(schoolId, status, "admin-platform-01");
@@ -53,43 +52,43 @@ export default function AdminSchoolsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-surface p-5 rounded-xl border border-border shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
-            <SchoolIcon className="w-5 h-5 text-[#5865D8]" />
-            Manajemen Sekolah & Tenant Instansi
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <SchoolIcon className="w-5 h-5 text-primary" />
+            Manajemen Sekolah &amp; Tenant Instansi
           </h1>
-          <p className="text-xs text-[#697386] mt-0.5">
-            Daftar seluruh instansi pendidikan terdaftar (SD, SMP, SMA) beserta status verifikasi dan isolasi data.
+          <p className="text-xs text-foreground-secondary mt-0.5">
+            Daftar seluruh instansi pendidikan terdaftar beserta status verifikasi dan isolasi data.
           </p>
         </div>
 
         <button
           type="button"
           onClick={refresh}
-          className="text-xs text-[#697386] hover:text-[#252B3A] flex items-center gap-1 self-start sm:self-center"
+          className="text-xs text-foreground-secondary hover:text-foreground flex items-center gap-1.5 self-start sm:self-center px-3 py-1.5 rounded-lg border border-border bg-surface-secondary"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Segarkan Data
         </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-[#DCE0EA] flex flex-col sm:flex-row gap-3">
+      <div className="bg-surface p-4 rounded-xl border border-border shadow-xs flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#697386] absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-foreground-secondary absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Cari nama sekolah, kabupaten, atau kode..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC] focus:bg-white focus:outline-none"
+            className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
         <select
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value)}
-          className="text-xs px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC] text-[#252B3A]"
+          className="text-xs px-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
           <option value="ALL">Semua Jenjang</option>
           <option value="SD">SD</option>
@@ -100,7 +99,7 @@ export default function AdminSchoolsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-xs px-3 py-2 rounded-lg border border-[#DCE0EA] bg-[#F7F8FC] text-[#252B3A]"
+          className="text-xs px-3 py-2 rounded-lg border border-border bg-surface-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
           <option value="ALL">Semua Status</option>
           <option value="active">Aktif</option>
@@ -109,12 +108,12 @@ export default function AdminSchoolsPage() {
       </div>
 
       {/* Schools Table */}
-      <div className="bg-white rounded-xl border border-[#DCE0EA] overflow-hidden shadow-xs">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#F7F8FC] border-b border-[#DCE0EA] text-[#697386] font-semibold">
+            <thead className="bg-surface-secondary border-b border-border text-foreground-secondary font-semibold">
               <tr>
-                <th className="py-3 px-4">Nama Sekolah & Kode</th>
+                <th className="py-3 px-4">Nama Sekolah &amp; Kode</th>
                 <th className="py-3 px-4">Jenjang</th>
                 <th className="py-3 px-4">Wilayah Administratif</th>
                 <th className="py-3 px-4">Verifikasi</th>
@@ -122,43 +121,43 @@ export default function AdminSchoolsPage() {
                 <th className="py-3 px-4 text-right">Tindakan Admin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EDEFF5]">
+            <tbody className="divide-y divide-border">
               {filtered.map((sch) => (
-                <tr key={sch.id} className="hover:bg-[#F7F8FC] transition-colors">
+                <tr key={sch.id} className="hover:bg-surface-secondary transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-bold text-[#252B3A] block">{sch.name}</span>
-                    <span className="font-mono text-[10px] text-[#5865D8] font-semibold">{sch.code}</span>
+                    <span className="font-bold text-foreground block">{sch.name}</span>
+                    <span className="font-mono text-[10px] text-primary font-semibold">{sch.code}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8] text-[10px]">
+                    <Badge variant="secondary">
                       {sch.educational_level}
-                    </span>
+                    </Badge>
                   </td>
-                  <td className="py-3 px-4 text-[#697386]">
+                  <td className="py-3 px-4 text-foreground-secondary">
                     <div className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#697386]" />
+                      <MapPin className="w-3 h-3 text-foreground-secondary" />
                       <span>{sch.district}, {sch.regency}</span>
                     </div>
                   </td>
                   <td className="py-3 px-4">
                     {sch.verification_status === "verified" ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
-                        <CheckCircle2 className="w-3 h-3" /> Terverifikasi
-                      </span>
+                      <Badge variant="success">
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Terverifikasi
+                      </Badge>
                     ) : sch.verification_status === "pending_verification" ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-[#C68A28]">
-                        <AlertTriangle className="w-3 h-3" /> Menunggu
-                      </span>
+                      <Badge variant="warning">
+                        <AlertTriangle className="w-3 h-3 mr-1" /> Menunggu
+                      </Badge>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-[#C94F58]">
+                      <Badge variant="error">
                         Ditolak
-                      </span>
+                      </Badge>
                     )}
                   </td>
                   <td className="py-3 px-4">
                     <span
-                      className={`text-[10px] font-semibold capitalize ${
-                        sch.status === "active" ? "text-[#238B68]" : "text-[#C94F58]"
+                      className={`text-[11px] font-semibold capitalize ${
+                        sch.status === "active" ? "text-success" : "text-error"
                       }`}
                     >
                       {sch.status === "active" ? "Aktif" : "Ditangguhkan"}
@@ -170,7 +169,7 @@ export default function AdminSchoolsPage() {
                         variant="primary"
                         size="sm"
                         onClick={() => handleVerify(sch.id, "verified")}
-                        className="h-6 text-[10px] bg-[#238B68] hover:bg-[#1E7758] px-2"
+                        className="h-6 text-[10px] bg-success hover:bg-success/90 px-2 font-semibold"
                       >
                         Setujui
                       </Button>
@@ -179,7 +178,7 @@ export default function AdminSchoolsPage() {
                       type="button"
                       onClick={() => handleToggleStatus(sch)}
                       className={`text-xs hover:underline font-medium ${
-                        sch.status === "active" ? "text-red-600" : "text-[#238B68]"
+                        sch.status === "active" ? "text-error" : "text-success"
                       }`}
                     >
                       {sch.status === "active" ? "Tangguhkan" : "Aktifkan"}

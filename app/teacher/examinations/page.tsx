@@ -7,14 +7,12 @@ import {
   PlusCircle,
   Clock,
   UsersRound,
-  CheckCircle2,
   Eye,
   Award,
-  Calendar,
   Printer,
-  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { repository } from "@/lib/db/repository";
@@ -96,28 +94,28 @@ export default function TeacherExaminationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface p-5 rounded-xl border border-border shadow-2xs">
         <div>
-          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-[#5865D8]" />
-            Ruang Ujian & Penilaian Siswa
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-primary" />
+            Ruang Ujian & Penilaian
           </h1>
-          <p className="text-xs text-[#697386] mt-0.5">
-            Jadwalkan penilaian kontekstual, cetak LJK, koreksi lembar jawaban scan, dan review hasil evaluasi.
+          <p className="text-xs text-secondary-text mt-1">
+            Jadwalkan penilaian harian kontekstual, pantau pengumpulan siswa, dan lakukan koreksi essay.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Link href="/teacher/examinations/scan-correction">
-            <Button variant="outline" size="sm" className="text-xs border-[#238B68] text-[#238B68] bg-emerald-50/50">
-              <ScanLine className="w-3.5 h-3.5 mr-1" /> Koreksi Scan LJK
+            <Button variant="outline" size="sm" className="text-xs">
+              Koreksi Lembar Scan
             </Button>
           </Link>
           <Button
             variant="primary"
             size="sm"
             onClick={() => setShowCreateModal(true)}
-            className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold"
+            className="text-xs font-semibold"
           >
             <PlusCircle className="w-4 h-4 mr-1.5" /> Buat Ruang Ujian
           </Button>
@@ -127,51 +125,51 @@ export default function TeacherExaminationsPage() {
       {/* Exams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {exams.map((exam) => (
-          <div key={exam.id} className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs flex flex-col justify-between space-y-4">
+          <div key={exam.id} className="bg-surface rounded-xl border border-border p-5 shadow-2xs flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
-                  {exam.subject} • Kelas {exam.grade}
-                </span>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
+                <Badge variant="primary">
+                  {exam.subject} · Kelas {exam.grade}
+                </Badge>
+                <Badge variant="success">
                   Berlangsung
-                </span>
+                </Badge>
               </div>
-              <h3 className="text-base font-bold text-[#252B3A] mt-2">{exam.title}</h3>
-              <p className="text-xs text-[#697386] flex items-center gap-1.5 mt-0.5">
-                <UsersRound className="w-3.5 h-3.5 text-[#5865D8]" /> {exam.class_name || "Kelas 5 SD"}
-                <span className="text-slate-300">•</span>
-                <Clock className="w-3.5 h-3.5 text-[#697386]" /> {exam.duration_minutes} Menit
+              <h3 className="text-base font-bold text-foreground mt-2">{exam.title}</h3>
+              <p className="text-xs text-secondary-text flex items-center gap-1.5 mt-0.5">
+                <UsersRound className="w-3.5 h-3.5 text-primary" /> {exam.class_name || "Kelas 5"}
+                <span className="text-border">·</span>
+                <Clock className="w-3.5 h-3.5 text-secondary-text" /> {exam.duration_minutes} Menit
               </p>
             </div>
 
-            <p className="text-xs text-[#697386] leading-relaxed line-clamp-2">
+            <p className="text-xs text-secondary-text leading-relaxed line-clamp-2">
               {exam.description || "Ujian evaluasi kompetensi kontekstual berbasis lingkungan sekolah."}
             </p>
 
-            <div className="rounded-lg border border-[#EDEFF5] bg-[#F7F8FC] p-3 space-y-1 text-xs text-[#697386]">
+            <div className="rounded-lg border border-border bg-[#F2F4F8] p-3 space-y-1.5 text-xs text-secondary-text">
               <div className="flex items-center justify-between">
                 <span>Jumlah Butir Soal:</span>
-                <strong className="text-[#252B3A]">{exam.question_count || exam.questions?.length || 3} Butir</strong>
+                <strong className="text-foreground">{exam.question_count || exam.questions?.length || 3} Butir</strong>
               </div>
               <div className="flex items-center justify-between">
                 <span>Status Pengumpulan:</span>
-                <strong className="text-[#238B68]">1 Terkumpul (Budi Pratama)</strong>
+                <strong className="text-success">1 Terkumpul (Budi Pratama)</strong>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[#EDEFF5] flex items-center justify-between">
+            <div className="pt-2 border-t border-border flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setReviewModalOpen(true)}
-                className="text-xs font-semibold text-[#5865D8] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-link hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <Award className="w-3.5 h-3.5" /> Review Essay
               </button>
 
               <div className="flex items-center gap-1">
                 <Link href="/teacher/print">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-[#697386]" title="Cetak Naskah">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-secondary-text hover:text-foreground" title="Cetak Naskah">
                     <Printer className="w-3.5 h-3.5" />
                   </Button>
                 </Link>
@@ -179,7 +177,7 @@ export default function TeacherExaminationsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedExam(exam)}
-                  className="text-xs h-7 border-[#DCE0EA]"
+                  className="text-xs h-7"
                 >
                   <Eye className="w-3.5 h-3.5 mr-1" /> Naskah
                 </Button>
@@ -198,7 +196,7 @@ export default function TeacherExaminationsPage() {
       >
         <form onSubmit={handleCreateExam} className="space-y-4 text-xs">
           <div>
-            <label className="font-semibold text-[#252B3A] block mb-1">Judul Ujian / Penilaian:</label>
+            <label className="font-semibold text-foreground block mb-1">Judul Ujian / Penilaian:</label>
             <Input
               type="text"
               required
@@ -210,11 +208,11 @@ export default function TeacherExaminationsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-semibold text-[#252B3A] block mb-1">Kelas Sasaran:</label>
+              <label className="font-semibold text-foreground block mb-1">Kelas Sasaran:</label>
               <select
                 value={classId}
                 onChange={(e) => setClassId(e.target.value)}
-                className="w-full rounded-xl border border-[#DCE0EA] bg-white px-3 py-2 text-xs"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
               >
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -225,7 +223,7 @@ export default function TeacherExaminationsPage() {
             </div>
 
             <div>
-              <label className="font-semibold text-[#252B3A] block mb-1">Durasi Ujian (Menit):</label>
+              <label className="font-semibold text-foreground block mb-1">Durasi Ujian (Menit):</label>
               <Input
                 type="number"
                 min={10}
@@ -237,12 +235,12 @@ export default function TeacherExaminationsPage() {
           </div>
 
           <div>
-            <label className="font-semibold text-[#252B3A] block mb-1">
+            <label className="font-semibold text-foreground block mb-1">
               Pilih Soal dari Bank Soal ({selectedQuestionIds.length} Soal Terpilih):
             </label>
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-[#DCE0EA] bg-[#F7F8FC] p-2 divide-y divide-[#EDEFF5]">
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-[#F2F4F8] p-2 divide-y divide-border">
               {questions.map((q) => (
-                <label key={q.id} className="py-2 px-2 flex items-start gap-2.5 cursor-pointer hover:bg-white rounded-lg">
+                <label key={q.id} className="py-2 px-2 flex items-start gap-2.5 cursor-pointer hover:bg-surface rounded-md">
                   <input
                     type="checkbox"
                     checked={selectedQuestionIds.includes(q.id)}
@@ -253,24 +251,24 @@ export default function TeacherExaminationsPage() {
                         setSelectedQuestionIds(selectedQuestionIds.filter((id) => id !== q.id));
                       }
                     }}
-                    className="mt-0.5 rounded text-[#5865D8]"
+                    className="mt-0.5 rounded text-primary focus:ring-primary"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-[#252B3A]">
+                    <span className="font-semibold text-foreground">
                       [{q.subject}] {q.topic}
                     </span>
-                    <p className="text-[#697386] line-clamp-1 mt-0.5">{q.original_text}</p>
+                    <p className="text-secondary-text line-clamp-1 mt-0.5">{q.original_text}</p>
                   </div>
                 </label>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
             <Button type="button" variant="outline" size="sm" onClick={() => setShowCreateModal(false)} className="text-xs">
               Batal
             </Button>
-            <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+            <Button type="submit" variant="primary" size="sm" className="text-xs">
               Terbitkan Ruang Ujian
             </Button>
           </div>
@@ -286,24 +284,24 @@ export default function TeacherExaminationsPage() {
           description="Evaluasi Jawaban Lembar Ujian Kontekstual"
         >
           <form onSubmit={handleGradeEssaySubmit} className="space-y-4 text-xs">
-            <div className="rounded-xl border border-[#DCE0EA] bg-[#F7F8FC] p-3 space-y-1">
+            <div className="rounded-lg border border-border bg-[#F2F4F8] p-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[#697386]">Skor Pilihan Ganda (Otomatis Deterministik):</span>
-                <strong className="text-[#238B68] font-bold">100 / 100 (2/2 Benar)</strong>
+                <span className="text-secondary-text">Skor Pilihan Ganda (Otomatis Deterministik):</span>
+                <strong className="text-success font-bold">100 / 100 (2/2 Benar)</strong>
               </div>
             </div>
 
-            <div className="space-y-2 border-t border-[#DCE0EA] pt-3">
-              <span className="font-bold text-[#5865D8] block uppercase tracking-wider">
+            <div className="space-y-2 border-t border-border pt-3">
+              <span className="font-bold text-primary block uppercase tracking-wider">
                 Soal Uraian / Essay:
               </span>
-              <p className="font-medium text-[#252B3A] bg-[#F7F8FC] p-2.5 rounded-lg border border-[#DCE0EA]">
+              <p className="font-medium text-foreground bg-[#F2F4F8] p-3 rounded-lg border border-border">
                 Jelaskan bagaimana kondisi bentang alam perairan Sungai Mahakam memengaruhi mata pencaharian masyarakat!
               </p>
 
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-[#697386] uppercase">Jawaban Siswa:</span>
-                <p className="text-[#252B3A] p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/40 leading-relaxed">
+                <span className="text-[11px] font-semibold text-secondary-text uppercase">Jawaban Siswa:</span>
+                <p className="text-foreground p-3 rounded-lg border border-primary/20 bg-primary-subtle leading-relaxed">
                   &quot;Karena kami tinggal di dekat Sungai Mahakam, warga banyak yang menjadi nelayan ikan haruan dan pengemudi perahu klotok untuk mengantar orang ke Pasar Pagi.&quot;
                 </p>
               </div>
@@ -317,27 +315,27 @@ export default function TeacherExaminationsPage() {
                   value={essayScore}
                   onChange={(e) => setEssayScore(e.target.value)}
                 />
-                <div className="text-[11px] text-[#697386] self-end pb-2">
+                <div className="text-[11px] text-secondary-text self-end pb-2">
                   Skor Maksimal: 10 Poin
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-[#252B3A] block mb-1">Catatan Umpan Balik Guru:</label>
+                <label className="font-semibold text-foreground block mb-1">Catatan Umpan Balik Guru:</label>
                 <textarea
                   rows={2}
                   value={essayFeedback}
                   onChange={(e) => setEssayFeedback(e.target.value)}
-                  className="w-full rounded-xl border border-[#DCE0EA] bg-white p-2 text-xs"
+                  className="w-full rounded-lg border border-border bg-surface text-foreground p-2.5 text-xs focus:border-primary focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button type="button" variant="outline" size="sm" onClick={() => setReviewModalOpen(false)} className="text-xs">
                 Tutup
               </Button>
-              <Button type="submit" variant="primary" size="sm" className="bg-[#5865D8] text-xs">
+              <Button type="submit" variant="primary" size="sm" className="text-xs">
                 Simpan &amp; Rilis Nilai ke Siswa
               </Button>
             </div>
@@ -353,15 +351,15 @@ export default function TeacherExaminationsPage() {
           title={selectedExam.title}
           description={`Naskah Ujian • Durasi: ${selectedExam.duration_minutes} Menit`}
         >
-          <div className="space-y-4 divide-y divide-[#EDEFF5] text-xs">
+          <div className="space-y-4 divide-y divide-border text-xs">
             {repository.getQuestions().map((q, i) => (
               <div key={q.id} className="pt-3 first:pt-0 space-y-1">
-                <span className="font-bold text-[#5865D8]">Nomor {i + 1} ({q.subject})</span>
-                <p className="text-[#252B3A] leading-relaxed">{q.original_text}</p>
+                <span className="font-semibold text-primary">Nomor {i + 1} ({q.subject})</span>
+                <p className="text-foreground leading-relaxed font-normal">{q.original_text}</p>
               </div>
             ))}
           </div>
-          <div className="pt-3 border-t border-[#DCE0EA] text-right">
+          <div className="pt-3 border-t border-border text-right">
             <Button variant="outline" size="sm" onClick={() => setSelectedExam(null)} className="text-xs">
               Tutup
             </Button>

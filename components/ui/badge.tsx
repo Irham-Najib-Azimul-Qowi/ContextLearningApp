@@ -11,17 +11,17 @@ export function Badge({
   ...props
 }: BadgeProps) {
   const variantStyles = {
-    primary: "bg-indigo-50 text-primary border-indigo-200/60",
-    secondary: "bg-sky-50 text-secondary border-sky-200/60",
-    success: "bg-emerald-50 text-success border-emerald-200/60",
-    warning: "bg-amber-50 text-warning border-amber-200/60",
-    error: "bg-red-50 text-error border-red-200/60",
-    neutral: "bg-slate-100 text-muted border-slate-200",
+    primary: "bg-primary-subtle text-primary border-primary/20",
+    secondary: "bg-sky-50 text-[#0369A1] border-sky-200",
+    success: "bg-success-subtle text-success border-emerald-200",
+    warning: "bg-warning-subtle text-warning border-amber-200",
+    error: "bg-error-subtle text-error border-red-200",
+    neutral: "bg-[#F2F4F8] text-secondary-text border-border",
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-semibold tracking-normal select-none ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {children}

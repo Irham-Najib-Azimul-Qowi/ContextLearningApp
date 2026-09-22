@@ -6,11 +6,11 @@ import {
   PlusCircle,
   CheckCircle2,
   AlertCircle,
-  GraduationCap,
   Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { repository } from "@/lib/db/repository";
 import { ClassRoom } from "@/lib/db/types";
@@ -68,13 +68,13 @@ export default function StudentClassesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-[#DCE0EA] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface p-5 rounded-xl border border-border shadow-xs">
         <div>
-          <h1 className="text-xl font-bold text-[#252B3A] tracking-tight flex items-center gap-2">
-            <UsersRound className="w-5 h-5 text-[#5865D8]" />
+          <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <UsersRound className="w-5 h-5 text-primary" />
             Daftar Kelas Saya
           </h1>
-          <p className="text-xs text-[#697386] mt-0.5">
+          <p className="text-xs text-foreground-secondary mt-0.5">
             Rombongan belajar yang Anda ikuti dan opsi bergabung dengan kode kelas guru.
           </p>
         </div>
@@ -83,7 +83,7 @@ export default function StudentClassesPage() {
           variant="primary"
           size="sm"
           onClick={() => setShowJoinModal(true)}
-          className="bg-[#5865D8] hover:bg-[#4753C4] text-xs font-semibold"
+          className="bg-primary hover:bg-primary-hover text-xs font-semibold"
         >
           <PlusCircle className="w-4 h-4 mr-1.5" /> Gabung Kelas dengan Kode
         </Button>
@@ -92,40 +92,41 @@ export default function StudentClassesPage() {
       {/* Classes Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {classes.map((cls) => (
-          <div key={cls.id} className="bg-white rounded-xl border border-[#DCE0EA] p-5 shadow-xs flex flex-col justify-between space-y-4">
+          <div key={cls.id} className="bg-surface rounded-xl border border-border p-5 shadow-xs flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-[#5865D8]">
-                  Kelas {cls.grade} SD
-                </span>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-[#238B68]">
+                <Badge variant="secondary">
+                  Kelas {cls.grade}
+                </Badge>
+                <Badge variant="success">
                   Terdaftar
-                </span>
+                </Badge>
               </div>
-              <h3 className="text-base font-bold text-[#252B3A] mt-2">{cls.name}</h3>
-              <p className="text-xs text-[#697386] flex items-center gap-1 mt-0.5">
+              <h3 className="text-base font-bold text-foreground mt-2.5">{cls.name}</h3>
+              <p className="text-xs text-foreground-secondary flex items-center gap-1 mt-0.5">
                 <Calendar className="w-3.5 h-3.5" /> Tahun Ajaran {cls.academic_year}
               </p>
             </div>
 
             <div>
-              <span className="text-[10px] font-semibold text-[#697386] uppercase tracking-wider block mb-1">
+              <span className="text-[10px] font-semibold text-foreground-secondary uppercase tracking-wider block mb-1.5">
                 Mata Pelajaran:
               </span>
               <div className="flex flex-wrap gap-1">
                 {cls.subjects.map((sub) => (
-                  <span
+                  <Badge
                     key={sub}
-                    className="px-2 py-0.5 rounded bg-[#F1F3F9] text-[11px] font-medium text-[#252B3A]"
+                    variant="neutral"
+                    className="text-[11px]"
                   >
                     {sub}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[#EDEFF5] text-xs text-[#697386]">
-              Wali Kelas: <strong className="text-[#252B3A]">Ibu Nurhaliza, S.Pd.</strong>
+            <div className="pt-2.5 border-t border-border text-xs text-foreground-secondary">
+              Wali Kelas: <strong className="text-foreground">Ibu Nurhaliza, S.Pd.</strong>
             </div>
           </div>
         ))}
@@ -140,7 +141,7 @@ export default function StudentClassesPage() {
       >
         <form onSubmit={handleJoinClass} className="space-y-4 text-xs">
           <div>
-            <label className="font-semibold text-[#252B3A] block mb-1">Kode Gabung Kelas:</label>
+            <label className="font-semibold text-foreground block mb-1">Kode Gabung Kelas:</label>
             <Input
               type="text"
               required
@@ -155,8 +156,8 @@ export default function StudentClassesPage() {
             <div
               className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
                 feedback.type === "success"
-                  ? "bg-emerald-50 text-[#238B68] border border-emerald-200"
-                  : "bg-red-50 text-[#C94F58] border border-red-200"
+                  ? "bg-emerald-50 text-success border border-emerald-200"
+                  : "bg-red-50 text-error border border-red-200"
               }`}
             >
               {feedback.type === "success" ? (
@@ -168,13 +169,13 @@ export default function StudentClassesPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0EA]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setShowJoinModal(false)}
-              className="text-xs"
+              className="text-xs border-border"
             >
               Batal
             </Button>
@@ -183,7 +184,7 @@ export default function StudentClassesPage() {
               variant="primary"
               size="sm"
               disabled={isSubmitting}
-              className="bg-[#5865D8] text-xs"
+              className="bg-primary hover:bg-primary-hover text-xs font-semibold"
             >
               {isSubmitting ? "Memproses..." : "Gabung Sekarang"}
             </Button>

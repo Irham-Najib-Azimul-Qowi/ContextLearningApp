@@ -1,10 +1,17 @@
-import type  { Metadata } from "next";
-import "./globals.css"
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
-  title: "Context Learning | Pembelajaran Kontekstual",
-  description: 
-    "Platform pembelajaran berbasis AI yang membantnu guru membuat soal dan materi sesuai dengan karakteristik lingkungan lokal siswa.",
+  title: "ContextLearning | Platform Pembelajaran Kontekstual",
+  description:
+    "Platform pembelajaran multi-tenant berbasis AI yang membantu guru menciptakan soal dan materi pembelajaran sesuai dengan karakteristik lingkungan lokal siswa.",
 };
 
 export default function RootLayout({
@@ -13,10 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
-      <body className="min-h-screen antialiased">
+    <html lang="id" className={inter.variable}>
+      <body className="min-h-screen font-sans antialiased bg-background text-foreground">
         {children}
       </body>
     </html>
   );
 }
+

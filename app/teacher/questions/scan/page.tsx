@@ -3,10 +3,7 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/layout/navbar";
-import Container from "@/components/ui/container";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,12 +11,12 @@ import {
   Upload,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  FileImage,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
-import { QuestionSubject, QuestionType } from "@/lib/db/types";
+import { QuestionSubject } from "@/lib/db/types";
 
 export default function ScanQuestionPage() {
   const router = useRouter();
@@ -123,24 +120,30 @@ export default function ScanQuestionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <Container className="py-8 sm:py-10">
-        <div className="mb-8">
+    <div className="space-y-6">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface p-5 rounded-xl border border-border shadow-2xs">
+        <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="primary">Multimodal OCR & Vision</Badge>
-            <span className="text-xs text-muted">Pemindaian Lembar Soal Cetak / Buku Guru</span>
+            <Link
+              href="/teacher/questions"
+              className="text-xs font-semibold text-secondary-text hover:text-foreground flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Bank Soal
+            </Link>
+            <span className="text-border">/</span>
+            <span className="text-xs font-semibold text-primary">Pindai OCR</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Pindai Soal dari Foto Lembar Kerja
           </h1>
-          <p className="text-sm text-muted mt-1">
+          <p className="text-xs text-secondary-text mt-1">
             Unggah foto lembar soal fisik atau materi cetak untuk didigitalkan dan diekstraksi variabel kontekstualnya.
           </p>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upload and Preview Column */}
           <Card>
             <CardHeader className="py-4">
@@ -314,7 +317,6 @@ export default function ScanQuestionPage() {
             </CardContent>
           </Card>
         </div>
-      </Container>
     </div>
   );
 }
