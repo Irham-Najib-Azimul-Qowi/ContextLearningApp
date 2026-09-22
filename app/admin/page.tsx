@@ -13,6 +13,10 @@ import {
   Eye,
   GraduationCap,
   Building2,
+  MapPin,
+  Compass,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -449,62 +453,79 @@ export default function AdminOverviewPage() {
 
       {/* DETAIL DOSSIER MODAL */}
       {selectedSchool && (
-        <div className="fixed inset-0 bg-[#202638]/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-surface rounded-xl max-w-lg w-full p-5 sm:p-6 shadow-xl border border-border space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between border-b border-border pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-foreground">{selectedSchool.name}</h3>
-                  <Badge variant="primary">{selectedSchool.educational_level}</Badge>
+        <div className="fixed inset-0 bg-[#202638]/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-surface rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-border space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-border pb-3.5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-200/80 text-primary flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+                  <School className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-secondary mt-0.5">
-                  Berkas Verifikasi Permohonan Ruang Kerja
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-foreground leading-snug">
+                      {selectedSchool.name}
+                    </h3>
+                    <Badge variant="primary" className="text-[10px] px-2 py-0.5 font-bold">
+                      {selectedSchool.educational_level}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-secondary mt-0.5">
+                    Berkas Verifikasi Permohonan Ruang Kerja Instansi
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setSelectedSchool(null)}
-                className="text-secondary hover:text-foreground p-1 rounded-lg hover:bg-workspace"
+                className="text-secondary hover:text-foreground p-1.5 rounded-lg hover:bg-workspace transition-colors"
+                title="Tutup"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2 p-3 rounded-lg bg-surface-subtle border border-border">
+            {/* Modal Body */}
+            <div className="space-y-3.5 text-xs">
+              {/* Executive Metadata Strip (4-col on sm) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-workspace/80 border border-border">
                 <div>
-                  <span className="text-muted block text-[11px]">NPSN:</span>
-                  <span className="font-mono font-bold text-foreground">
-                    {selectedSchool.npsn || "Tidak ada"}
+                  <span className="text-[11px] text-secondary font-medium block">NPSN</span>
+                  <span className="font-mono font-bold text-foreground text-xs mt-0.5 block">
+                    {selectedSchool.npsn || "—"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted block text-[11px]">Kode Registrasi:</span>
-                  <span className="font-mono font-bold text-primary">{selectedSchool.code}</span>
+                  <span className="text-[11px] text-secondary font-medium block">Kode Instansi</span>
+                  <span className="font-mono font-bold text-primary text-xs mt-0.5 block">
+                    {selectedSchool.code}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-muted block text-[11px]">Status:</span>
-                  <Badge
-                    variant={
-                      selectedSchool.verification_status === "verified"
-                        ? "success"
+                  <span className="text-[11px] text-secondary font-medium block">Status</span>
+                  <div className="mt-0.5">
+                    <Badge
+                      variant={
+                        selectedSchool.verification_status === "verified"
+                          ? "success"
+                          : selectedSchool.verification_status === "rejected"
+                          ? "error"
+                          : "warning"
+                      }
+                      className="text-[10px]"
+                    >
+                      {selectedSchool.verification_status === "verified"
+                        ? "Terverifikasi"
                         : selectedSchool.verification_status === "rejected"
-                        ? "error"
-                        : "warning"
-                    }
-                    className="text-[10px]"
-                  >
-                    {selectedSchool.verification_status === "verified"
-                      ? "Terverifikasi"
-                      : selectedSchool.verification_status === "rejected"
-                      ? "Ditolak"
-                      : "Menunggu"}
-                  </Badge>
+                        ? "Ditolak"
+                        : "Menunggu"}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
-                  <span className="text-muted block text-[11px]">Tanggal Pengajuan:</span>
-                  <span className="text-foreground font-medium">
+                  <span className="text-[11px] text-secondary font-medium block">Tanggal Masuk</span>
+                  <span className="font-semibold text-foreground text-xs mt-0.5 block">
                     {new Date(selectedSchool.created_at).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "short",
@@ -514,73 +535,104 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
 
-              <div>
-                <span className="font-semibold text-foreground block mb-0.5">Alamat:</span>
-                <p className="text-secondary p-2.5 rounded-lg bg-surface-subtle border border-border leading-relaxed">
-                  {selectedSchool.address || "Alamat belum diatur"} • Kec. {selectedSchool.district}, {selectedSchool.regency}, {selectedSchool.province}
-                </p>
+              {/* Alamat Geografis */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <span>Alamat Geografis Sekolah</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-surface border border-border text-xs space-y-1">
+                  <p className="font-semibold text-foreground text-xs leading-snug">
+                    {selectedSchool.address || "Alamat jalan belum diatur"}
+                  </p>
+                  <p className="text-secondary text-[11px]">
+                    Kecamatan {selectedSchool.district} • {selectedSchool.regency} • {selectedSchool.province}
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <span className="font-semibold text-foreground block mb-0.5">Kearifan Lokal Wilayah:</span>
-                <p className="text-secondary p-2.5 rounded-lg bg-surface-subtle border border-border leading-relaxed">
-                  {selectedSchool.local_characteristics || selectedSchool.description || "Belum ada catatan konteks wilayah."}
-                </p>
+              {/* Karakteristik & Kearifan Lokal */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
+                  <Compass className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Karakteristik &amp; Kearifan Lokal Wilayah</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/90 text-xs">
+                  <p className="text-amber-900 leading-relaxed font-normal">
+                    {selectedSchool.local_characteristics || selectedSchool.description || "Belum ada catatan konteks lingkungan lokal yang didaftarkan."}
+                  </p>
+                </div>
               </div>
 
+              {/* Koordinator Pengusul */}
               {selectedSchool.created_by && COORDINATOR_LOOKUP[selectedSchool.created_by] && (
-                <div>
-                  <span className="font-semibold text-foreground block mb-0.5">Koordinator Pengusul:</span>
-                  <div className="p-2.5 rounded-lg bg-surface-subtle border border-border space-y-0.5">
-                    <p className="font-medium text-foreground">
-                      {COORDINATOR_LOOKUP[selectedSchool.created_by].name} (
-                      {COORDINATOR_LOOKUP[selectedSchool.created_by].role})
-                    </p>
-                    <p className="text-secondary font-mono text-[11px]">
-                      {COORDINATOR_LOOKUP[selectedSchool.created_by].email} • {COORDINATOR_LOOKUP[selectedSchool.created_by].phone}
-                    </p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-sky-950">
+                    <UsersRound className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Koordinator / Pendidik Pengusul</span>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200/90 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                    <div>
+                      <p className="font-bold text-xs text-sky-950">
+                        {COORDINATOR_LOOKUP[selectedSchool.created_by].name}
+                      </p>
+                      <p className="text-[11px] text-sky-800">
+                        {COORDINATOR_LOOKUP[selectedSchool.created_by].role}
+                      </p>
+                    </div>
+                    <div className="text-[11px] text-sky-950 font-mono space-y-1 sm:text-right">
+                      <div className="flex items-center gap-1.5 sm:justify-end">
+                        <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <span>{COORDINATOR_LOOKUP[selectedSchool.created_by].email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 sm:justify-end">
+                        <Phone className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <span>{COORDINATOR_LOOKUP[selectedSchool.created_by].phone}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
+            {/* Modal Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-border">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedSchool(null)}
-                className="text-xs h-8"
+                className="text-xs h-8 text-secondary hover:text-foreground"
               >
                 Tutup
               </Button>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 {selectedSchool.verification_status !== "rejected" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={() => {
                       handleUpdateStatus(selectedSchool.id, "rejected");
                       setSelectedSchool(null);
                     }}
-                    className="text-xs h-8 text-error border-red-200 hover:bg-red-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-[#B42336] hover:bg-red-50 text-xs font-medium transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5 mr-1" /> Tolak
-                  </Button>
+                    <X className="w-3.5 h-3.5" />
+                    <span>Tolak Permohonan</span>
+                  </button>
                 )}
 
                 {selectedSchool.verification_status !== "verified" && (
-                  <Button
-                    variant="primary"
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={() => {
                       handleUpdateStatus(selectedSchool.id, "verified");
                       setSelectedSchool(null);
                     }}
-                    className="text-xs h-8 bg-[#18764F] hover:bg-[#135E3E] text-white font-medium"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#18764F] hover:bg-[#135E3E] text-white text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                   >
-                    <Check className="w-3.5 h-3.5 mr-1" /> Setujui Verifikasi
-                  </Button>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Setujui &amp; Verifikasi</span>
+                  </button>
                 )}
               </div>
             </div>
