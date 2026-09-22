@@ -7,7 +7,7 @@ import { Sparkles } from "lucide-react";
 import { TEACHER_NAV_GROUPS, NavGroup } from "./teacher-nav-config";
 
 interface IconNavigationRailProps {
-  activeGroupId: string;
+  activeGroupId: string | null;
   openGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
 }
@@ -32,14 +32,14 @@ export function IconNavigationRail({
 
   return (
     <aside
-      className="w-16 sm:w-[68px] bg-slate-50/90 border-r border-slate-200/90 flex flex-col items-center py-3.5 shrink-0 z-20 select-none h-screen"
+      className="w-[72px] sm:w-[76px] bg-slate-50/90 border-r border-slate-200/90 flex flex-col items-center py-3.5 shrink-0 z-20 select-none h-screen"
       aria-label="Rel Navigasi Ruang Kerja"
     >
-      {/* 1. BRAND LOGO AT THE VERY TOP OF VERTICAL MENU RAIL */}
-      <div className="relative flex items-center group/tooltip w-full justify-center mb-1.5">
+      {/* 1. BRAND LOGO AT THE VERY TOP OF VERTICAL MENU RAIL (Shifted to right aligned with menu buttons) */}
+      <div className="relative flex items-center group/tooltip w-full justify-center pl-2.5 mb-2">
         <Link
           href="/teacher/dashboard"
-          className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs hover:bg-indigo-700 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 active:scale-95"
+          className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xs hover:bg-indigo-700 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 active:scale-95"
           title="Pahami"
           aria-label="Pahami"
         >
@@ -59,37 +59,39 @@ export function IconNavigationRail({
         </div>
       </div>
 
-      {/* Subtle Divider between Brand Logo and Menu Groups */}
-      <div className="w-8 h-[1px] bg-slate-200 shrink-0 mb-2.5" aria-hidden="true" />
+      {/* Subtle Divider between Brand Logo and Menu Groups (Shifted to match buttons) */}
+      <div className="w-8 h-[1px] bg-slate-200 shrink-0 mb-3 ml-2.5" aria-hidden="true" />
 
       {/* 2. VERTICAL MENU GROUPS */}
-      <div className="flex-1 flex flex-col items-center gap-2.5 w-full px-2.5">
+      <div className="flex-1 flex flex-col items-center gap-2.5 w-full">
         {TEACHER_NAV_GROUPS.map((group) => {
-          const isRouteActive = group.id === activeGroupId;
+          // Only the currently active group is highlighted (Dashboard does not stay active if another group is selected)
+          const isHighlighted = openGroupId
+            ? group.id === openGroupId
+            : group.id === activeGroupId;
           const isSubmenuOpen = group.id === openGroupId;
-          const isHighlighted = isRouteActive || isSubmenuOpen;
           const Icon = group.icon;
 
           return (
-            <div key={group.id} className="relative flex items-center group/tooltip w-full justify-center">
-              {/* Left Active Indicator Bar */}
+            <div key={group.id} className="relative flex items-center group/tooltip w-full justify-center pl-2.5">
+              {/* Left Active Indicator Bar (Cleanly separated from the button) */}
               <div
-                className={`absolute left-0 w-1 rounded-r-full transition-all duration-150 ${
+                className={`absolute left-1 w-1 rounded-full transition-all duration-200 ${
                   isHighlighted
-                    ? "h-7 bg-indigo-600 opacity-100"
+                    ? "h-8 bg-indigo-600 opacity-100"
                     : "h-2 bg-slate-300 opacity-0 group-hover/tooltip:opacity-100 group-hover/tooltip:h-4"
                 }`}
                 aria-hidden="true"
               />
 
-              {/* Icon Button (Circular for menu items) */}
+              {/* Icon Button: Circular when inactive, morphs to rounded-2xl ('aga ngotak') when active */}
               <button
                 type="button"
                 onClick={() => handleGroupClick(group)}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-150 relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-200 ease-in-out relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
                   isHighlighted
-                    ? "bg-indigo-600 text-white shadow-xs font-semibold"
-                    : "bg-white text-slate-600 hover:text-slate-950 hover:bg-slate-100/90 border border-slate-200/80 shadow-2xs"
+                    ? "rounded-2xl bg-indigo-600 text-white shadow-xs font-semibold"
+                    : "rounded-full hover:rounded-2xl bg-white text-slate-600 hover:text-slate-950 hover:bg-slate-100/90 border border-slate-200/80 shadow-2xs"
                 }`}
                 aria-label={group.label}
                 aria-expanded={group.hasSubmenu ? isSubmenuOpen : undefined}

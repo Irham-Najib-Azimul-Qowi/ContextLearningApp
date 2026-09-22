@@ -36,12 +36,12 @@ export function TeacherWorkspaceShell({ children }: TeacherWorkspaceShellProps) 
   }, []);
 
   useEffect(() => {
-    if (activeGroup.hasSubmenu) {
+    if (activeGroup && activeGroup.hasSubmenu) {
       setOpenGroupId(activeGroup.id);
     } else {
       setOpenGroupId(null);
     }
-  }, [pathname, activeGroup.id, activeGroup.hasSubmenu]);
+  }, [pathname, activeGroup?.id, activeGroup?.hasSubmenu]);
 
   // Handle icon click on rail
   const handleSelectGroup = (groupId: string) => {
@@ -67,7 +67,7 @@ export function TeacherWorkspaceShell({ children }: TeacherWorkspaceShellProps) 
       {/* 1. DESKTOP ICON RAIL (Starts from very top, Pahami Logo at top) */}
       <div className="hidden md:flex shrink-0">
         <IconNavigationRail
-          activeGroupId={activeGroup.id}
+          activeGroupId={activeGroup ? activeGroup.id : null}
           openGroupId={openGroupId}
           onSelectGroup={handleSelectGroup}
         />

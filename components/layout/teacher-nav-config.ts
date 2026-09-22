@@ -175,10 +175,10 @@ export const TEACHER_NAV_GROUPS: NavGroup[] = [
 /**
  * Finds the active NavGroup based on the current URL pathname.
  */
-export function getActiveNavGroup(pathname: string): NavGroup {
+export function getActiveNavGroup(pathname: string): NavGroup | null {
   // Check special cases first (e.g., /teacher/examinations/scan-correction belongs to "dokumen")
   if (pathname.startsWith("/teacher/examinations/scan-correction")) {
-    return TEACHER_NAV_GROUPS.find((g) => g.id === "dokumen") || TEACHER_NAV_GROUPS[0];
+    return TEACHER_NAV_GROUPS.find((g) => g.id === "dokumen") || null;
   }
 
   // Find matching group by prefix
@@ -188,8 +188,7 @@ export function getActiveNavGroup(pathname: string): NavGroup {
     }
   }
 
-  // Fallback to Beranda
-  return TEACHER_NAV_GROUPS[0];
+  return null;
 }
 
 /**
