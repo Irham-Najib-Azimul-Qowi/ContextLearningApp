@@ -75,7 +75,7 @@ export default function AdminLoginPage() {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold">
             <Sparkles className="w-4 h-4" />
           </div>
-          <span className="font-bold text-sm text-white">ContextLearning</span>
+          <span className="font-bold text-sm text-white">Pahami</span>
         </div>
 
         <Link href="/auth/login" className="text-xs text-slate-400 hover:text-white transition-colors">

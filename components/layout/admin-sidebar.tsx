@@ -55,7 +55,7 @@ export function AdminSidebar() {
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="font-bold text-xs text-white leading-tight">ContextLearning</h2>
+            <h2 className="font-bold text-xs text-white leading-tight">Pahami</h2>
             <span className="text-[10px] text-slate-400 font-mono">Platform Admin</span>
           </div>
         </div>
