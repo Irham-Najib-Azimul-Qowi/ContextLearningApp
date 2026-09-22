@@ -453,25 +453,25 @@ export default function AdminOverviewPage() {
 
       {/* DETAIL DOSSIER MODAL */}
       {selectedSchool && (
-        <div className="fixed inset-0 bg-[#202638]/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-surface rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-border space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border pb-3.5">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-200/80 text-primary flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+            <div className="flex items-start justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
                   <School className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-foreground leading-snug">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
                       {selectedSchool.name}
                     </h3>
-                    <Badge variant="primary" className="text-[10px] px-2 py-0.5 font-bold">
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
                       {selectedSchool.educational_level}
-                    </Badge>
+                    </span>
                   </div>
-                  <p className="text-xs text-secondary mt-0.5">
-                    Berkas Verifikasi Permohonan Ruang Kerja Instansi
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Berkas Permohonan Registrasi Instansi &amp; Ruang Kerja Guru
                   </p>
                 </div>
               </div>
@@ -479,7 +479,7 @@ export default function AdminOverviewPage() {
               <button
                 type="button"
                 onClick={() => setSelectedSchool(null)}
-                className="text-secondary hover:text-foreground p-1.5 rounded-lg hover:bg-workspace transition-colors"
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
                 title="Tutup"
               >
                 <X className="w-4 h-4" />
@@ -487,24 +487,34 @@ export default function AdminOverviewPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="space-y-3.5 text-xs">
-              {/* Executive Metadata Strip (4-col on sm) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-workspace/80 border border-border">
+            <div className="space-y-4 text-xs">
+              {/* Executive Metadata Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
                 <div>
-                  <span className="text-[11px] text-secondary font-medium block">NPSN</span>
-                  <span className="font-mono font-bold text-foreground text-xs mt-0.5 block">
+                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">NPSN</span>
+                  <span className="font-mono font-bold text-slate-900 text-xs mt-1 block">
                     {selectedSchool.npsn || "—"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-secondary font-medium block">Kode Instansi</span>
-                  <span className="font-mono font-bold text-primary text-xs mt-0.5 block">
+                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Kode Instansi</span>
+                  <span className="font-mono font-bold text-indigo-600 text-xs mt-1 block">
                     {selectedSchool.code}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-secondary font-medium block">Status</span>
-                  <div className="mt-0.5">
+                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Tanggal Masuk</span>
+                  <span className="font-semibold text-slate-800 text-xs mt-1 block">
+                    {new Date(selectedSchool.created_at).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Status</span>
+                  <div className="mt-1">
                     <Badge
                       variant={
                         selectedSchool.verification_status === "verified"
@@ -519,33 +529,23 @@ export default function AdminOverviewPage() {
                         ? "Terverifikasi"
                         : selectedSchool.verification_status === "rejected"
                         ? "Ditolak"
-                        : "Menunggu"}
+                        : "Menunggu Verifikasi"}
                     </Badge>
                   </div>
                 </div>
-                <div>
-                  <span className="text-[11px] text-secondary font-medium block">Tanggal Masuk</span>
-                  <span className="font-semibold text-foreground text-xs mt-0.5 block">
-                    {new Date(selectedSchool.created_at).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
               </div>
 
-              {/* Alamat Geografis */}
+              {/* Alamat Geografis Sekolah */}
               <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <MapPin className="w-3.5 h-3.5 text-slate-500" />
                   <span>Alamat Geografis Sekolah</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-surface border border-border text-xs space-y-1">
-                  <p className="font-semibold text-foreground text-xs leading-snug">
+                <div className="p-3.5 rounded-xl bg-slate-50/60 border border-slate-200/80 text-xs space-y-1">
+                  <p className="font-semibold text-slate-900 text-xs leading-snug">
                     {selectedSchool.address || "Alamat jalan belum diatur"}
                   </p>
-                  <p className="text-secondary text-[11px]">
+                  <p className="text-slate-500 text-[11px]">
                     Kecamatan {selectedSchool.district} • {selectedSchool.regency} • {selectedSchool.province}
                   </p>
                 </div>
@@ -553,12 +553,12 @@ export default function AdminOverviewPage() {
 
               {/* Karakteristik & Kearifan Lokal */}
               <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
                   <Compass className="w-3.5 h-3.5 text-amber-600" />
                   <span>Karakteristik &amp; Kearifan Lokal Wilayah</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/90 text-xs">
-                  <p className="text-amber-900 leading-relaxed font-normal">
+                <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-xs">
+                  <p className="text-amber-950 leading-relaxed font-normal">
                     {selectedSchool.local_characteristics || selectedSchool.description || "Belum ada catatan konteks lingkungan lokal yang didaftarkan."}
                   </p>
                 </div>
@@ -567,26 +567,36 @@ export default function AdminOverviewPage() {
               {/* Koordinator Pengusul */}
               {selectedSchool.created_by && COORDINATOR_LOOKUP[selectedSchool.created_by] && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-sky-950">
-                    <UsersRound className="w-3.5 h-3.5 text-sky-600" />
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                    <UsersRound className="w-3.5 h-3.5 text-slate-500" />
                     <span>Koordinator / Pendidik Pengusul</span>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200/90 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-                    <div>
-                      <p className="font-bold text-xs text-sky-950">
-                        {COORDINATOR_LOOKUP[selectedSchool.created_by].name}
-                      </p>
-                      <p className="text-[11px] text-sky-800">
-                        {COORDINATOR_LOOKUP[selectedSchool.created_by].role}
-                      </p>
+                  <div className="p-3.5 rounded-xl bg-slate-50/60 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        {COORDINATOR_LOOKUP[selectedSchool.created_by].name
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-900">
+                          {COORDINATOR_LOOKUP[selectedSchool.created_by].name}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {COORDINATOR_LOOKUP[selectedSchool.created_by].role}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-sky-950 font-mono space-y-1 sm:text-right">
+                    <div className="text-[11px] text-slate-600 font-mono space-y-1 sm:text-right">
                       <div className="flex items-center gap-1.5 sm:justify-end">
-                        <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{COORDINATOR_LOOKUP[selectedSchool.created_by].email}</span>
                       </div>
                       <div className="flex items-center gap-1.5 sm:justify-end">
-                        <Phone className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{COORDINATOR_LOOKUP[selectedSchool.created_by].phone}</span>
                       </div>
                     </div>
@@ -596,17 +606,16 @@ export default function AdminOverviewPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-border">
-              <Button
-                variant="ghost"
-                size="sm"
+            <div className="flex items-center justify-between pt-3.5 border-t border-slate-100">
+              <button
+                type="button"
                 onClick={() => setSelectedSchool(null)}
-                className="text-xs h-8 text-secondary hover:text-foreground"
+                className="h-9 px-4 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Tutup
-              </Button>
+              </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 {selectedSchool.verification_status !== "rejected" && (
                   <button
                     type="button"
@@ -614,7 +623,7 @@ export default function AdminOverviewPage() {
                       handleUpdateStatus(selectedSchool.id, "rejected");
                       setSelectedSchool(null);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-[#B42336] hover:bg-red-50 text-xs font-medium transition-colors cursor-pointer"
+                    className="h-9 px-3.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>Tolak Permohonan</span>
@@ -628,7 +637,7 @@ export default function AdminOverviewPage() {
                       handleUpdateStatus(selectedSchool.id, "verified");
                       setSelectedSchool(null);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#18764F] hover:bg-[#135E3E] text-white text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                    className="h-9 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Setujui &amp; Verifikasi</span>
