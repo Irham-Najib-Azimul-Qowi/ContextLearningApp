@@ -159,58 +159,70 @@ export default function AdminOverviewPage() {
         </div>
       )}
 
-      {/* KPI Cards */}
+      {/* KPI Cards - Themed & Colorful with High-Contrast Text & Prominent Icons */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-2xs">
+        {/* Total Sekolah - Indigo Theme */}
+        <div className="bg-gradient-to-br from-indigo-50/95 via-indigo-50/60 to-indigo-100/50 p-4 sm:p-5 rounded-xl border border-indigo-200/80 shadow-2xs transition-all hover:border-indigo-300">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-secondary">Total Sekolah</span>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-primary border border-indigo-100 flex items-center justify-center shrink-0">
-              <School className="w-5 h-5" />
+            <span className="text-xs font-bold text-indigo-950 tracking-tight">Total Sekolah</span>
+            <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white shadow-xs flex items-center justify-center shrink-0">
+              <School className="w-6 h-6" />
             </div>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{stats.totalSchools}</p>
-          <span className="text-xs text-success font-medium flex items-center gap-1.5 mt-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> {verifiedCount} Terverifikasi
+          <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-indigo-950 font-mono tracking-tight">
+            {stats.totalSchools}
+          </p>
+          <span className="text-xs text-indigo-700 font-semibold flex items-center gap-1.5 mt-1">
+            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> {verifiedCount} Terverifikasi
           </span>
         </div>
 
-        <div
-          className={`p-4 sm:p-5 rounded-xl border shadow-2xs ${
-            pendingCount > 0 ? "bg-amber-50/70 border-amber-300" : "bg-surface border-border"
-          }`}
-        >
+        {/* Permohonan Baru - Amber Theme */}
+        <div className="bg-gradient-to-br from-amber-50/95 via-amber-50/60 to-amber-100/60 p-4 sm:p-5 rounded-xl border border-amber-300/80 shadow-2xs transition-all hover:border-amber-400">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-secondary">Permohonan Baru</span>
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5" />
+            <span className="text-xs font-bold text-amber-950 tracking-tight">Permohonan Baru</span>
+            <div className="w-12 h-12 rounded-xl bg-amber-500 text-white shadow-xs flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6" />
             </div>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{pendingCount}</p>
-          <span className="text-xs text-amber-800 font-medium block mt-1">
-            Menunggu Verifikasi
+          <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-amber-950 font-mono tracking-tight">
+            {pendingCount}
+          </p>
+          <span className="text-xs text-amber-900 font-semibold block mt-1">
+            Menunggu Verifikasi Admin
           </span>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-2xs">
+        {/* Pendidik Terdaftar - Sky Blue Theme */}
+        <div className="bg-gradient-to-br from-sky-50/95 via-sky-50/60 to-sky-100/50 p-4 sm:p-5 rounded-xl border border-sky-200/80 shadow-2xs transition-all hover:border-sky-300">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-secondary">Pendidik Terdaftar</span>
-            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shrink-0">
-              <UsersRound className="w-5 h-5" />
+            <span className="text-xs font-bold text-sky-950 tracking-tight">Pendidik Terdaftar</span>
+            <div className="w-12 h-12 rounded-xl bg-sky-600 text-white shadow-xs flex items-center justify-center shrink-0">
+              <UsersRound className="w-6 h-6" />
             </div>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{stats.totalTeachers}</p>
-          <span className="text-xs text-secondary block mt-1">Koordinator Sekolah</span>
+          <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-sky-950 font-mono tracking-tight">
+            {stats.totalTeachers}
+          </p>
+          <span className="text-xs text-sky-800 font-semibold block mt-1">
+            Koordinator Ruang Kerja
+          </span>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-2xs">
+        {/* Siswa Terdaftar - Emerald Theme */}
+        <div className="bg-gradient-to-br from-emerald-50/95 via-emerald-50/60 to-emerald-100/50 p-4 sm:p-5 rounded-xl border border-emerald-200/80 shadow-2xs transition-all hover:border-emerald-300">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-secondary">Siswa Terdaftar</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-              <GraduationCap className="w-5 h-5" />
+            <span className="text-xs font-bold text-emerald-950 tracking-tight">Siswa Terdaftar</span>
+            <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white shadow-xs flex items-center justify-center shrink-0">
+              <GraduationCap className="w-6 h-6" />
             </div>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground font-mono">{stats.totalStudents}</p>
-          <span className="text-xs text-secondary block mt-1">Akun Multi-Tenant</span>
+          <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-emerald-950 font-mono tracking-tight">
+            {stats.totalStudents}
+          </p>
+          <span className="text-xs text-emerald-800 font-semibold block mt-1">
+            Akun Siswa Multi-Tenant
+          </span>
         </div>
       </div>
 
