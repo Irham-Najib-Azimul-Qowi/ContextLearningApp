@@ -20,7 +20,7 @@ export function GlobalControls({
 }: GlobalControlsProps) {
   return (
     <div
-      className="inline-flex items-center h-10 sm:h-11 px-2 py-1 rounded-xl bg-slate-50/90 border border-slate-200/90 shadow-xs gap-1 sm:gap-1.5"
+      className="inline-flex items-center h-10 sm:h-11 px-2.5 py-1 rounded-xl bg-white/95 backdrop-blur-xs border border-slate-200/90 shadow-xs gap-1 sm:gap-1.5"
       role="region"
       aria-label="Kontrol Pengguna Global"
     >

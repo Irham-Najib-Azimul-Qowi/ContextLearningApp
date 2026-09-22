@@ -21,7 +21,7 @@ export function NavigationSubmenu({ group, onClose, onNavigate }: NavigationSubm
 
   return (
     <nav
-      className="w-56 sm:w-60 bg-white border-r border-slate-200/90 flex flex-col shrink-0 z-10 select-none animate-in fade-in duration-100"
+      className="w-56 sm:w-60 bg-white border-r border-slate-200/90 flex flex-col shrink-0 z-10 select-none animate-in fade-in duration-100 h-screen"
       aria-label={`Submenu ${group.label}`}
     >
       {/* Submenu Panel Header */}

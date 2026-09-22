@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Sparkles } from "lucide-react";
 import { TEACHER_NAV_GROUPS, NavGroup } from "./teacher-nav-config";
 
 interface IconNavigationRailProps {
@@ -31,10 +32,38 @@ export function IconNavigationRail({
 
   return (
     <aside
-      className="w-16 sm:w-[68px] bg-slate-50/80 border-r border-slate-200/90 flex flex-col items-center py-4 shrink-0 z-20 select-none min-h-[calc(100vh-64px)]"
+      className="w-16 sm:w-[68px] bg-slate-50/90 border-r border-slate-200/90 flex flex-col items-center py-3.5 shrink-0 z-20 select-none h-screen"
       aria-label="Rel Navigasi Ruang Kerja"
     >
-      <div className="flex-1 flex flex-col items-center gap-3 w-full px-2.5">
+      {/* 1. BRAND LOGO AT THE VERY TOP OF VERTICAL MENU RAIL */}
+      <div className="relative flex items-center group/tooltip w-full justify-center mb-1.5">
+        <Link
+          href="/teacher/dashboard"
+          className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs hover:bg-indigo-700 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 active:scale-95"
+          title="Pahami"
+          aria-label="Pahami"
+        >
+          <Sparkles className="w-5 h-5" />
+        </Link>
+
+        {/* Accessible Tooltip */}
+        <div
+          role="tooltip"
+          className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
+        >
+          Pahami
+          <div
+            className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-slate-900"
+            aria-hidden="true"
+          />
+        </div>
+      </div>
+
+      {/* Subtle Divider between Brand Logo and Menu Groups */}
+      <div className="w-8 h-[1px] bg-slate-200 shrink-0 mb-2.5" aria-hidden="true" />
+
+      {/* 2. VERTICAL MENU GROUPS */}
+      <div className="flex-1 flex flex-col items-center gap-2.5 w-full px-2.5">
         {TEACHER_NAV_GROUPS.map((group) => {
           const isRouteActive = group.id === activeGroupId;
           const isSubmenuOpen = group.id === openGroupId;
