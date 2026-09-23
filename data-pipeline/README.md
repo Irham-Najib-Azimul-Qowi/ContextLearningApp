@@ -1,49 +1,87 @@
-# Data Pipeline — Pahami V2 Local Knowledge Base
+# Data Pipeline & Local Knowledge Base (LKB) — Pahami V2
 
-Direktori ini merupakan boundary kerja utama bagi **Member 1 (Data & RAG Engineer)**.
+Modul ini merupakan ruang kerja **Anggota 1 (Data & RAG Engineer)** untuk basis pengetahuan lokal wilayah historis Karesidenan Madiun (**Kota Madiun, Kabupaten Madiun, Ngawi, Magetan, Ponorogo, Pacitan**).
 
-## 1. Peran & Tanggung Jawab
-- Pengumpulan dan dokumentasi sumber data konteks lokal (khususnya wilayah Karesidenan Madiun).
-- Pembersihan (*cleaning*), normalisasi (*normalization*), dan kurasi entitas konteks.
-- Klasifikasi entitas konteks (*historical*, *culinary*, *geography*, *tradition*, *figures*, *flora_fauna*, *economy*).
-- *Chunking* dokumen dan pembuatan *embedding vector* lokal.
-- Penyimpanan ke shared PostgreSQL + pgvector (Supabase).
-- Evaluasi kualitas *retrieval* dan optimasi pencarian hybrid (*dense vector* + *sparse/full-text*).
+---
 
-## 2. Arsitektur Alur Data
+## 1. Arsitektur & Prinsip Desain
+
+- **Database:** PostgreSQL + pgvector (Supabase) dengan namespacing `lkb_*`.
+- **Zero-Python Server di Produksi:** Next.js backend (Anggota 2) mengakses fungsi retrieval via stored procedure `lkb_retrieve_context` langsung dari SQL/PostgREST.
+- **Model Embedding:** `intfloat/multilingual-e5-small` (384 dimensi, prefix `passage: ` dan `query: `).
+- **Hirarki Retrieval:** Validasi wilayah → Filter kategori/kelas → Pencarian leksikal berbobot → Fallback wilayah terukur → Output berbukti audit.
+
+---
+
+## 2. Struktur Modul
+
+```text
+data-pipeline/
+  README.md
+  requirements.txt
+  pyproject.toml
+  .env.example
+  config/
+    regions.yaml                 # Kode BPS dan batas 6 wilayah Madiun Raya
+    categories.yaml              # 8 taksonomi kategori konteks pendidikan SD
+    pipeline.yaml                # Konfigurasi model E5-small, dimensi 384, chunking
+  datasets/
+    samples/
+      madiun_raya_seed.json      # Dataset entitas terverifikasi bersumber BPS/Pemda
+      evaluation_30_queries.json # 30 kueri benchmark ditinjau manusia (termasuk trick cases)
+    validated/
+      seed_madiun_raya.sql       # Script SQL seed idempotent untuk Supabase
+  src/pahami_data/
+    schemas/                     # Pydantic v2 models (Entity, Source, Retrieval)
+    sources/                     # Legal source registry & provenance metadata
+    processing/                  # Normalizer, deduplication fingerprint, chunker
+    embedding/                   # E5-small wrapper, 384-dim check, L2-norm
+    storage/                     # Local store & SQL seed generator
+    retrieval/                   # Structured-lexical engine & region fallback
+    evaluation/                  # 30-query benchmark evaluator
+    cli.py                       # CLI tool (--dry-run, --evaluate, --export-seed)
+  tests/                         # Unit tests (schemas, pipeline, retrieval)
+  reports/
+    curation_report.md           # Laporan audit sumber dan cakupan entitas
+    evaluation_report.md         # Hasil metrik benchmark 30 kueri uji
 ```
-Python Data Pipeline (Local/Batch)
-  ├── 1. Ingestion: Sumber data lokal (BPS, Pemda, Budaya Madiun Raya)
-  ├── 2. Processing & Validation: Sesuai contracts/context-entity-contract.md
-  └── 3. Embeddings: Vektorisasi teks konteks
-           ↓
-Validated Local Knowledge
-           ↓
-Supabase PostgreSQL + pgvector (Shared Database)
-           ↓
-Next.js Server-Side Retrieval (API / Server Actions)
-           ↓
-Contextualization Engine (Member 2 - Full-Stack & AI)
+
+---
+
+## 3. Cara Menjalankan Pipeline & Pengujian
+
+### A. Pengujian Unit (Pytest)
+```powershell
+py -3 -m pytest data-pipeline/tests -v
 ```
 
-> **Catatan Arsitektur:**
-> Pipeline data ini berjalan secara *batch / ad-hoc scripts* (Python) untuk memproses dan menyuntikkan data konteks terverifikasi ke database Supabase. Pipeline tidak memerlukan runtime public web service terpisah (seperti FastAPI) yang berjalan terus-menerus pada fase persiapan dan prototipe awal.
+### B. Dry Run Ingestion & Audit
+```powershell
+py -3 "data-pipeline/src/pahami_data/cli.py" --dry-run --report
+```
 
-## 3. Struktur Direktori
-- `config/`: Konfigurasi pipeline, parameter embedding, dan konektor database.
-- `datasets/raw/`: Data mentah hasil scraping atau ekstraksi manual (diabaikan oleh Git via `.gitignore`).
-- `datasets/processed/`: Data hasil normalisasi awal (diabaikan oleh Git via `.gitignore`).
-- `datasets/validated/`: Data terverifikasi yang siap dimuat ke database.
-- `datasets/samples/`: Sampel data kecil yang telah ditinjau untuk keperluan testing & integrasi (dapat di-commit).
-- `ingestion/`: Modul pengumpul data dari berbagai format/sumber.
-- `processing/`: Modul pembersihan teks, chunking, validasi format schema.
-- `embeddings/`: Modul pembentukan vektor embedding.
-- `retrieval/`: Script pengujian dan evaluasi akurasi pencarian konteks.
-- `scripts/`: CLI helper scripts (misal: `ingest_madiun.py`, `seed_pgvector.py`).
-- `tests/`: Unit test & integrasi untuk modul Python pipeline.
+### C. Eksekusi Benchmark Evaluasi 30 Kueri
+```powershell
+py -3 "data-pipeline/src/pahami_data/cli.py" --evaluate
+```
 
-## 4. Standar dan Kontrak
-Seluruh data yang diproses wajib mematuhi kontrak integrasi yang disepakati bersama:
-- [Region Contract](../contracts/region-contract.md)
-- [Context Entity Contract](../contracts/context-entity-contract.md)
-- [Retrieval Contract](../contracts/retrieval-contract.md)
+### D. Ekspor SQL Seed untuk Supabase
+```powershell
+py -3 "data-pipeline/src/pahami_data/cli.py" --export-seed "data-pipeline/datasets/validated/seed_madiun_raya.sql"
+```
+
+---
+
+## 4. Migrasi Database Supabase
+
+File migrasi database telah disiapkan di:
+- [`supabase/migrations/20260923140000_local_knowledge.sql`](../supabase/migrations/20260923140000_local_knowledge.sql)
+
+Migrasi ini bersifat **non-destruktif**, membuat tabel ber-prefix `lkb_*`, mengaktifkan pgvector (384 dimensi), membuat indeks pencarian teks penuh (GIN) dan vektor (HNSW), serta mendefinisikan stored procedure `lkb_retrieve_context`.
+
+---
+
+## 5. Dokumen Integrasi untuk Anggota 2
+
+- Kontrak JSON Schema: [`contracts/local-context-retrieval.schema.json`](../contracts/local-context-retrieval.schema.json)
+- Panduan Pemanggilan di Next.js: [`contracts/LOCAL_CONTEXT_INTEGRATION.md`](../contracts/LOCAL_CONTEXT_INTEGRATION.md)

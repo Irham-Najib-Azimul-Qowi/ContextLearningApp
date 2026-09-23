@@ -1,0 +1,504 @@
+{
+  "regions": [
+    {
+      "region_id": "35.77",
+      "name": "Kota Madiun",
+      "popular_name": "Kota Pendekar",
+      "level": "city",
+      "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19",
+      "name": "Kabupaten Madiun",
+      "popular_name": "Madiun Kampung Pesilat",
+      "level": "regency",
+      "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.21",
+      "name": "Kabupaten Ngawi",
+      "popular_name": "Ngawi Ramah",
+      "level": "regency",
+      "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.20",
+      "name": "Kabupaten Magetan",
+      "popular_name": "Magetan Kaki Lawu",
+      "level": "regency",
+      "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.02",
+      "name": "Kabupaten Ponorogo",
+      "popular_name": "Bumi Reog",
+      "level": "regency",
+      "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.01",
+      "name": "Kabupaten Pacitan",
+      "popular_name": "Kota 1001 Goa",
+      "level": "regency",
+      "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "ctx_ent_3577_inka_01",
+      "region_id": "35.77",
+      "category": "mobility",
+      "subcategory": "railway",
+      "canonical_name": "PT Industri Kereta Api (INKA) Madiun",
+      "aliases": ["PT INKA", "Pabrik Kereta Api Madiun", "INKA"],
+      "short_description": "Pabrik manufaktur sarana perkeretaapian terintegrasi pertama di Asia Tenggara yang memproduksi gerbong penumpang, lokomotif, dan kereta rel listrik di Kota Madiun.",
+      "educational_usage": "Sangat cocok untuk soal Matematika SD materi kecepatan kereta api, jarak rute tempuh, dan kapasitas daya angkut penumpang.",
+      "grade_suitability": [4, 5, 6],
+      "subject_tags": ["matematika", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "gerbong",
+        "min_val": 4,
+        "max_val": 12
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3577:pt_industri_kereta_api_inka_madiun",
+      "evidence": [
+        {
+          "source_id": "src_pt_inka_official",
+          "url": "https://www.inka.co.id/profil",
+          "claim": "PT INKA (Persero) beroperasi di Kota Madiun sebagai pusat manufaktur perkeretaapian nasional yang memproduksi kereta penumpang untuk PT KAI dan pasar ekspor internasional.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "Corporate Public Profile"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3577_pecel_01",
+      "region_id": "35.77",
+      "category": "culture",
+      "subcategory": "culinary",
+      "canonical_name": "Nasi Pecel Madiun",
+      "aliases": ["Pecel Madiun", "Sambal Pecel Madiun", "Pecel Pincuk"],
+      "short_description": "Kuliner khas berbahan aneka sayuran rebus disiram sambal kacang tanah dengan daun jeruk purut, disajikan di atas pincuk daun pisang beserta rempeyek kacang.",
+      "educational_usage": "Bagus untuk soal Matematika penjumlahan dan pengurangan uang kembalian di warung, porsi makanan, serta materi Bahasa Indonesia teks deskripsi kuliner.",
+      "grade_suitability": [1, 2, 3, 4, 5],
+      "subject_tags": ["matematika", "bahasa_indonesia", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "porsi",
+        "min_val": 1,
+        "max_val": 50
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3577:nasi_pecel_madiun",
+      "evidence": [
+        {
+          "source_id": "src_pemkot_madiun_official",
+          "url": "https://madiunkota.go.id",
+          "claim": "Pecel Madiun merupakan ikon kuliner tradisional kebanggaan Kota Madiun yang diakui sebagai Warisan Budaya Takbenda dengan sentra penjualan di Jalan Cokroaminoto.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "Public Domain Government Portal"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3577_pasar_besar_01",
+      "region_id": "35.77",
+      "category": "built_environment",
+      "subcategory": "market",
+      "canonical_name": "Pasar Besar Kota Madiun",
+      "aliases": ["Pasar Besar Madiun", "PBM Madiun"],
+      "short_description": "Pusat perdagangan rakyat terbesar di Kota Madiun yang mempertemukan pedagang komoditas pertanian, bahan pokok, pakaian, dan aneka hasil bumi antardaerah.",
+      "educational_usage": "Cocok untuk soal cerita aritmetika sosial jual beli, timbangan berat (kg/gram), dan konsep kegiatan ekonomi produsen-distributor-konsumen di IPS.",
+      "grade_suitability": [2, 3, 4, 5, 6],
+      "subject_tags": ["matematika", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "kg",
+        "min_val": 1,
+        "max_val": 100
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3577:pasar_besar_kota_madiun",
+      "evidence": [
+        {
+          "source_id": "src_bps_kota_madiun_2024",
+          "url": "https://madiunkota.bps.go.id/publication/2024/02/28/kota-madiun-dalam-angka-2024.html",
+          "claim": "Pasar Besar Madiun menampung ratusan pedagang bahan pokok dan merupakan pusat perputaran roda ekonomi retail utama di Kota Madiun.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "Open Government Data / BPS Public License"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3577_bengawan_madiun_01",
+      "region_id": "35.77",
+      "category": "geography",
+      "subcategory": "river",
+      "canonical_name": "Sungai Bengawan Madiun",
+      "aliases": ["Kali Madiun", "Bengawan Madiun"],
+      "short_description": "Sungai utama yang membelah wilayah Madiun, merupakan anak sungai terbesar dari Bengawan Solo yang mengalirkan air dari lereng Gunung Wilis dan Gunung Lawu.",
+      "educational_usage": "Konteks pembelajaran IPA dan IPS mengenai daur air, pencegahan banjir, serta soal Matematika perbandingan debit dan tinggi muka air.",
+      "grade_suitability": [4, 5, 6],
+      "subject_tags": ["ips", "bahasa_indonesia"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "meter",
+        "min_val": 1,
+        "max_val": 15
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3577:sungai_bengawan_madiun",
+      "evidence": [
+        {
+          "source_id": "src_osm_geodata",
+          "url": "https://www.openstreetmap.org",
+          "claim": "Sungai Bengawan Madiun mengalir melintasi Kota dan Kabupaten Madiun hingga bermuara ke Sungai Bengawan Solo di wilayah Ngawi.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "ODbL 1.0"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3577_brem_01",
+      "region_id": "35.77",
+      "category": "culture",
+      "subcategory": "culinary",
+      "canonical_name": "Brem Padat Tradisional",
+      "aliases": ["Brem Madiun", "Brem Padat"],
+      "short_description": "Makanan ringan tradisional berbentuk lempengan padat berwarna putih kekuningan hasil fermentasi sari ketan yang meleleh manis dan dingin di lidah.",
+      "educational_usage": "Bagus untuk soal pembagian kardus oleh-oleh, pecahan matematika, dan teks prosedur pengolahan makanan khas daerah.",
+      "grade_suitability": [2, 3, 4, 5],
+      "subject_tags": ["matematika", "bahasa_indonesia"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "kotak",
+        "min_val": 1,
+        "max_val": 30
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3577:brem_padat_tradisional",
+      "evidence": [
+        {
+          "source_id": "src_bps_kota_madiun_2024",
+          "url": "https://madiunkota.bps.go.id/publication/2024/02/28/kota-madiun-dalam-angka-2024.html",
+          "claim": "Industri kecil brem padat berpusat di Madiun dan menjadi komoditas oleh-oleh unggulan yang didistribusikan ke berbagai kota di Jawa Timur.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3519_porang_01",
+      "region_id": "35.19",
+      "category": "livelihood",
+      "subcategory": "plantation",
+      "canonical_name": "Komoditas Porang Saradan",
+      "aliases": ["Porang Madiun", "Umbi Porang", "Iles-iles"],
+      "short_description": "Tanaman umbi-umbian bernilai ekonomi tinggi penghasil glukomanan yang dibudidayakan secara luas di kawasan hutan lindung Kecamatan Saradan dan Kare.",
+      "educational_usage": "Konteks realistis untuk soal pengurangan hasil panen di gudang, perkalian bobot karung porang (kg), dan materi IPS komoditas ekspor.",
+      "grade_suitability": [3, 4, 5, 6],
+      "subject_tags": ["matematika", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "kg",
+        "min_val": 10,
+        "max_val": 500
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3519:komoditas_porang_saradan",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_madiun_2024",
+          "url": "https://madiunkab.bps.go.id/publication/2024/02/28/kabupaten-madiun-dalam-angka-2024.html",
+          "claim": "Kabupaten Madiun merupakan salah satu sentra budidaya dan pengolahan tepung umbi porang terbesar di Indonesia dengan kawasan budidaya di Kecamatan Saradan dan Kare.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3519_waduk_bening_01",
+      "region_id": "35.19",
+      "category": "geography",
+      "subcategory": "lake",
+      "canonical_name": "Waduk Bening Widas",
+      "aliases": ["Waduk Widas", "Bendungan Bening"],
+      "short_description": "Waduk serbaguna di Kecamatan Saradan yang berfungsi sebagai pengendali banjir, irigasi lahan pertanian ratusan hektar, dan pembangkit listrik.",
+      "educational_usage": "Konteks pembelajaran IPS tentang pembangunan infrastruktur perairan dan soal Matematika luas daerah irigasi persawahan.",
+      "grade_suitability": [4, 5, 6],
+      "subject_tags": ["ips", "matematika"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "hektar",
+        "min_val": 5,
+        "max_val": 100
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3519:waduk_bening_widas",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_madiun_2024",
+          "url": "https://madiunkab.bps.go.id/publication/2024/02/28/kabupaten-madiun-dalam-angka-2024.html",
+          "claim": "Waduk Bening di Saradan memiliki kapasitas jutaan meter kubik air yang mengairi sawah di bagian utara Kabupaten Madiun.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3521_benteng_pendem_01",
+      "region_id": "35.21",
+      "category": "built_environment",
+      "subcategory": "monument",
+      "canonical_name": "Benteng Pendem Van den Bosch Ngawi",
+      "aliases": ["Benteng Pendem Ngawi", "Benteng Van den Bosch"],
+      "short_description": "Kompleks benteng pertahanan bersejarah peninggalan abad ke-19 di Kelurahan Pelem Ngawi, dibangun dekat pertemuan Sungai Bengawan Solo dan Sungai Bengawan Madiun.",
+      "educational_usage": "Cocok untuk materi sejarah lokal IPS SD kelas 4-6 dan soal Matematika mengenai tahun pembuatan dan luas pekarangan benteng.",
+      "grade_suitability": [4, 5, 6],
+      "subject_tags": ["ips", "bahasa_indonesia"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "pengunjung",
+        "min_val": 10,
+        "max_val": 200
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3521:benteng_pendem_van_den_bosch_ngawi",
+      "evidence": [
+        {
+          "source_id": "src_kemdikbud_cagar_budaya",
+          "url": "https://kebudayaan.kemdikbud.go.id/warisan-budaya",
+          "claim": "Benteng Van den Bosch di Ngawi telah dipugar sebagai cagar budaya nasional yang menyimpan nilai arsitektur kolonial pertahanan sungai.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "Kementerian Kebudayaan Open Access"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3521_kayu_jati_01",
+      "region_id": "35.21",
+      "category": "livelihood",
+      "subcategory": "forestry",
+      "canonical_name": "Hutan Kayu Jati Ngawi",
+      "aliases": ["Kayu Jati Ngawi", "Hutan Jati KPH Ngawi"],
+      "short_description": "Kawasan perkebunan hutan jati tropis yang luas di Kabupaten Ngawi, menghasilkan kayu bangunan berkualitas tinggi dan komoditas kerajinan akar jati.",
+      "educational_usage": "Konteks soal volume batang kayu (m3), penanaman pohon penghijauan, dan materi IPS fungsi hutan produksi bagi warga.",
+      "grade_suitability": [4, 5, 6],
+      "subject_tags": ["matematika", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "batang",
+        "min_val": 5,
+        "max_val": 80
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3521:hutan_kayu_jati_ngawi",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_ngawi_2024",
+          "url": "https://ngawikab.bps.go.id/publication/2024/02/28/kabupaten-ngawi-dalam-angka-2024.html",
+          "claim": "Kawasan hutan negara di Kabupaten Ngawi didominasi tegakan kayu jati (Tectona grandis) yang dikelola oleh Perum Perhutani.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3520_telaga_sarangan_01",
+      "region_id": "35.20",
+      "category": "geography",
+      "subcategory": "lake",
+      "canonical_name": "Telaga Sarangan Magetan",
+      "aliases": ["Danau Pasir Sarangan", "Telaga Sarangan"],
+      "short_description": "Danau vulkanik alami seluas 30 hektar di lereng Gunung Lawu pada ketinggian 1.200 mdpl di Kecamatan Plaosan, berhawa sejuk dan menjadi destinasi wisata utama.",
+      "educational_usage": "Cocok untuk soal keliling dan luas danau, perhitungan tiket masuk wisata, dan deskripsi bentang alam pegunungan sejuk.",
+      "grade_suitability": [3, 4, 5, 6],
+      "subject_tags": ["matematika", "ips", "bahasa_indonesia"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "meter",
+        "min_val": 100,
+        "max_val": 1200
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3520:telaga_sarangan_magetan",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_magetan_2024",
+          "url": "https://magetankab.bps.go.id/publication/2024/02/28/kabupaten-magetan-dalam-angka-2024.html",
+          "claim": "Telaga Sarangan di lereng Gunung Lawu Kabupaten Magetan merupakan ikon pariwisata alam Jawa Timur dengan suhu rata-rata 18-23 derajat Celsius.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3520_kerajinan_kulit_01",
+      "region_id": "35.20",
+      "category": "livelihood",
+      "subcategory": "craftmanship",
+      "canonical_name": "Sentra Kerajinan Kulit Jalan Sawo Magetan",
+      "aliases": ["Kerajinan Kulit Magetan", "Sentra Sepatu Kulit Sawo"],
+      "short_description": "Kawasan pusat kerajinan dan penjualan produk kulit sapi dan kambing seperti sepatu, tas, sandal, dan jaket kulit berkualitas tinggi di Kabupaten Magetan.",
+      "educational_usage": "Konteks soal Matematika perhitungan harga beli, diskon persen penjualan sepatu, dan materi IPS aktivitas industri kreatif rumahan.",
+      "grade_suitability": [3, 4, 5, 6],
+      "subject_tags": ["matematika", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "pasang",
+        "min_val": 1,
+        "max_val": 40
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3520:sentra_kerajinan_kulit_jalan_sawo_magetan",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_magetan_2024",
+          "url": "https://magetankab.bps.go.id/publication/2024/02/28/kabupaten-magetan-dalam-angka-2024.html",
+          "claim": "Jalan Sawo di Kelurahan Selosari Kabupaten Magetan dikenal luas sebagai sentra kerajinan olahan kulit sapi tradisional.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3502_reog_ponorogo_01",
+      "region_id": "35.02",
+      "category": "culture",
+      "subcategory": "performing_arts",
+      "canonical_name": "Kesenian Reog Ponorogo",
+      "aliases": ["Reog Ponorogo", "Tari Reog", "Dhadak Merak"],
+      "short_description": "Seni pertunjukan tari tradisional adiluhung dengan penari utama mengusung topeng kepala singa berhiaskan bulu merak (Dhadak Merak) seberat lebih dari 40 kg dengan kekuatan gigi.",
+      "educational_usage": "Sangat ideal untuk materi seni budaya Bahasa Indonesia, sejarah IPS, dan soal perbandingan berat massa beban (kg) pada matematika.",
+      "grade_suitability": [3, 4, 5, 6],
+      "subject_tags": ["ips", "bahasa_indonesia", "matematika"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "kg",
+        "min_val": 35,
+        "max_val": 55
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3502:kesenian_reog_ponorogo",
+      "evidence": [
+        {
+          "source_id": "src_kemdikbud_cagar_budaya",
+          "url": "https://kebudayaan.kemdikbud.go.id/warisan-budaya",
+          "claim": "Reog Ponorogo adalah warisan budaya takbenda Indonesia dari Kabupaten Ponorogo yang memiliki tokoh Prabu Klono Sewandono, Bujang Ganong, dan Warok.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "Kementerian Kebudayaan Open Access"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3502_telaga_ngebel_01",
+      "region_id": "35.02",
+      "category": "geography",
+      "subcategory": "lake",
+      "canonical_name": "Telaga Ngebel Ponorogo",
+      "aliases": ["Danau Ngebel", "Telaga Ngebel"],
+      "short_description": "Danau alami di kaki Gunung Wilis pada ketinggian 734 mdpl dengan keliling telaga sekitar 5 kilometer, berudara segar dan menjadi sumber perikanan nila serta pariwisata.",
+      "educational_usage": "Konteks keliling lintasan lari matematika SD (km), soal kecepatan perahu wisata, dan teks narasi legenda Baru Klinting di Bahasa Indonesia.",
+      "grade_suitability": [3, 4, 5, 6],
+      "subject_tags": ["matematika", "bahasa_indonesia", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "kilometer",
+        "min_val": 1,
+        "max_val": 10
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3502:telaga_ngebel_ponorogo",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_ponorogo_2024",
+          "url": "https://ponorogokab.bps.go.id/publication/2024/02/28/kabupaten-ponorogo-dalam-angka-2024.html",
+          "claim": "Telaga Ngebel merupakan objek wisata alam utama di Kabupaten Ponorogo yang terletak di lereng barat Pegunungan Wilis.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3501_goa_gong_01",
+      "region_id": "35.01",
+      "category": "geography",
+      "subcategory": "cave",
+      "canonical_name": "Goa Gong Pacitan",
+      "aliases": ["Gua Gong Pacitan", "Goa Gong"],
+      "short_description": "Gua kapur karst spektakuler di Desa Bomo Kecamatan Punung Pacitan dengan formasi stalaktit dan stalagmit yang menghasilkan dentuman mirip suara gong saat dipukul.",
+      "educational_usage": "Materi pembelajaran IPA pembentukan batuan karst dan soal Matematika panjang lorong gua dan tangga anak tangga wisata.",
+      "grade_suitability": [4, 5, 6],
+      "subject_tags": ["ips", "bahasa_indonesia", "matematika"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "meter",
+        "min_val": 50,
+        "max_val": 300
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3501:goa_gong_pacitan",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_pacitan_2024",
+          "url": "https://pacitankab.bps.go.id/publication/2024/02/28/kabupaten-pacitan-dalam-angka-2024.html",
+          "claim": "Goa Gong di Pacitan diakui sebagai salah satu gua terindah di Asia Tenggara yang terbentuk dalam kawasan bentang alam karst Pegunungan Sewu.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    },
+    {
+      "entity_id": "ctx_ent_3501_ikan_tamperan_01",
+      "region_id": "35.01",
+      "category": "livelihood",
+      "subcategory": "fishery",
+      "canonical_name": "Pelabuhan Perikanan Nusantara Tamperan",
+      "aliases": ["PPN Tamperan Pacitan", "Pelabuhan Tamperan", "TPI Tamperan"],
+      "short_description": "Pusat pelabuhan perikanan laut selatan di Teluk Pacitan tempat bersandarnya kapal nelayan penangkap ikan tuna, cakalang, dan tongkol.",
+      "educational_usage": "Sangat pas untuk soal pengurangan timbangan hasil tangkapan ikan laut (kg/kuintal), lelang ikan, dan materi IPS mata pencaharian pesisir.",
+      "grade_suitability": [3, 4, 5, 6],
+      "subject_tags": ["matematika", "ips"],
+      "safe_for_word_problem": true,
+      "quantitative_constraints": {
+        "typical_units": "kg",
+        "min_val": 20,
+        "max_val": 800
+      },
+      "verification_status": "verified",
+      "dedup_fingerprint": "3501:pelabuhan_perikanan_nusantara_tamperan",
+      "evidence": [
+        {
+          "source_id": "src_bps_kab_pacitan_2024",
+          "url": "https://pacitankab.bps.go.id/publication/2024/02/28/kabupaten-pacitan-dalam-angka-2024.html",
+          "claim": "Pelabuhan Perikanan Tamperan Pacitan menghasilkan komoditas perikanan laut bernilai tinggi yang dikirim ke sentra industri pengolahan Jawa Timur.",
+          "reviewer": "member1_rag_engineer",
+          "verified_at": "2026-09-23",
+          "license_note": "BPS Open Data"
+        }
+      ]
+    }
+  ]
+}
