@@ -1,0 +1,13 @@
+{
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/data-pipeline/src"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/data-pipeline/src"
+  ],
+  "python.testing.pytestArgs": [
+    "data-pipeline/tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
+}

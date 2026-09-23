@@ -59,6 +59,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
 
 # data pipeline & local embedding model caches
 .cache/
