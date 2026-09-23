@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+.pytest_cache/
 
 # next.js
 /.next/
@@ -24,13 +25,17 @@
 .DS_Store
 *.pem
 
-# debug
+# debug & logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
+# env files
+.env
+.env.local
+.env.*.local
 .env*
 !.env.example
 
@@ -40,3 +45,39 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# data pipeline & local embedding model caches
+.cache/
+huggingface/
+*.bin
+*.safetensors
+*.pt
+*.onnx
+
+# large unapproved datasets & temporary pipeline outputs
+data-pipeline/datasets/raw/*
+!data-pipeline/datasets/raw/.gitkeep
+data-pipeline/datasets/processed/*
+!data-pipeline/datasets/processed/.gitkeep
+data-pipeline/tmp/
+tmp/
+
+# local database dumps containing sensitive data
+*.dump
+*.sql.gz
+database_dump.sql
+dump.sql

@@ -1,16 +1,36 @@
-# ContextLearning — AI-Powered Local Contextual Learning Platform
+# Pahami V2 (ContextLearning) — AI-Powered Local Contextual Learning Platform
 
-> **Purwarupa Platform Pembelajaran Kontekstual Berbasis AI & Karakteristik Wilayah Lokal untuk Sekolah Dasar (SD)**  
-> *Dikembangkan untuk IT Competition POLNES*
+> **Platform Pembelajaran Kontekstual Berbasis AI & Karakteristik Wilayah Lokal untuk Sekolah Dasar (SD)**  
+> *Fokus Prototipe V2: Wilayah Karesidenan Madiun (Kota Madiun, Kab. Madiun, Kab. Ngawi, Kab. Magetan, Kab. Ponorogo, Kab. Pacitan)*
+
+---
+
+## 🚀 Pahami V2: Kolaborasi & Arsitektur Paralel
+Repositori ini telah disiapkan untuk pengembangan kolaboratif paralel antara 2 pengembang:
+- **Member 1 (Data & RAG Engineer):** Bertanggung jawab atas pengumpulan dataset konteks lokal Karesidenan Madiun, normalisasi entitas, chunking, embedding, serta pencarian hybrid di `data-pipeline/` dan pgvector.
+  - Cabang aktif: `feature/local-knowledge-rag`
+- **Member 2 (Full-Stack & AI Engineer):** Bertanggung jawab atas antarmuka web guru/siswa Next.js, integrasi Google Gemini API, Contextualization Engine, dan sistem ujian interaktif.
+  - Cabang aktif: `feature/pahami-core-web`
+
+### Tautan Dokumentasi & Kontrak Integrasi
+- 📐 **Kontrak Integrasi:**
+  - [Region Contract (Standar Kode Wilayah BPS)](./contracts/region-contract.md)
+  - [Context Entity Contract (Struktur Data Entitas Konteks)](./contracts/context-entity-contract.md)
+  - [Retrieval Contract (Antarmuka Permintaan & Tanggapan RAG)](./contracts/retrieval-contract.md)
+- 📚 **Panduan & Arsitektur:**
+  - [Repository Architecture & Boundaries](./docs/REPOSITORY_ARCHITECTURE.md)
+  - [Git Team Workflow & Collaboration Rules](./docs/TEAM_WORKFLOW.md)
+  - [Development Handoff & Readiness Guide](./docs/DEVELOPMENT_HANDOFF.md)
+  - [Developer Setup Guide (Setup Lokal)](./docs/DEVELOPER_SETUP_GUIDE.md)
 
 ---
 
 ## 1. Ikhtisar Produk (Product Overview)
 
-**ContextLearning** adalah platform Learning Management System (LMS) inovatif yang dirancang khusus untuk membantu guru Sekolah Dasar (SD Kelas 1–6) di Indonesia menciptakan soal latihan, naskah ujian, dan materi pembelajaran yang diadaptasi secara langsung dengan karakteristik geografis, ekonomi, sosial, mata pencaharian, dan budaya di lingkungan sekitar sekolah siswa.
+**Pahami (ContextLearning)** adalah platform Learning Management System (LMS) inovatif yang dirancang khusus untuk membantu guru Sekolah Dasar (SD Kelas 1–6) di Indonesia menciptakan soal latihan, naskah ujian, dan materi pembelajaran yang diadaptasi secara langsung dengan karakteristik geografis, ekonomi, sosial, mata pencaharian, dan budaya di lingkungan sekitar sekolah siswa.
 
 ### Nilai Utama Produk (Value Proposition)
-> *"ContextLearning membantu guru menciptakan soal dan materi pembelajaran yang sesuai dengan karakteristik lingkungan lokal siswa melalui kecerdasan buatan dan pemrosesan konteks wilayah."*
+> *"Pahami membantu guru menciptakan soal dan materi pembelajaran yang sesuai dengan karakteristik lingkungan lokal siswa melalui kecerdasan buatan dan pemrosesan konteks wilayah."*
 
 ---
 
