@@ -1,0 +1,51 @@
+# Context Taxonomy and Categories for Pahami V2
+# Target: SD Grades 1 - 6 (Matematika, Bahasa Indonesia, IPS)
+
+categories:
+  - id: "geography"
+    name: "Geografi & Bentang Alam"
+    description: "Sungai, danau, telaga, dataran rendah, pegunungan, iklim mikro."
+    subcategories: ["river", "lake", "mountain", "plain", "valley", "coast"]
+    pedagogical_value: "Latar cerita soal, navigasi arah mata angin, pengukuran ketinggian/panjang."
+
+  - id: "built_environment"
+    name: "Infrastruktur & Lingkungan Terbangun"
+    description: "Pasar tradisional, stasiun, terminal, jembatan, fasilitas publik, sekolah."
+    subcategories: ["market", "station", "terminal", "bridge", "public_facility", "monument"]
+    pedagogical_value: "Konteks transaksi jual beli, jadwal perjalanan, estimasi jarak dan waktu."
+
+  - id: "livelihood"
+    name: "Mata Pencaharian & Komoditas"
+    description: "Petani porang, peternak sapi perah, pengrajin kulit, komoditas hasil bumi."
+    subcategories: ["agriculture", "plantation", "livestock", "fishery", "craftmanship", "manufacturing"]
+    pedagogical_value: "Soal hitung hasil panen (kg, ton), modal, keuntungan, pengurangan persediaan."
+
+  - id: "mobility"
+    name: "Transportasi & Mobilitas"
+    description: "Kereta api, angkutan lokal, rute antarkota, perjalanan komuter."
+    subcategories: ["railway", "road_transit", "intercity_bus", "non_motorized"]
+    pedagogical_value: "Soal kecepatan, jarak, waktu tempuh (J = K x W), kapasitas gerbong."
+
+  - id: "community"
+    name: "Kehidupan Sosial & Komunitas"
+    description: "Gotong royong, posyandu, kerja bakti desa, sanggar kesenian."
+    subcategories: ["mutual_aid", "social_gathering", "civic_service"]
+    pedagogical_value: "Teks narasi IPS tentang interaksi sosial dan kerja sama."
+
+  - id: "culture"
+    name: "Kebudayaan & Tradisi"
+    description: "Kesenian Reog, tari daerah, kuliner khas pecel/brem, perayaan adat."
+    subcategories: ["performing_arts", "culinary", "folklore", "traditional_craft"]
+    pedagogical_value: "Teks bacaan Bahasa Indonesia, soal pembagian porsi makanan tradisional."
+
+  - id: "nature_environment"
+    name: "Lingkungan Hidup & Konservasi"
+    description: "Hutan jati, ekosistem gua kapur, pelestarian sumber air."
+    subcategories: ["forest_ecosystem", "cave_karst", "water_source"]
+    pedagogical_value: "Pemahaman sains dasar tentang keanekaragaman hayati dan daur air."
+
+  - id: "administratif"
+    name: "Tata Kelola Administratif"
+    description: "Pembagian kecamatan, kelurahan, batas wilayah pemerintahan."
+    subcategories: ["boundary", "census", "governance"]
+    pedagogical_value: "Materi IPS tentang struktur pemerintahan desa dan kecamatan."

@@ -1,0 +1,31 @@
+# Data Pipeline Configuration for Pahami V2
+
+pipeline:
+  name: "pahami_lkb_madiun_pipeline"
+  version: "2.0.0"
+
+embedding:
+  model_id: "intfloat/multilingual-e5-small"
+  dimensions: 384
+  prefix:
+    passage: "passage: "
+    query: "query: "
+  normalize_l2: true
+  max_seq_length: 512
+
+chunking:
+  chunk_size_tokens: 150
+  chunk_overlap_tokens: 20
+  strategy: "topic_focused"
+
+database:
+  schema: "public"
+  table_prefix: "lkb_"
+  idempotent_key: "dedup_fingerprint"
+
+retrieval:
+  default_mode: "structured_lexical"
+  supported_modes: ["structured_lexical", "semantic", "hybrid"]
+  default_limit: 5
+  max_limit: 20
+  cosine_similarity_threshold: 0.72

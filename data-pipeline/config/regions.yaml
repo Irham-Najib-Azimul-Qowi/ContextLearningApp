@@ -1,0 +1,64 @@
+# Configuration: Official Administrative Regions in Karesidenan Madiun Scope
+# Standard: BPS / Kemendagri 2024
+
+regions:
+  - region_id: "35.77"
+    name: "Kota Madiun"
+    popular_name: "Kota Pendekar / Kota Gadis"
+    level: "city"
+    parent_id: "35"
+    scope_status: "priority_1"
+    postal_codes: ["63111", "63119", "63122", "63133"]
+    center_coords: [-7.6298, 111.5239]
+    districts:
+      - code: "35.77.01"
+        name: "Kartoharjo"
+      - code: "35.77.02"
+        name: "Manguharjo"
+      - code: "35.77.03"
+        name: "Taman"
+
+  - region_id: "35.19"
+    name: "Kabupaten Madiun"
+    popular_name: "Madiun Kampung Pesilat"
+    level: "regency"
+    parent_id: "35"
+    scope_status: "priority_1"
+    postal_codes: ["63153", "63154", "63155"]
+    center_coords: [-7.5583, 111.6577]
+
+  - region_id: "35.21"
+    name: "Kabupaten Ngawi"
+    popular_name: "Ngawi Ramah"
+    level: "regency"
+    parent_id: "35"
+    scope_status: "priority_1"
+    postal_codes: ["63211", "63216"]
+    center_coords: [-7.4039, 111.4452]
+
+  - region_id: "35.20"
+    name: "Kabupaten Magetan"
+    popular_name: "Magetan Kaki Gunung Lawu"
+    level: "regency"
+    parent_id: "35"
+    scope_status: "priority_1"
+    postal_codes: ["63311", "63318"]
+    center_coords: [-7.6528, 111.3283]
+
+  - region_id: "35.02"
+    name: "Kabupaten Ponorogo"
+    popular_name: "Bumi Reog"
+    level: "regency"
+    parent_id: "35"
+    scope_status: "priority_1"
+    postal_codes: ["63411", "63419"]
+    center_coords: [-7.8692, 111.4622]
+
+  - region_id: "35.01"
+    name: "Kabupaten Pacitan"
+    popular_name: "Kota 1001 Goa"
+    level: "regency"
+    parent_id: "35"
+    scope_status: "priority_1"
+    postal_codes: ["63511", "63518"]
+    center_coords: [-8.2044, 111.0924]
