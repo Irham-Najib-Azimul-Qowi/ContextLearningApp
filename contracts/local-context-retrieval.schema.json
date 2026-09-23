@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LocalContextRetrievalContract",
+  "description": "Standardized Contract for Local Knowledge Base (LKB) Retrieval in Pahami V2 (Karesidenan Madiun)",
+  "definitions": {
+    "EvidenceItem": {
+      "type": "object",
+      "required": ["source_id", "url", "claim"],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "description": "UUID or stable identifier of the registered source in lkb_sources"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical verified URL or official publisher citation reference"
+        },
+        "claim": {
+          "type": "string",
+          "description": "Verifiable factual claim extracted from official publication"
+        },
+        "license_note": {
+          "type": "string",
+          "description": "Usage license note (e.g. BPS Open Data, Pemda Portal, ODbL OSM)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EntityResult": {
+      "type": "object",
+      "required": [
+        "entity_id",
+        "name",
+        "category",
+        "subcategory",
+        "region_id",
+        "educational_usage",
+        "evidence",
+        "verification_status"
+      ],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "description": "Unique identifier of the entity (e.g. ctx_ent_3577_inka_01)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Canonical entity name"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "geography",
+            "built_environment",
+            "livelihood",
+            "mobility",
+            "community",
+            "culture",
+            "nature_environment",
+            "administratif"
+          ]
+        },
+        "subcategory": {
+          "type": "string",
+          "description": "Subcategory within the primary category"
+        },
+        "region_id": {
+          "type": "string",
+          "pattern": "^35\\.(77|19|21|20|02|01)(\\.\\d{2})?$",
+          "description": "Official BPS/Kemendagri administrative region code"
+        },
+        "educational_usage": {
+          "type": "string",
+          "description": "Pedagogical guidance note for injecting this context into SD grade problems"
+        },
+        "quantitative_constraints": {
+          "type": "object",
+          "description": "Mathematical realistic numerical bounds for word problems",
+          "properties": {
+            "typical_units": { "type": "string" },
+            "min_val": { "type": "number" },
+            "max_val": { "type": "number" }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/EvidenceItem" },
+          "minItems": 1
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": ["verified", "in_review", "draft"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RetrievalRequest": {
+      "type": "object",
+      "required": ["region_id", "query"],
+      "properties": {
+        "region_id": {
+          "type": "string",
+          "pattern": "^35\\.(77|19|21|20|02|01)(\\.\\d{2})?$",
+          "description": "Requested official region ID (e.g. 35.77 for Kota Madiun)"
+        },
+        "category": {
+          "type": ["string", "null"],
+          "enum": [
+            null,
+            "geography",
+            "built_environment",
+            "livelihood",
+            "mobility",
+            "community",
+            "culture",
+            "nature_environment",
+            "administratif"
+          ]
+        },
+        "subcategory": {
+          "type": ["string", "null"]
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Search concept or question intent"
+        },
+        "grade": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 6,
+          "description": "Target SD grade level (1-6)"
+        },
+        "subject": {
+          "type": ["string", "null"],
+          "enum": [null, "matematika", "bahasa_indonesia", "ips"]
+        },
+        "limit": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["structured_lexical", "semantic", "hybrid"],
+          "default": "structured_lexical"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RetrievalResponse": {
+      "type": "object",
+      "required": [
+        "requested_region_id",
+        "matched_region_id",
+        "region_fallback_level",
+        "retrieval_mode_used",
+        "results",
+        "warnings"
+      ],
+      "properties": {
+        "requested_region_id": { "type": "string" },
+        "matched_region_id": { "type": "string" },
+        "region_fallback_level": {
+          "type": "string",
+          "enum": ["exact", "district_to_regency", "regency_to_residency", "none"]
+        },
+        "retrieval_mode_used": {
+          "type": "string",
+          "enum": ["structured_lexical", "semantic", "hybrid"]
+        },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/EntityResult" }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
