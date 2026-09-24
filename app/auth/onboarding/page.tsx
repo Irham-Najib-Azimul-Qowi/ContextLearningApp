@@ -259,38 +259,32 @@ export default function OnboardingPage() {
             LANGKAH 1: IDENTITAS PENGGUNA
             ==================================================================== */}
         {step === 1 && (
-          <div className="space-y-5">
+          <div className="space-y-6 pt-2">
             <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-3 border border-white/15 shadow-sm">
-                <User className="w-7 h-7 text-[#FFD36D]" />
+              <div className="w-16 h-16 rounded-2xl bg-white/10 text-white flex items-center justify-center border border-white/15 shadow-sm">
+                <User className="w-8 h-8 text-[#FFD36D]" />
               </div>
-              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-sm">
-                Nama ini akan dicantumkan pada naskah soal dan modul materi pembelajaran yang Anda susun.
-              </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">
-                Nama Lengkap / Nama Panggilan
-              </label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Contoh: Budi Santoso, S.Pd."
+                placeholder="Masukkan nama Anda..."
                 className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-sm sm:text-base font-semibold text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
                 autoFocus
               />
             </div>
 
             {/* Bottom Navigation Button */}
-            <div className="pt-3">
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={handleNextStep}
                 className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Berikutnya</span>
+                <span>Lanjut</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -301,18 +295,14 @@ export default function OnboardingPage() {
             LANGKAH 2: JENIS PENGGUNAAN (HORIZONTAL 2 CARDS)
             ==================================================================== */}
         {step === 2 && (
-          <div className="space-y-5">
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-              Sesuaikan fokus pembuatan materi pembelajaran kontekstual Anda.
-            </p>
-
+          <div className="space-y-5 pt-2">
             {/* 2 Opsi Horizontal: Ikon di atas, teks di bawah */}
-            <div className="grid grid-cols-2 gap-3.5 pt-1">
+            <div className="grid grid-cols-2 gap-3.5">
               {/* Option 1: Perorangan */}
               <button
                 type="button"
                 onClick={() => setUsageMode("individual")}
-                className={`p-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${
+                className={`py-6 px-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${
                   usageMode === "individual"
                     ? "border-[#FFD36D] bg-white/15 ring-2 ring-[#FFD36D]/30 shadow-lg"
                     : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
@@ -332,19 +322,16 @@ export default function OnboardingPage() {
                   <UserCheck className="w-6 h-6" />
                 </div>
                 {/* Teks di bawahnya */}
-                <div className="font-extrabold text-sm sm:text-base text-white">
+                <div className="font-extrabold text-base text-white">
                   Perorangan
                 </div>
-                <p className="text-[11px] text-gray-300 mt-1.5 leading-snug line-clamp-2">
-                  Guru mandiri, tutor les, atau pengajar privat
-                </p>
               </button>
 
               {/* Option 2: Sekolah */}
               <button
                 type="button"
                 onClick={() => setUsageMode("school")}
-                className={`p-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${
+                className={`py-6 px-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${
                   usageMode === "school"
                     ? "border-[#FFD36D] bg-white/15 ring-2 ring-[#FFD36D]/30 shadow-lg"
                     : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
@@ -364,31 +351,28 @@ export default function OnboardingPage() {
                   <Building2 className="w-6 h-6" />
                 </div>
                 {/* Teks di bawahnya */}
-                <div className="font-extrabold text-sm sm:text-base text-white">
+                <div className="font-extrabold text-base text-white">
                   Sekolah
                 </div>
-                <p className="text-[11px] text-gray-300 mt-1.5 leading-snug line-clamp-2">
-                  Institusi formal SD, kelola kelas & ujian siswa
-                </p>
               </button>
             </div>
 
-            {/* Bottom Navigation Buttons (Sebelumnya & Berikutnya di bawah form) */}
+            {/* Bottom Navigation Buttons (Equal 50/50: Kembali & Lanjut) */}
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="w-1/3 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Sebelumnya</span>
+                <span>Kembali</span>
               </button>
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Berikutnya</span>
+                <span>Lanjut</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -399,27 +383,18 @@ export default function OnboardingPage() {
             LANGKAH 3: LOKASI & KONTEKS WILAYAH
             ==================================================================== */}
         {step === 3 && (
-          <div className="space-y-4">
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-              AI akan merujuk data komoditas, lingkungan alam, dan cagar budaya dari wilayah terpilih.
-            </p>
-
-            {/* Geolocation Button Assistance */}
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <Compass className="w-5 h-5 text-[#FFD36D] shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-white">Bantuan Deteksi Lokasi</div>
-                  <div className="text-[11px] text-gray-300">Gunakan GPS perangkat untuk rekomendasi wilayah</div>
-                </div>
-              </div>
+          <div className="space-y-4 pt-1">
+            {/* Clean compact GPS CTA button */}
+            <div className="flex items-center justify-end">
               <button
                 type="button"
                 onClick={handleDetectLocation}
                 disabled={isLocating}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-[#FFD36D] transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-[#FFD36D] hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                title="Gunakan sensor GPS perangkat untuk rekomendasi wilayah"
               >
-                {isLocating ? "Mendeteksi..." : "Deteksi Otomatis"}
+                <MapPin className="w-3.5 h-3.5 text-[#FFD36D]" />
+                <span>{isLocating ? "Mencari lokasi..." : "Gunakan GPS"}</span>
               </button>
             </div>
 
@@ -504,22 +479,22 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Bottom Navigation Buttons (Sebelumnya & Berikutnya di bawah form) */}
+            {/* Bottom Navigation Buttons (Equal 50/50: Kembali & Lanjut) */}
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-1/3 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Sebelumnya</span>
+                <span>Kembali</span>
               </button>
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Berikutnya</span>
+                <span>Lanjut</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -530,16 +505,7 @@ export default function OnboardingPage() {
             LANGKAH 4: KONFIRMASI RINGKASAN DATA
             ==================================================================== */}
         {step === 4 && (
-          <div className="space-y-5">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-11 h-11 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-2 border border-white/15 shadow-sm">
-                <CheckCircle2 className="w-5 h-5 text-[#FFD36D]" />
-              </div>
-              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                Periksa kembali data Anda sebelum mulai menggunakan workspace pembelajaran Depaskan.
-              </p>
-            </div>
-
+          <div className="space-y-5 pt-1">
             {/* Summary Cards */}
             <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/15 space-y-3">
               <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
@@ -577,30 +543,30 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Bottom Navigation Buttons (Sebelumnya & Selesai di bawah form) */}
+            {/* Bottom Navigation Buttons (Equal 50/50: Kembali & Lanjut) */}
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
                 onClick={() => setStep(3)}
-                className="w-1/3 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Sebelumnya</span>
+                <span>Kembali</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSubmit()}
                 disabled={loading}
-                className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-[#251E2B] border-t-transparent rounded-full animate-spin" />
-                    <span>Menyiapkan...</span>
+                    <span>Menyimpan...</span>
                   </div>
                 ) : (
                   <>
-                    <span>Selesai & Masuk</span>
+                    <span>Lanjut</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
