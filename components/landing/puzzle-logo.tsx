@@ -13,7 +13,7 @@ interface PahamiPuzzleLogoProps {
 /**
  * DepaskanLogo / PahamiPuzzleLogo
  * Brand identity logo: Capital letter 'D' constructed as a rounded puzzle piece,
- * followed directly by lowercase text "epaskan" in exact vertical center alignment so it reads "Depaskan".
+ * followed directly by lowercase text "epaskan" perfectly tuned horizontally and vertically so it reads "Depaskan".
  */
 export function PahamiPuzzleLogo({
   size = "md",
@@ -21,7 +21,7 @@ export function PahamiPuzzleLogo({
   className = "",
   theme = "light",
 }: PahamiPuzzleLogoProps) {
-  // Dimensions scale: tuned so the 'D' puzzle glyph and 'epaskan' text align in the exact vertical center
+  // Dimensions scale
   const sizeMap = {
     sm: { icon: 34, text: "text-2xl" },
     md: { icon: 44, text: "text-3xl" },
@@ -59,7 +59,7 @@ export function PahamiPuzzleLogo({
   return (
     <Link
       href="/"
-      className={`inline-flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
+      className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
       aria-label="Beranda Depaskan"
     >
       {/* Puzzle D SVG Icon (Acts as the capital letter 'D') */}
@@ -106,13 +106,13 @@ export function PahamiPuzzleLogo({
         </svg>
       </div>
 
-      {/* Brand Typography: Lowercase "epaskan" perfectly centered vertically with the 'D' puzzle glyph */}
+      {/* Brand Typography: Lowercase "epaskan" positioned slightly left & up for seamless optical alignment */}
       {showText && (
         <span
-          className={`font-black tracking-tight leading-none lowercase select-none ${currentSize.text} ${
+          className={`font-black tracking-tight leading-none lowercase select-none -ml-0.5 ${currentSize.text} ${
             theme === "dark" ? "text-white" : "text-[#51465B]"
           }`}
-          style={{ transform: "translateY(-1px)" }}
+          style={{ transform: "translateY(-3px)" }}
         >
           epaskan
         </span>

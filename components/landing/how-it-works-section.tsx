@@ -5,31 +5,27 @@ import { FileUp, MapPin, Sparkles, Printer } from "lucide-react";
 
 /**
  * HowItWorksSection
- * 4 concise structured steps with icons and brief texts, without numbers or "Alur Terstruktur" badge.
+ * 4 concise structured step cards: Centered icon with direct title text, no extra description.
  */
 export function HowItWorksSection() {
   const steps = [
     {
       title: "Unggah Bahan",
-      desc: "Unggah dokumen PDF atau ketik materi Anda.",
       icon: FileUp,
       color: "bg-[#51465B] text-[#FFD36D]",
     },
     {
       title: "Pilih Daerah",
-      desc: "Tentukan kabupaten atau kota sekolah Anda.",
       icon: MapPin,
       color: "bg-[#F47D83] text-white",
     },
     {
       title: "Selaraskan AI",
-      desc: "AI menyematkan data dan fakta lokal terverifikasi.",
       icon: Sparkles,
       color: "bg-[#FFD36D] text-[#51465B]",
     },
     {
       title: "Cetak & Uji",
-      desc: "Cetak dokumen fisik A4 atau rilis ujian daring.",
       icon: Printer,
       color: "bg-[#51465B] text-white",
     },
@@ -47,29 +43,24 @@ export function HowItWorksSection() {
         </p>
       </div>
 
-      {/* 4 Cards Grid with Icons and Short Texts */}
+      {/* 4 Cards Grid with Centered Icons and Direct Text (No Description) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {steps.map((st) => {
           const Icon = st.icon;
           return (
             <div
               key={st.title}
-              className="group bg-white rounded-3xl p-6 border-2 border-[#E9E5E8] hover:border-[#51465B] shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+              className="group bg-white rounded-3xl p-7 border-2 border-[#E9E5E8] hover:border-[#51465B] shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center text-center"
             >
-              <div>
-                <div className="mb-4">
-                  <div className={`w-12 h-12 rounded-2xl ${st.color} flex items-center justify-center font-black shadow-xs group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-6 h-6 stroke-[2.2]" />
-                  </div>
-                </div>
-
-                <h3 className="font-extrabold text-base text-[#23212A] mb-1.5 leading-snug">
-                  {st.title}
-                </h3>
-                <p className="text-xs text-[#756F7A] leading-relaxed font-medium">
-                  {st.desc}
-                </p>
+              {/* Centered Icon */}
+              <div className={`w-14 h-14 rounded-2xl ${st.color} flex items-center justify-center font-black shadow-xs group-hover:scale-110 group-hover:-translate-y-0.5 transition-all mb-4`}>
+                <Icon className="w-7 h-7 stroke-[2.2]" />
               </div>
+
+              {/* Direct Title Text (No Description Underneath) */}
+              <h3 className="font-black text-base sm:text-lg text-[#23212A] leading-snug">
+                {st.title}
+              </h3>
             </div>
           );
         })}

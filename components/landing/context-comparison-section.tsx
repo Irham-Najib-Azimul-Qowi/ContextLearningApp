@@ -10,7 +10,7 @@ import { Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 export function ContextComparisonSection() {
   return (
     <section className="w-full max-w-5xl mx-auto py-12 sm:py-16 border-t border-[#E9E5E8]/80">
-      {/* Section Header (Teks "Contoh Nyata" telah dihapus) */}
+      {/* Section Header */}
       <div className="text-center max-w-2xl mx-auto mb-10">
         <h2 className="text-2xl sm:text-4xl font-black text-[#23212A] tracking-tight">
           Perbandingan Pembelajaran
@@ -22,7 +22,7 @@ export function ContextComparisonSection() {
 
       {/* Two Comparison Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        {/* Card 1: Sebelum (Standar) — Diperbaiki agar memiliki kontras tinggi & tegas */}
+        {/* Card 1: Sebelum (Standar) */}
         <div className="p-7 sm:p-8 rounded-[32px] bg-white border-2 border-[#51465B] shadow-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -30,7 +30,6 @@ export function ContextComparisonSection() {
                 <AlertCircle className="w-3.5 h-3.5 text-rose-700" />
                 <span>Sebelum &bull; Standar</span>
               </span>
-              <span className="text-xs font-black text-[#51465B]">Matematika Fase C</span>
             </div>
 
             <h3 className="text-lg font-black text-[#23212A] mb-3">
@@ -42,9 +41,10 @@ export function ContextComparisonSection() {
             </div>
           </div>
 
+          {/* Teks Dipersingkat */}
           <div className="pt-4 border-t border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0" />
-            <span>Konteks generik & abstrak, objek barang tidak dialami nyata oleh siswa.</span>
+            <span>Konteks generik & abstrak.</span>
           </div>
         </div>
 
@@ -59,7 +59,6 @@ export function ContextComparisonSection() {
                 <Sparkles className="w-3.5 h-3.5 text-[#51465B]" />
                 <span>Sesudah &bull; Depaskan</span>
               </span>
-              <span className="text-xs font-bold text-white/80">Kota Madiun &bull; 35.77</span>
             </div>
 
             <h3 className="text-lg font-black text-white mb-3">
@@ -71,9 +70,10 @@ export function ContextComparisonSection() {
             </div>
           </div>
 
+          {/* Teks Dipersingkat */}
           <div className="pt-4 border-t border-white/20 text-xs font-bold text-[#FFD36D] flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-[#FFD36D] shrink-0" />
-            <span>Mengintegrasikan industri nyata daerah tanpa mengubah rumus hitung.</span>
+            <span>Konteks nyata industri daerah.</span>
           </div>
         </div>
       </div>

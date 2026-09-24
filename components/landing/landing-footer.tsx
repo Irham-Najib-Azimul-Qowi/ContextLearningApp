@@ -37,7 +37,7 @@ export function LandingFooter() {
           </div>
 
           {/* Links Columns */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-xs">
+          <div className="grid grid-cols-2 gap-8 sm:gap-12 text-xs">
             {/* Col 1: Layanan */}
             <div className="space-y-2.5">
               <span className="font-mono text-[10px] font-black uppercase tracking-wider text-white/50 block">
@@ -62,22 +62,8 @@ export function LandingFooter() {
               </ul>
             </div>
 
-            {/* Col 2: Wilayah Prioritas */}
+            {/* Col 2: Legal & Akses Internal */}
             <div className="space-y-2.5">
-              <span className="font-mono text-[10px] font-black uppercase tracking-wider text-white/50 block">
-                Cakupan Wilayah
-              </span>
-              <ul className="space-y-1.5 text-white/70 text-[11px]">
-                <li>Kota & Kab. Madiun</li>
-                <li>Kab. Ponorogo</li>
-                <li>Kab. Magetan & Ngawi</li>
-                <li>Kabupaten Pacitan</li>
-                <li>Kota Semarang</li>
-              </ul>
-            </div>
-
-            {/* Col 3: Legal & Akses Internal */}
-            <div className="space-y-2.5 col-span-2 sm:col-span-1">
               <span className="font-mono text-[10px] font-black uppercase tracking-wider text-white/50 block">
                 Legal & Developer
               </span>
