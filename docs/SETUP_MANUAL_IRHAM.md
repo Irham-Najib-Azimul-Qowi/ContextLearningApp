@@ -391,3 +391,17 @@ Untuk menjaga agar proyek tetap 100% gratis tanpa biaya tak terduga selama masa 
    - Fast Data Transfer: 100 GB per bulan.
    - Serverless Function Execution: 100 GB-hours per bulan.
    - Pantau di: Vercel Dashboard > **Usage**.
+
+---
+
+### X. Verifikasi UI/UX Redesign V3 (Layered Rounded Dashboard)
+Pada implementasi V3, antarmuka PAHAMI telah disempurnakan dengan sistem desain berlapis:
+1. **Latar Belakang & Shell**: Latar pastel `#FAF7F3` dengan sudut kontainer membulat besar (`rounded-[36px]`).
+2. **Dashboard Guru**: Dua hero panel berdampingan: Panel Materi (Dark Mauve `#51465B`) di kiri dan Panel Soal (Warm Yellow `#FFD36D`) di kanan.
+3. **Hub 4 Metode Input**:
+   - `/teacher/questions/new`: Upload PDF, Ambil Foto OCR, Ketik Manual, Generate AI.
+   - `/teacher/materials/new`: Upload PDF, Ambil Foto OCR, Ketik Manual, Generate AI.
+4. **Indikator Progres Kontekstual (`ContextualProgress`)**: Menampilkan 6 tahapan nyata eksekusi RAG LKB.
+5. **Cetak Dokumen A4 (`/teacher/print`)**: Format terpisah untuk lembar siswa dan kunci jawaban/rubrik guru.
+6. **Portal Siswa SD (`/student/dashboard`)**: Disesuaikan khusus untuk anak kelas 5 SD dengan navigasi ceria dan ringkas.
+

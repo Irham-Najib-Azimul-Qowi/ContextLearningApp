@@ -25,28 +25,35 @@ export function TeacherWorkspaceShell({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex text-slate-900 antialiased">
-      {/* 1. Left Vertical Icon Rail */}
-      <IconNavigationRail
-        activeGroupId={activeGroupId}
-        openGroupId={openGroupId}
-        onSelectGroup={handleSelectGroup}
-      />
+    <div className="min-h-screen bg-[#FAF7F3] p-2 sm:p-4 lg:p-6 flex items-center justify-center text-[#23212A] antialiased relative overflow-x-hidden">
+      {/* Decorative ambient background tints */}
+      <div className="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#DFAEB3]/25 blur-3xl pointer-events-none" />
+      <div className="fixed -bottom-40 -right-40 w-96 h-96 rounded-full bg-[#FFD36D]/25 blur-3xl pointer-events-none" />
 
-      {/* 2. Flyout Submenu Panel */}
-      <NavigationSubmenu
-        openGroupId={openGroupId}
-        onClose={() => setOpenGroupId(null)}
-      />
+      {/* Main Layered Application Container (Rounded Squircle 36px) */}
+      <div className="w-full max-w-[1580px] bg-white rounded-[28px] sm:rounded-[36px] shadow-2xl border border-[#E9E5E8] overflow-hidden flex flex-row min-h-[880px] lg:min-h-[920px] relative z-10">
+        {/* 1. Left Vertical Navigation Rail (Dark Mauve #51465B) */}
+        <IconNavigationRail
+          activeGroupId={activeGroupId}
+          openGroupId={openGroupId}
+          onSelectGroup={handleSelectGroup}
+        />
 
-      {/* 3. Floating Top-Right Controls */}
-      <GlobalControls />
+        {/* 2. Flyout Submenu Panel */}
+        <NavigationSubmenu
+          openGroupId={openGroupId}
+          onClose={() => setOpenGroupId(null)}
+        />
 
-      {/* 4. Main Scrollable Workspace Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 p-4 sm:p-8 md:p-10 max-w-7xl w-full mx-auto">
-          {children}
-        </main>
+        {/* 3. Floating Top-Right Controls */}
+        <GlobalControls />
+
+        {/* 4. Main Scrollable Workspace Content */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white">
+          <main className="flex-1 p-4 sm:p-7 md:p-9 max-w-7xl w-full mx-auto">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

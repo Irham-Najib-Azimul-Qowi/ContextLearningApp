@@ -152,71 +152,110 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
 
-          {/* Quick Action Navigation Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Link
-              href="/teacher/questions/new"
-              className="p-5 rounded-3xl bg-white border border-[#E9E5E8] hover:border-[#51465B] shadow-2xs hover:shadow-md transition-all group flex flex-col justify-between"
-            >
+          {/* ====================================================================
+              DUA BAGIAN UTAMA (SECTION 8.4): BUAT MATERI (KIRI) & BUAT SOAL (KANAN)
+              ==================================================================== */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* PANEL KIRI: BUAT MATERI (Dark Mauve #51465B) */}
+            <div className="p-7 rounded-[28px] bg-[#51465B] text-white shadow-md flex flex-col justify-between relative overflow-hidden group">
               <div>
-                <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                  <Brain className="w-5 h-5 text-[#FFD36D]" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-xs text-[#FFD36D] flex items-center justify-center shadow-xs">
+                    <BookOpen className="w-6 h-6 text-[#FFD36D]" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-white/10 text-white/90">
+                    Modul Ajar SD
+                  </span>
                 </div>
-                <h3 className="font-extrabold text-sm text-[#23212A] mb-1">Konteks Soal</h3>
-                <p className="text-xs text-[#756F7A]">Generate butir soal AI / input manual dengan konteks wilayah.</p>
-              </div>
-              <div className="pt-3 border-t border-[#E9E5E8] flex items-center justify-between text-xs font-bold text-[#51465B] group-hover:text-[#F47D83]">
-                <span>Buat Soal</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </Link>
 
-            <Link
-              href="/teacher/materials/new"
-              className="p-5 rounded-3xl bg-white border border-[#E9E5E8] hover:border-[#51465B] shadow-2xs hover:shadow-md transition-all group flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-5 h-5 text-[#F47D83]" />
-                </div>
-                <h3 className="font-extrabold text-sm text-[#23212A] mb-1">Konteks Materi</h3>
-                <p className="text-xs text-[#756F7A]">Rancang bahan ajar modul bacaan berbasis potensi lokal.</p>
-              </div>
-              <div className="pt-3 border-t border-[#E9E5E8] flex items-center justify-between text-xs font-bold text-[#51465B] group-hover:text-[#F47D83]">
-                <span>Buat Materi</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </Link>
+                <h3 className="text-xl sm:text-2xl font-black text-white mb-2">
+                  Buat Materi
+                </h3>
+                <p className="text-xs sm:text-sm text-white/80 leading-relaxed mb-6 font-normal">
+                  Siapkan materi pembelajaran yang sesuai dengan lingkungan siswa. Diperkaya dengan studi kasus ekonomi, kekayaan budaya, dan cagar alam lokal.
+                </p>
 
-            <Link
-              href={exams.length > 0 ? `/teacher/print/exam/${exams[0].id}` : "/teacher/examinations"}
-              className="p-5 rounded-3xl bg-white border border-[#E9E5E8] hover:border-[#51465B] shadow-2xs hover:shadow-md transition-all group flex flex-col justify-between"
-            >
+                {materials.length > 0 && (
+                  <div className="p-3 rounded-xl bg-white/10 border border-white/15 text-[11px] text-white/90 mb-6 flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-[#FFD36D] shrink-0" />
+                    <span className="truncate">
+                      Terakhir: <strong>{materials[0]?.title}</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href="/teacher/materials/new"
+                className="w-full py-3.5 px-5 rounded-2xl bg-white text-[#51465B] hover:bg-[#FAF7F3] font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 group-hover:gap-3"
+              >
+                <span>Mulai Buat Materi</span>
+                <ArrowRight className="w-4 h-4 text-[#F47D83]" />
+              </Link>
+            </div>
+
+            {/* PANEL KANAN: BUAT SOAL (Warm Yellow #FFD36D) */}
+            <div className="p-7 rounded-[28px] bg-[#FFD36D] text-[#23212A] shadow-md flex flex-col justify-between relative overflow-hidden group">
               <div>
-                <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                  <Printer className="w-5 h-5 text-[#FFD36D]" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-white flex items-center justify-center shadow-xs">
+                    <Brain className="w-6 h-6 text-[#FFD36D]" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#51465B]/15 text-[#51465B]">
+                    Asesmen Kontekstual
+                  </span>
                 </div>
-                <h3 className="font-extrabold text-sm text-[#23212A] mb-1">Cetak PDF A4</h3>
-                <p className="text-xs text-[#756F7A]">Ekspor lembar soal murid dan kunci jawaban guru terpisah.</p>
+
+                <h3 className="text-xl sm:text-2xl font-black text-[#23212A] mb-2">
+                  Buat Soal
+                </h3>
+                <p className="text-xs sm:text-sm text-[#51465B] leading-relaxed mb-6 font-medium">
+                  Buat soal latihan atau ujian menggunakan konteks lokal. Menjamin validasi matematika kuantitatif dan menyertakan foto cagar budaya asli.
+                </p>
+
+                {questions.length > 0 && (
+                  <div className="p-3 rounded-xl bg-white/70 border border-[#51465B]/15 text-[11px] text-[#23212A] mb-6 flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-[#51465B] shrink-0" />
+                    <span className="truncate">
+                      Terakhir: <strong>{questions[0]?.topic}</strong> ({questions[0]?.subject})
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="pt-3 border-t border-[#E9E5E8] flex items-center justify-between text-xs font-bold text-[#51465B] group-hover:text-[#F47D83]">
-                <span>Cetak Lembar Soal</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </Link>
+
+              <Link
+                href="/teacher/questions/new"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#51465B] text-white hover:bg-[#3E3547] font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 group-hover:gap-3"
+              >
+                <span>Mulai Buat Soal</span>
+                <ArrowRight className="w-4 h-4 text-[#FFD36D]" />
+              </Link>
+            </div>
           </div>
 
-          {/* Recent Contextual Items Showcase */}
-          <div className="p-6 rounded-3xl bg-white border border-[#E9E5E8] shadow-2xs">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-extrabold text-[#23212A]">Soal Kontekstual Terkini</h3>
-              <Link
-                href="/teacher/questions"
-                className="text-xs font-bold text-[#51465B] hover:text-[#F47D83] flex items-center gap-1"
-              >
-                <span>Lihat Semua Soal</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+          {/* ====================================================================
+              BAGIAN TERAKHIR DIKERJAKAN (RECENT ITEMS SHOWCASE)
+              ==================================================================== */}
+          <div className="p-6 sm:p-7 rounded-[28px] bg-white border border-[#E9E5E8] shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
+              <div>
+                <h3 className="text-base font-black text-[#23212A]">Terakhir Dikerjakan</h3>
+                <p className="text-xs text-[#756F7A]">Daftar soal dan modul materi yang baru saja dikontekstualisasikan</p>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href="/teacher/questions"
+                  className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] hover:border-[#51465B] transition-colors"
+                >
+                  Semua Soal
+                </Link>
+                <Link
+                  href="/teacher/materials"
+                  className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] hover:border-[#51465B] transition-colors"
+                >
+                  Semua Materi
+                </Link>
+              </div>
             </div>
 
             <div className="space-y-3">

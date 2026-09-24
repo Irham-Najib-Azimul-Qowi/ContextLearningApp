@@ -39,8 +39,8 @@ const SUPPORTED_REGIONS: RegionOption[] = [
 export default function OnboardingPage() {
   const router = useRouter();
 
-  // Multi-step flow: 1 (Identity), 2 (Usage Mode: Perorangan vs Sekolah), 3 (Location & Profile)
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Multi-step flow: 1 (Identitas), 2 (Jenis Penggunaan), 3 (Lokasi & Wilayah), 4 (Konfirmasi)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [roleMode, setRoleMode] = useState<"TEACHER" | "STUDENT">("TEACHER");
   const [usageMode, setUsageMode] = useState<"individual" | "school">("individual");
 
@@ -48,6 +48,7 @@ export default function OnboardingPage() {
   const [fullName, setFullName] = useState("");
   const [selectedProvince, setSelectedProvince] = useState<string>("Jawa Timur");
   const [selectedRegionId, setSelectedRegionId] = useState<string>("35.77");
+  const [districtName, setDistrictName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [teacherPasscode, setTeacherPasscode] = useState("GURU-PAHAMI-2026");
   const [classCode, setClassCode] = useState("");
@@ -129,11 +130,18 @@ export default function OnboardingPage() {
     } else if (step === 2) {
       setErrorMessage(null);
       setStep(3);
+    } else if (step === 3) {
+      if (usageMode === "school" && !schoolName.trim()) {
+        setErrorMessage("Silakan masukkan nama sekolah SD Anda.");
+        return;
+      }
+      setErrorMessage(null);
+      setStep(4);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setErrorMessage(null);
 
@@ -183,22 +191,30 @@ export default function OnboardingPage() {
     }
   };
 
+  const matchedRegion = SUPPORTED_REGIONS.find((r) => r.code === selectedRegionId);
+  const regionName = matchedRegion ? matchedRegion.name : "Kota Madiun";
+
   return (
-    <main className="min-h-screen bg-[#FAF7F3] flex items-center justify-center p-4 text-[#23212A]">
-      <div className="w-full max-w-xl bg-white rounded-3xl border border-[#E9E5E8] shadow-lg p-8 sm:p-10 relative overflow-hidden">
+    <main className="min-h-screen bg-[#FAF7F3] flex items-center justify-center p-4 text-[#23212A] relative overflow-hidden">
+      {/* Ambient background tints */}
+      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-[#DFAEB3]/20 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-[#FFD36D]/20 blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-xl bg-white rounded-[32px] sm:rounded-[36px] border border-[#E9E5E8] shadow-xl p-8 sm:p-10 relative overflow-hidden">
         {/* Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-2 bg-[#51465B]" />
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#51465B] via-[#F47D83] to-[#FFD36D]" />
 
         {/* Stepper Header */}
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#E9E5E8]">
           <div className="flex items-center gap-2">
             <span className="text-xs font-black uppercase tracking-wider text-[#51465B] bg-[#51465B]/10 px-3 py-1 rounded-full">
-              Langkah {step} dari 3
+              Langkah {step} dari 4
             </span>
             <span className="text-xs text-[#756F7A] font-semibold">
-              {step === 1 && "Identitas Pengguna"}
-              {step === 2 && "Jenis Penggunaan"}
-              {step === 3 && "Lokasi & Konteks Wilayah"}
+              {step === 1 && "Identitas"}
+              {step === 2 && "Penggunaan"}
+              {step === 3 && "Lokasi & Wilayah"}
+              {step === 4 && "Konfirmasi"}
             </span>
           </div>
           {step > 1 && (
@@ -363,7 +379,7 @@ export default function OnboardingPage() {
             LANGKAH 3: LOKASI & KONTEKS WILAYAH
             ==================================================================== */}
         {step === 3 && (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-black text-[#23212A]">Wilayah Pembelajaran Siswa</h2>
               <p className="text-sm text-[#756F7A] mt-1">
@@ -473,7 +489,73 @@ export default function OnboardingPage() {
 
             <div className="pt-4">
               <button
-                type="submit"
+                type="button"
+                onClick={handleNextStep}
+                className="w-full py-4 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <span>Lanjutkan ke Konfirmasi Ringkasan</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================================
+            LANGKAH 4: KONFIRMASI RINGKASAN DATA
+            ==================================================================== */}
+        {step === 4 && (
+          <div className="space-y-6">
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mb-4 shadow-sm">
+                <CheckCircle2 className="w-6 h-6 text-[#FFD36D]" />
+              </div>
+              <h2 className="text-2xl font-black text-[#23212A]">Konfirmasi Ringkasan Akun</h2>
+              <p className="text-sm text-[#756F7A] mt-1">
+                Periksa kembali data Anda sebelum mulai menggunakan workspace pembelajaran kontekstual PAHAMI.
+              </p>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="p-5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
+                <span className="text-xs font-bold text-[#756F7A]">Nama Lengkap</span>
+                <span className="text-sm font-extrabold text-[#23212A]">{fullName}</span>
+              </div>
+
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
+                <span className="text-xs font-bold text-[#756F7A]">Jenis Penggunaan</span>
+                <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B]">
+                  {usageMode === "school" ? "Sekolah / Institusi Formal" : "Perorangan (Guru Mandiri)"}
+                </span>
+              </div>
+
+              {usageMode === "school" && (
+                <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
+                  <span className="text-xs font-bold text-[#756F7A]">Nama Sekolah</span>
+                  <span className="text-sm font-bold text-[#23212A]">{schoolName}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
+                <span className="text-xs font-bold text-[#756F7A]">Wilayah Pembelajaran</span>
+                <span className="text-sm font-extrabold text-[#51465B] flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#F47D83]" />
+                  <span>{regionName} ({selectedProvince})</span>
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#756F7A]">Jenjang Pendidikan</span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-[#FFD36D]/30 text-[#51465B]">
+                  SD Kelas 5 (Fase C)
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
                 disabled={loading}
                 className="w-full py-4 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
               >
@@ -481,13 +563,13 @@ export default function OnboardingPage() {
                   <span>Menyiapkan Workspace Pembelajaran...</span>
                 ) : (
                   <>
-                    <span>Selesai & Buka Workspace</span>
+                    <span>Mulai Menggunakan PAHAMI</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
             </div>
-          </form>
+          </div>
         )}
       </div>
     </main>

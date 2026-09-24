@@ -89,13 +89,13 @@ export default function TeacherMaterialsPage() {
             </p>
           </div>
 
-          <Link
-            href="/teacher/materials/create"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-xs hover:shadow transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Buat Materi Baru</span>
-          </Link>
+            <Link
+              href="/teacher/materials/new"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white text-xs font-black shadow-md transition-transform active:scale-95"
+            >
+              <Plus className="w-4 h-4 text-[#FFD36D]" />
+              <span>Buat Materi Baru</span>
+            </Link>
         </div>
 
         {/* Filter & Search Bar */}
@@ -139,10 +139,10 @@ export default function TeacherMaterialsPage() {
               Mulai membuat materi terkontekstualisasi dengan kearifan lokal menggunakan bantuan AI atau input manual.
             </p>
             <Link
-              href="/teacher/materials/create"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+              href="/teacher/materials/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white text-xs font-black shadow-md transition-transform active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 text-[#FFD36D]" />
               Buat Materi Sekarang
             </Link>
           </div>

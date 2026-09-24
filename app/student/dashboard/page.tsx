@@ -11,6 +11,8 @@ import {
   ArrowRight,
   School as SchoolIcon,
   Sparkles,
+  MapPin,
+  Trophy,
 } from "lucide-react";
 import { StudentWorkspaceShell } from "@/components/layout/student-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -38,21 +40,26 @@ export default function StudentDashboardPage() {
   return (
     <StudentWorkspaceShell>
       {/* 1. Welcome Card for Elementary Student */}
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-md mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#51465B] rounded-[28px] sm:rounded-[36px] p-6 sm:p-8 text-white shadow-lg mb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#FFD36D]/15 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-[#F47D83]/20 rounded-full blur-xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3 backdrop-blur-xs">
-              Siswa Kelas 5 SD &bull; Ponorogo
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <div className="inline-flex items-center gap-1.5 bg-[#FAF7F3]/15 text-[#FFD36D] text-xs font-bold px-3 py-1 rounded-full mb-3 backdrop-blur-xs border border-white/10">
+              <MapPin className="w-3.5 h-3.5 text-[#F47D83]" />
+              <span>Siswa Kelas 5 SD &bull; Karesidenan Madiun</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               Halo, Budi Santoso! 👋
             </h1>
-            <p className="text-indigo-100 text-sm mt-1 max-w-xl leading-relaxed">
-              Selamat datang di Pahami! Belajar materi dan kerjakan latihan soal seru yang dekat dengan lingkungan sekitarmu di Ponorogo.
+            <p className="text-white/80 text-xs sm:text-sm mt-1.5 max-w-xl leading-relaxed">
+              Selamat datang di PAHAMI! Belajar materi dan kerjakan latihan soal seru yang dekat dengan lingkungan nyata sekitarmu di Ponorogo & Karesidenan Madiun.
             </p>
           </div>
-          <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl shrink-0">
-            📚
+
+          <div className="w-20 h-20 rounded-[24px] bg-[#FFD36D] text-[#51465B] flex items-center justify-center text-4xl shrink-0 shadow-md transform rotate-2">
+            🎒
           </div>
         </div>
       </div>
@@ -61,14 +68,14 @@ export default function StudentDashboardPage() {
       <div className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <ClipboardList className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-[#FAF7F3] text-[#51465B] border border-[#E9E5E8] flex items-center justify-center font-bold">
+              <ClipboardList className="w-4 h-4 text-[#F47D83]" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Ujian & Latihan Soal</h2>
+            <h2 className="text-lg font-black text-[#23212A]">Ujian & Latihan Soal Aktif</h2>
           </div>
           <Link
             href="/student/examinations"
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            className="text-xs font-bold text-[#51465B] hover:text-[#23212A] flex items-center gap-1"
           >
             <span>Lihat Semua</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -79,30 +86,30 @@ export default function StudentDashboardPage() {
           {exams.map((exam) => (
             <div
               key={exam.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between"
+              className="bg-[#FAF7F3] rounded-[24px] border border-[#E9E5E8] p-5 shadow-xs hover:border-[#51465B]/40 transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] bg-white border border-[#E9E5E8] px-2.5 py-1 rounded-full">
                     {exam.subject}
                   </span>
-                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
+                  <span className="text-xs text-[#756F7A] font-semibold flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-[#F47D83]" />
                     {exam.duration_minutes} Menit
                   </span>
                 </div>
-                <h3 className="font-bold text-slate-900 text-base mb-1">{exam.title}</h3>
-                <p className="text-xs text-slate-600 mb-4">{exam.class_name}</p>
+                <h3 className="font-extrabold text-[#23212A] text-base mb-1">{exam.title}</h3>
+                <p className="text-xs text-[#756F7A] mb-4">{exam.class_name}</p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">3 Butir Soal</span>
+              <div className="pt-3 border-t border-[#E9E5E8] flex items-center justify-between">
+                <span className="text-xs text-[#756F7A] font-medium">Butir Soal Terkontekstualisasi</span>
                 <Link
                   href={`/student/examinations/${exam.id}/session`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-transform active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-bold text-xs shadow-xs transition-transform active:scale-95"
                 >
                   <span>Kerjakan Sekarang</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#FFD36D]" />
                 </Link>
               </div>
             </div>
@@ -112,27 +119,27 @@ export default function StudentDashboardPage() {
 
       {/* 3. Published Score / Exam Result */}
       {completedAttempt && (
-        <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-5 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-lg shadow-xs shrink-0">
+        <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-[28px] p-6 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
               {completedAttempt.score}
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 uppercase tracking-wider">
+                <Trophy className="w-4 h-4 text-emerald-600" />
                 <span>Nilai Ujian Terbaru Telah Dirilis</span>
               </div>
-              <h4 className="font-bold text-slate-900 text-sm mt-0.5">
+              <h4 className="font-extrabold text-[#23212A] text-base mt-0.5">
                 Penilaian Harian Matematika & IPAS Kontekstual Ponorogo
               </h4>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <p className="text-xs text-[#756F7A] mt-0.5">
                 Catatan Guru: &ldquo;{completedAttempt.teacher_feedback}&rdquo;
               </p>
             </div>
           </div>
           <Link
             href={`/student/examinations/${completedAttempt.exam_id}/results`}
-            className="px-4 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold text-xs shrink-0 shadow-2xs"
+            className="px-5 py-2.5 rounded-xl bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold text-xs shrink-0 shadow-2xs transition-colors"
           >
             Lihat Pembahasan Lengkap
           </Link>
@@ -143,14 +150,14 @@ export default function StudentDashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <BookOpen className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-[#FAF7F3] text-[#51465B] border border-[#E9E5E8] flex items-center justify-center font-bold">
+              <BookOpen className="w-4 h-4 text-[#51465B]" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Materi Pembelajaran Ponorogo</h2>
+            <h2 className="text-lg font-black text-[#23212A]">Materi Pembelajaran Kontekstual</h2>
           </div>
           <Link
             href="/student/materials"
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            className="text-xs font-bold text-[#51465B] hover:text-[#23212A] flex items-center gap-1"
           >
             <span>Semua Materi</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -161,23 +168,23 @@ export default function StudentDashboardPage() {
           {materials.map((mat) => (
             <div
               key={mat.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between"
+              className="bg-white rounded-[24px] border border-[#E9E5E8] p-5 shadow-xs flex flex-col justify-between"
             >
               <div>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md mb-2 inline-block">
-                  {mat.subject} Kelas {mat.grade}
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] bg-[#FAF7F3] border border-[#E9E5E8] px-2.5 py-1 rounded-full mb-2.5 inline-block">
+                  {mat.subject} &bull; Kelas {mat.grade} SD
                 </span>
-                <h3 className="font-bold text-slate-900 text-base mb-2">{mat.title}</h3>
-                <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">
+                <h3 className="font-extrabold text-[#23212A] text-base mb-2">{mat.title}</h3>
+                <p className="text-xs text-[#756F7A] line-clamp-3 leading-relaxed mb-4">
                   {mat.content}
                 </p>
               </div>
               <Link
                 href="/student/materials"
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 self-start"
+                className="text-xs font-bold text-[#51465B] hover:text-[#23212A] flex items-center gap-1 self-start"
               >
                 <span>Baca Selengkapnya</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#F47D83]" />
               </Link>
             </div>
           ))}

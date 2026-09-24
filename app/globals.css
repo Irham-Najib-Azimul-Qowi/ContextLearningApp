@@ -7,7 +7,18 @@
 :root {
   color-scheme: light;
 
-  /* Reference Design Theme Palette (PAHAMI V2) */
+  /* Layered Rounded Dashboard Tokens (PAHAMI V3 Reference) */
+  --color-dark-mauve: #51465B;
+  --color-soft-rose: #DFAEB3;
+  --color-coral: #F47D83;
+  --color-warm-yellow: #FFD36D;
+  --color-off-white: #FAF7F3;
+  --color-white: #FFFFFF;
+  --color-dark-text: #23212A;
+  --color-secondary-text: #756F7A;
+  --color-soft-border: #E9E5E8;
+
+  /* Semantic Mappings */
   --primary: #51465B;
   --primary-hover: #3E3547;
   --primary-subtle: #F3EEF5;
@@ -19,6 +30,7 @@
   --accent-coral: #F47D83;
   --accent-yellow: #FFD36D;
   --accent-yellow-subtle: #FFF8E6;
+  --accent-rose: #DFAEB3;
 
   --app-bg: #FAF7F3;
   --surface: #FFFFFF;
@@ -42,9 +54,26 @@
 
   --rail-bg: #51465B;
   --rail-active: #F47D83;
+
+  /* Rounded Corner Scale Tokens */
+  --radius-outer: 36px;
+  --radius-panel: 28px;
+  --radius-card: 22px;
+  --radius-small: 18px;
+  --radius-input: 14px;
+  --radius-button: 14px;
 }
 
 @theme inline {
+  --color-dark-mauve: var(--color-dark-mauve);
+  --color-soft-rose: var(--color-soft-rose);
+  --color-coral: var(--color-coral);
+  --color-warm-yellow: var(--color-warm-yellow);
+  --color-off-white: var(--color-off-white);
+  --color-dark-text: var(--color-dark-text);
+  --color-secondary-text: var(--color-secondary-text);
+  --color-soft-border: var(--color-soft-border);
+
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-subtle: var(--primary-subtle);

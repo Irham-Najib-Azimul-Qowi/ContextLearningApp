@@ -19,6 +19,7 @@ import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-she
 import { repository } from "@/lib/db/repository";
 import { contextEngine } from "@/lib/context-engine/pipeline";
 import { ContextualizationPipelineResult } from "@/lib/context-engine/types";
+import { ContextualProgress } from "@/components/context/contextual-progress";
 import { Question, School } from "@/lib/db/types";
 
 function ContextPreviewContent() {
@@ -30,6 +31,7 @@ function ContextPreviewContent() {
   const [question, setQuestion] = useState<Question | null>(null);
   const [pipelineResult, setPipelineResult] = useState<ContextualizationPipelineResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [includeImage, setIncludeImage] = useState<boolean>(true);
 
@@ -38,6 +40,12 @@ function ContextPreviewContent() {
 
   const runPipeline = async (targetQ: Question, school: School, altOverride?: string) => {
     setIsLoading(true);
+    setCurrentStepIndex(0);
+
+    const stepTimer = setInterval(() => {
+      setCurrentStepIndex((prev) => (prev < 5 ? prev + 1 : prev));
+    }, 450);
+
     try {
       const result = await contextEngine.executePipeline({
         questionText: targetQ.original_question_text || targetQ.question_text,
@@ -58,6 +66,7 @@ function ContextPreviewContent() {
     } catch (e) {
       console.error("Context engine failed:", e);
     } finally {
+      clearInterval(stepTimer);
       setIsLoading(false);
     }
   };
@@ -118,14 +127,13 @@ function ContextPreviewContent() {
   if (isLoading) {
     return (
       <TeacherWorkspaceShell activeGroupId="questions">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-          <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
-          <p className="text-sm font-bold text-slate-800">
-            Contextual AI Engine sedang menganalisis variabel & kearifan lokal...
-          </p>
-          <p className="text-xs text-slate-500">
-            Mengambil data terverifikasi untuk {activeSchool?.region_name || "Karesidenan Madiun"}
-          </p>
+        <div className="py-10">
+          <ContextualProgress
+            currentStepIndex={currentStepIndex}
+            regionName={activeSchool?.region_name || "Karesidenan Madiun"}
+            regionId={activeSchool?.region_id}
+            title="Contextual AI Engine Menganalisis Butir Soal"
+          />
         </div>
       </TeacherWorkspaceShell>
     );
@@ -182,28 +190,44 @@ function ContextPreviewContent() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleApproveAndSave}
-            disabled={isSaved}
-            className={`px-6 py-3 rounded-2xl font-extrabold text-xs shadow-xs flex items-center gap-2 transition-transform active:scale-95 ${
-              isSaved
-                ? "bg-emerald-600 text-white"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white"
-            }`}
-          >
-            {isSaved ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Berhasil Disetujui & Disimpan!</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Setujui & Simpan ke Bank Soal</span>
-              </>
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleApproveAndSave}
+              disabled={isSaved}
+              className={`px-5 py-3 rounded-2xl font-extrabold text-xs shadow-xs flex items-center gap-2 transition-transform active:scale-95 ${
+                isSaved
+                  ? "bg-emerald-600 text-white"
+                  : "bg-[#51465B] hover:bg-[#3E3547] text-white"
+              }`}
+            >
+              {isSaved ? (
+                <>
+                  <Check className="w-4 h-4 text-[#FFD36D]" />
+                  <span>Berhasil Disetujui & Disimpan!</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-[#FFD36D]" />
+                  <span>Setujui & Simpan ke Bank Soal</span>
+                </>
+              )}
+            </button>
+
+            <Link
+              href="/teacher/examinations/new"
+              className="px-4 py-3 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C75A] text-[#23212A] font-extrabold text-xs shadow-xs transition-colors flex items-center gap-1.5"
+            >
+              <span>Gunakan di Ujian</span>
+            </Link>
+
+            <Link
+              href={questionId ? `/teacher/print/exam/exam-sample-01` : `/teacher/print/exam/exam-sample-01`}
+              className="px-4 py-3 rounded-2xl bg-white border border-[#E9E5E8] hover:border-[#51465B] text-[#51465B] font-extrabold text-xs shadow-xs transition-colors flex items-center gap-1.5"
+            >
+              <span>Cetak A4</span>
+            </Link>
+          </div>
         </div>
       </div>
 

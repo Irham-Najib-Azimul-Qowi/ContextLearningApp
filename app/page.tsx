@@ -73,25 +73,25 @@ export default function HomePage() {
                 <FileQuestion className="w-7 h-7 text-[#FFD36D]" />
               </div>
               <div className="inline-block text-[11px] font-extrabold uppercase tracking-wider text-[#F47D83] mb-1">
-                Alur Utama 1
+                Layanan 1
               </div>
               <h2 className="text-2xl font-black text-[#23212A] mb-3 group-hover:text-[#51465B] transition-colors">
-                KONTEKS SOAL
+                KONTEKSKAN SOAL
               </h2>
               <p className="text-sm sm:text-base text-[#756F7A] leading-relaxed mb-6">
-                Buat atau sesuaikan soal berdasarkan lingkungan lokal siswa. Dilengkapi gambar pendukung visual, validasi integritas matematika, dan ekspor lembar cetak A4.
+                Buat atau sesuaikan soal pembelajaran dengan lingkungan lokal siswa. Dilengkapi gambar pendukung visual, validasi integritas matematika, dan ekspor lembar cetak A4.
               </p>
             </div>
 
             <div className="pt-4 border-t border-[#E9E5E8] flex items-center justify-between text-sm font-bold text-[#51465B] group-hover:text-[#F47D83]">
-              <span>Mulai Buat Soal Kontekstual</span>
+              <span>Mulai Kontekskan Soal</span>
               <div className="w-8 h-8 rounded-full bg-[#FAF7F3] flex items-center justify-center group-hover:bg-[#F47D83] group-hover:text-white transition-colors">
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>
           </Link>
 
-          {/* Card Kanan: KONTEKS MATERI */}
+          {/* Card Kanan: KONTEKSKAN MATERI */}
           <Link
             href="/login?intent=material"
             className="group relative flex flex-col justify-between p-8 rounded-3xl bg-white border-2 border-[#E9E5E8] hover:border-[#51465B] shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 text-left"
@@ -101,13 +101,13 @@ export default function HomePage() {
                 <BookOpen className="w-7 h-7 text-[#F47D83]" />
               </div>
               <div className="inline-block text-[11px] font-extrabold uppercase tracking-wider text-[#51465B] mb-1">
-                Alur Utama 2
+                Layanan 2
               </div>
               <h2 className="text-2xl font-black text-[#23212A] mb-3 group-hover:text-[#51465B] transition-colors">
-                KONTEKS MATERI
+                KONTEKSKAN MATERI
               </h2>
               <p className="text-sm sm:text-base text-[#756F7A] leading-relaxed mb-6">
-                Buat atau sesuaikan materi pembelajaran menggunakan konteks wilayah. Memperkaya modul ajar dengan contoh kegiatan ekonomi, budaya, dan sarana daerah nyata.
+                Buat atau sesuaikan materi pembelajaran menggunakan contoh dari daerah sekitar. Memperkaya modul ajar dengan fakta ekonomi, budaya, dan sarana daerah nyata.
               </p>
             </div>
 

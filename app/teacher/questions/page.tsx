@@ -74,27 +74,34 @@ export default function TeacherQuestionsPage() {
           </p>
         </div>
 
-        {/* 3 Creation Action Buttons */}
+        {/* Creation Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Link
-            href="/teacher/questions/generator"
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
+            href="/teacher/questions/new"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-black text-xs shadow-md transition-all active:scale-95"
           >
-            <Sparkles className="w-4 h-4" />
+            <Plus className="w-4 h-4 text-[#FFD36D]" />
+            <span>Buat Soal Baru</span>
+          </Link>
+          <Link
+            href="/teacher/questions/generator"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:bg-slate-100 text-[#51465B] font-bold text-xs shadow-xs transition-all active:scale-95"
+          >
+            <Sparkles className="w-4 h-4 text-[#F47D83]" />
             <span>Generate AI</span>
           </Link>
           <Link
-            href="/teacher/questions/manual"
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-all active:scale-95"
+            href="/teacher/questions/scan?mode=pdf"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:bg-slate-100 text-[#51465B] font-bold text-xs shadow-xs transition-all active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            <span>Input Manual</span>
+            <Brain className="w-4 h-4 text-[#51465B]" />
+            <span>Upload PDF</span>
           </Link>
           <Link
-            href="/teacher/questions/scan"
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-all active:scale-95"
+            href="/teacher/questions/scan?mode=photo"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:bg-slate-100 text-[#51465B] font-bold text-xs shadow-xs transition-all active:scale-95"
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-4 h-4 text-[#51465B]" />
             <span>Scan Foto</span>
           </Link>
         </div>
