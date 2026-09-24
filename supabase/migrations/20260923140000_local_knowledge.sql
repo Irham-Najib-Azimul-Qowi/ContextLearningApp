@@ -187,120 +187,258 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-    v_target_region_id TEXT := p_region_id;
+    v_target_region_id TEXT := TRIM(p_region_id);
     v_fallback_level TEXT := 'exact';
-    v_mode_used TEXT := p_mode;
+    v_mode_used TEXT := COALESCE(p_mode, 'structured_lexical');
     v_warnings JSONB := '[]'::jsonb;
     v_results JSONB := '[]'::jsonb;
     v_limit INT := LEAST(GREATEST(COALESCE(p_limit, 5), 1), 20);
     v_clean_query TEXT := TRIM(COALESCE(p_query, ''));
+    v_region_rec RECORD;
+    v_parent_rec RECORD;
+    v_clean_subject TEXT := NULL;
+    v_clean_cat TEXT := NULL;
 BEGIN
-    -- 1. Validate Region and Handle District to Regency Fallback
-    IF NOT EXISTS (SELECT 1 FROM lkb_regions WHERE region_id = v_target_region_id) THEN
-        -- If it's a district code e.g. 35.77.01, attempt fallback to regency 35.77
-        IF v_target_region_id ~ '^35\.\d{2}\.\d{2}$' THEN
-            v_target_region_id := SUBSTRING(v_target_region_id FROM 1 FOR 5);
-            IF EXISTS (SELECT 1 FROM lkb_regions WHERE region_id = v_target_region_id) THEN
-                v_fallback_level := 'district_to_regency';
-            ELSE
-                v_fallback_level := 'none';
+    -- Normalize subject parameter if passed (e.g. "Matematika" -> "matematika", "Bahasa Indonesia" -> "bahasa_indonesia")
+    IF p_subject IS NOT NULL AND TRIM(p_subject) <> '' THEN
+        v_clean_subject := LOWER(REPLACE(TRIM(p_subject), ' ', '_'));
+    END IF;
+
+    -- Normalize category parameter if passed
+    IF p_category IS NOT NULL AND TRIM(p_category) <> '' THEN
+        v_clean_cat := LOWER(TRIM(p_category));
+    END IF;
+
+    -- 1. Validate Region and Hierarchy Fallback
+    SELECT * INTO v_region_rec FROM lkb_regions WHERE region_id = v_target_region_id;
+
+    IF NOT FOUND THEN
+        -- Region ID not in database at all (e.g. 33.74 Semarang or 35.77.99 fake district)
+        RETURN jsonb_build_object(
+            'requested_region_id', p_region_id,
+            'matched_region_id', p_region_id,
+            'region_fallback_level', 'none',
+            'retrieval_mode_used', v_mode_used,
+            'results', '[]'::jsonb,
+            'warnings', jsonb_build_array('Wilayah tidak terdaftar dalam cakupan Karesidenan Madiun')
+        );
+    END IF;
+
+    -- If target region is an official district, check if there are direct entities; if not, fallback to parent regency
+    IF v_region_rec.level = 'district' THEN
+        IF NOT EXISTS (SELECT 1 FROM lkb_entities WHERE region_id = v_target_region_id AND verification_status = 'verified') THEN
+            v_target_region_id := v_region_rec.parent_id;
+            v_fallback_level := 'district_to_regency';
+            SELECT * INTO v_parent_rec FROM lkb_regions WHERE region_id = v_target_region_id;
+            IF NOT FOUND THEN
                 RETURN jsonb_build_object(
                     'requested_region_id', p_region_id,
                     'matched_region_id', p_region_id,
-                    'region_fallback_level', v_fallback_level,
+                    'region_fallback_level', 'none',
                     'retrieval_mode_used', v_mode_used,
                     'results', '[]'::jsonb,
-                    'warnings', jsonb_build_array('Wilayah tidak dikenali dalam cakupan Karesidenan Madiun')
+                    'warnings', jsonb_build_array('Parent wilayah untuk kecamatan tidak ditemukan')
                 );
             END IF;
-        ELSE
-            v_fallback_level := 'none';
-            RETURN jsonb_build_object(
-                'requested_region_id', p_region_id,
-                'matched_region_id', p_region_id,
-                'region_fallback_level', v_fallback_level,
-                'retrieval_mode_used', v_mode_used,
-                'results', '[]'::jsonb,
-                'warnings', jsonb_build_array('Wilayah tidak terdaftar dalam basis data')
-            );
         END IF;
     END IF;
 
-    -- 2. Fallback Mode Validation (Semantic to Lexical if no query embedding)
-    IF v_mode_used = 'semantic' AND p_query_embedding IS NULL THEN
-        v_mode_used := 'structured_lexical';
-        v_warnings := v_warnings || jsonb_build_array('Semantic mode requested without query embedding vector; defaulted to structured_lexical');
+    -- 2. Validate Semantic Mode & Vector Availability
+    IF v_mode_used = 'semantic' THEN
+        IF p_query_embedding IS NULL THEN
+            v_mode_used := 'structured_lexical';
+            v_warnings := v_warnings || jsonb_build_array('Semantic mode requested without query embedding vector; defaulted to structured_lexical');
+        END IF;
     END IF;
 
-    -- 3. Execute Structured + Lexical Matching
-    WITH matched_entities AS (
-        SELECT 
-            e.entity_id,
-            e.canonical_name,
-            e.category,
-            e.subcategory,
-            e.region_id,
-            e.educational_usage,
-            e.quantitative_constraints,
-            e.verification_status,
-            (
-                CASE 
-                    WHEN v_clean_query = '' THEN 1.0
-                    WHEN e.canonical_name ILIKE '%' || v_clean_query || '%' THEN 5.0
-                    WHEN e.short_description ILIKE '%' || v_clean_query || '%' THEN 3.0
-                    WHEN e.educational_usage ILIKE '%' || v_clean_query || '%' THEN 2.0
-                    WHEN to_tsvector('simple', e.canonical_name || ' ' || e.short_description) @@ plainto_tsquery('simple', v_clean_query) THEN 2.5
-                    ELSE 0.5
-                END
-            ) AS match_score
-        FROM lkb_entities e
-        WHERE e.verification_status = 'verified'
-          AND (e.region_id = v_target_region_id)
-          AND (p_category IS NULL OR e.category = p_category)
-          AND (p_subcategory IS NULL OR e.subcategory = p_subcategory)
-          AND (p_grade IS NULL OR p_grade = ANY(e.grade_suitability))
-          AND (p_subject IS NULL OR p_subject = ANY(e.subject_tags))
-          AND (
-              v_clean_query = '' 
-              OR e.canonical_name ILIKE '%' || v_clean_query || '%'
-              OR e.short_description ILIKE '%' || v_clean_query || '%'
-              OR e.educational_usage ILIKE '%' || v_clean_query || '%'
-              OR to_tsvector('simple', e.canonical_name || ' ' || e.short_description) @@ plainto_tsquery('simple', v_clean_query)
-          )
-        ORDER BY match_score DESC, e.canonical_name ASC
-        LIMIT v_limit
-    ),
-    entities_with_evidence AS (
-        SELECT 
-            m.entity_id,
-            m.canonical_name AS name,
-            m.category,
-            m.subcategory,
-            m.region_id,
-            m.educational_usage,
-            m.quantitative_constraints,
-            m.verification_status,
-            COALESCE(
-                (
-                    SELECT jsonb_agg(
-                        jsonb_build_object(
-                            'source_id', ev.source_id,
-                            'url', s.url,
-                            'claim', ev.claim,
-                            'license_note', s.license
+    -- 3. Execute Retrieval
+    IF v_mode_used = 'semantic' AND p_query_embedding IS NOT NULL THEN
+        -- Actual Vector Semantic Search using Cosine Distance (<=>)
+        WITH scored_passages AS (
+            SELECT 
+                p.entity_id,
+                p.passage_id,
+                p.content,
+                1 - (p.embedding <=> p_query_embedding) AS similarity
+            FROM lkb_passages p
+            WHERE p.status = 'verified'
+              AND (p.region_id = v_target_region_id)
+            ORDER BY p.embedding <=> p_query_embedding ASC
+            LIMIT 50
+        ),
+        best_entity_matches AS (
+            SELECT 
+                e.entity_id,
+                e.canonical_name,
+                e.short_description,
+                e.category,
+                e.subcategory,
+                e.region_id,
+                r.name AS region_name,
+                e.educational_usage,
+                e.quantitative_constraints,
+                e.verification_status,
+                MAX(sp.similarity) AS match_score
+            FROM scored_passages sp
+            JOIN lkb_entities e ON e.entity_id = sp.entity_id
+            JOIN lkb_regions r ON r.region_id = e.region_id
+            WHERE e.verification_status = 'verified'
+              AND (
+                  v_clean_cat IS NULL 
+                  OR LOWER(e.category) = v_clean_cat
+                  OR (v_clean_cat = 'commodity' AND e.category IN ('livelihood', 'culture'))
+                  OR (v_clean_cat = 'tradition' AND e.category = 'culture')
+                  OR (v_clean_cat = 'location' AND e.category IN ('built_environment', 'geography'))
+                  OR (v_clean_cat = 'occupation' AND e.category = 'livelihood')
+              )
+              AND (p_subcategory IS NULL OR e.subcategory ILIKE p_subcategory)
+              AND (p_grade IS NULL OR p_grade = ANY(e.grade_suitability))
+              AND (v_clean_subject IS NULL OR v_clean_subject = ANY(e.subject_tags))
+            GROUP BY e.entity_id, e.canonical_name, e.short_description, e.category, e.subcategory, e.region_id, r.name, e.educational_usage, e.quantitative_constraints, e.verification_status
+            ORDER BY match_score DESC, e.canonical_name ASC
+            LIMIT v_limit
+        ),
+        entities_with_evidence AS (
+            SELECT 
+                b.entity_id,
+                b.canonical_name AS name,
+                b.canonical_name,
+                b.category,
+                b.subcategory,
+                b.region_id,
+                b.region_name,
+                b.short_description,
+                b.short_description AS description,
+                b.educational_usage,
+                b.quantitative_constraints,
+                b.verification_status,
+                COALESCE(
+                    (
+                        SELECT s.url
+                        FROM lkb_entity_evidence ev
+                        JOIN lkb_sources s ON s.source_id = ev.source_id
+                        WHERE ev.entity_id = b.entity_id
+                        LIMIT 1
+                    ),
+                    ''
+                ) AS source_url,
+                COALESCE(
+                    (
+                        SELECT jsonb_agg(
+                            jsonb_build_object(
+                                'source_id', ev.source_id,
+                                'url', s.url,
+                                'claim', ev.claim,
+                                'license_note', s.license
+                            )
                         )
-                    )
-                    FROM lkb_entity_evidence ev
-                    JOIN lkb_sources s ON s.source_id = ev.source_id
-                    WHERE ev.entity_id = m.entity_id
-                ),
-                '[]'::jsonb
-            ) AS evidence
-        FROM matched_entities m
-    )
-    SELECT COALESCE(jsonb_agg(to_jsonb(ewe)), '[]'::jsonb)
-    INTO v_results
-    FROM entities_with_evidence ewe;
+                        FROM lkb_entity_evidence ev
+                        JOIN lkb_sources s ON s.source_id = ev.source_id
+                        WHERE ev.entity_id = b.entity_id
+                    ),
+                    '[]'::jsonb
+                ) AS evidence
+            FROM best_entity_matches b
+        )
+        SELECT COALESCE(jsonb_agg(to_jsonb(ewe)), '[]'::jsonb)
+        INTO v_results
+        FROM entities_with_evidence ewe;
+
+    ELSE
+        -- Structured + Lexical Search (Default Online Mode)
+        WITH matched_entities AS (
+            SELECT 
+                e.entity_id,
+                e.canonical_name,
+                e.short_description,
+                e.category,
+                e.subcategory,
+                e.region_id,
+                r.name AS region_name,
+                e.educational_usage,
+                e.quantitative_constraints,
+                e.verification_status,
+                (
+                    CASE 
+                        WHEN v_clean_query = '' THEN 1.0
+                        WHEN e.canonical_name ILIKE '%' || v_clean_query || '%' THEN 5.0
+                        WHEN e.short_description ILIKE '%' || v_clean_query || '%' THEN 3.0
+                        WHEN e.educational_usage ILIKE '%' || v_clean_query || '%' THEN 2.0
+                        WHEN to_tsvector('simple', e.canonical_name || ' ' || e.short_description) @@ plainto_tsquery('simple', v_clean_query) THEN 2.5
+                        ELSE 0.5
+                    END
+                ) AS match_score
+            FROM lkb_entities e
+            JOIN lkb_regions r ON r.region_id = e.region_id
+            WHERE e.verification_status = 'verified'
+              AND (e.region_id = v_target_region_id)
+              AND (
+                  v_clean_cat IS NULL 
+                  OR LOWER(e.category) = v_clean_cat
+                  OR (v_clean_cat = 'commodity' AND e.category IN ('livelihood', 'culture'))
+                  OR (v_clean_cat = 'tradition' AND e.category = 'culture')
+                  OR (v_clean_cat = 'location' AND e.category IN ('built_environment', 'geography'))
+                  OR (v_clean_cat = 'occupation' AND e.category = 'livelihood')
+              )
+              AND (p_subcategory IS NULL OR e.subcategory ILIKE p_subcategory)
+              AND (p_grade IS NULL OR p_grade = ANY(e.grade_suitability))
+              AND (v_clean_subject IS NULL OR v_clean_subject = ANY(e.subject_tags))
+              AND (
+                  v_clean_query = '' 
+                  OR e.canonical_name ILIKE '%' || v_clean_query || '%'
+                  OR e.short_description ILIKE '%' || v_clean_query || '%'
+                  OR e.educational_usage ILIKE '%' || v_clean_query || '%'
+                  OR to_tsvector('simple', e.canonical_name || ' ' || e.short_description) @@ plainto_tsquery('simple', v_clean_query)
+              )
+            ORDER BY match_score DESC, e.canonical_name ASC
+            LIMIT v_limit
+        ),
+        entities_with_evidence AS (
+            SELECT 
+                m.entity_id,
+                m.canonical_name AS name,
+                m.canonical_name,
+                m.category,
+                m.subcategory,
+                m.region_id,
+                m.region_name,
+                m.short_description,
+                m.short_description AS description,
+                m.educational_usage,
+                m.quantitative_constraints,
+                m.verification_status,
+                COALESCE(
+                    (
+                        SELECT s.url
+                        FROM lkb_entity_evidence ev
+                        JOIN lkb_sources s ON s.source_id = ev.source_id
+                        WHERE ev.entity_id = m.entity_id
+                        LIMIT 1
+                    ),
+                    ''
+                ) AS source_url,
+                COALESCE(
+                    (
+                        SELECT jsonb_agg(
+                            jsonb_build_object(
+                                'source_id', ev.source_id,
+                                'url', s.url,
+                                'claim', ev.claim,
+                                'license_note', s.license
+                            )
+                        )
+                        FROM lkb_entity_evidence ev
+                        JOIN lkb_sources s ON s.source_id = ev.source_id
+                        WHERE ev.entity_id = m.entity_id
+                    ),
+                    '[]'::jsonb
+                ) AS evidence
+            FROM matched_entities m
+        )
+        SELECT COALESCE(jsonb_agg(to_jsonb(ewe)), '[]'::jsonb)
+        INTO v_results
+        FROM entities_with_evidence ewe;
+    END IF;
 
     -- Return JSON payload matching RetrievalResponse contract
     RETURN jsonb_build_object(
