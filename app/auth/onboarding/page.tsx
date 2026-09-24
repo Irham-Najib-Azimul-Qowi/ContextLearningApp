@@ -66,6 +66,11 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const isCompleted = localStorage.getItem("pahami_v2_onboarding_completed");
+      if (isCompleted === "true") {
+        router.replace("/teacher/dashboard");
+        return;
+      }
       const intent = localStorage.getItem("pahami_user_intent") || "general";
       setUserIntent(intent);
     }
@@ -92,7 +97,7 @@ export default function OnboardingPage() {
     };
 
     fetchGoogleUserName();
-  }, []);
+  }, [router]);
 
   // Filter regions by selected province
   const availableRegions = SUPPORTED_REGIONS.filter(
@@ -199,18 +204,21 @@ export default function OnboardingPage() {
     try {
       const matchedRegion = SUPPORTED_REGIONS.find((r) => r.code === selectedRegionId);
       const regionName = matchedRegion ? matchedRegion.name : "Kota Madiun";
+      const cleanName = fullName.trim();
+      const cleanSchoolName = usageMode === "school" ? schoolName.trim() : `Workspace Mandiri (${cleanName})`;
+      const generatedSchoolId = usageMode === "school" ? `sch-${Date.now()}` : "school-individual";
 
       const res = await fetch("/api/auth/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role: roleMode,
-          fullName: fullName.trim(),
+          fullName: cleanName,
           usageMode,
           regionId: selectedRegionId,
           regionName,
-          schoolId: usageMode === "school" ? "school-madiun-1" : "school-individual",
-          schoolName: usageMode === "school" ? schoolName.trim() : `Workspace Mandiri (${fullName})`,
+          schoolId: generatedSchoolId,
+          schoolName: cleanSchoolName,
           classCode: roleMode === "STUDENT" ? classCode : undefined,
           intent: userIntent,
         }),
@@ -222,6 +230,48 @@ export default function OnboardingPage() {
         setErrorMessage(data.error || "Gagal menyimpan data onboarding.");
         setLoading(false);
         return;
+      }
+
+      // Synchronize client-side repository and localStorage
+      if (roleMode === "TEACHER") {
+        const newSchool = {
+          id: generatedSchoolId,
+          name: cleanSchoolName,
+          slug: cleanSchoolName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          region_id: selectedRegionId,
+          region_name: regionName,
+          address: `${regionName}, ${selectedProvince}`,
+          created_at: new Date().toISOString(),
+        };
+        repository.addSchool(newSchool);
+        repository.setActiveSchoolId(generatedSchoolId);
+
+        const newProfile = {
+          id: `usr-${Date.now()}`,
+          email: "guru@depaskan.id",
+          full_name: cleanName,
+          role: "TEACHER" as const,
+          avatar_url: "/images/dashboard/teacher-avatar.jpg",
+          school_id: generatedSchoolId,
+        };
+        repository.setCurrentUser(newProfile);
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("pahami_v2_onboarding_completed", "true");
+          localStorage.setItem(
+            "pahami_v2_teacher_profile",
+            JSON.stringify({
+              id: newProfile.id,
+              fullName: cleanName,
+              usageMode,
+              schoolId: generatedSchoolId,
+              schoolName: cleanSchoolName,
+              regionId: selectedRegionId,
+              regionName,
+              province: selectedProvince,
+            })
+          );
+        }
       }
 
       // Determine redirect destination based on initial intent

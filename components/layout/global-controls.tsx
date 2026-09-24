@@ -19,15 +19,25 @@ import { School, AppNotification } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/client";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
-export function GlobalControls() {
+interface GlobalControlsProps {
+  contextMode?: "material" | "question";
+}
+
+export function GlobalControls({ contextMode: propContextMode }: GlobalControlsProps) {
   const router = useRouter();
   const [schools, setSchools] = useState<School[]>([]);
   const [activeSchool, setActiveSchool] = useState<School | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
+  // Active theme context mode ("material" = #51465B, "question" = #FFD36D)
+  const [activeMode, setActiveMode] = useState<"material" | "question">("material");
+
+  // Floating controls expansion state: collapsed (circle only) vs expanded (pill wrapper)
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // Dropdown states
-  const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
   const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -44,34 +54,45 @@ export function GlobalControls() {
     setActiveSchool(active);
 
     const user = repository.getCurrentUser();
+    setCurrentUser(user);
+
     const notifs = repository.getNotifications(user.id);
     setNotifications(notifs);
     setUnreadCount(notifs.filter((n) => !n.read).length);
-  }, []);
 
-  // Close dropdowns on outside click
+    // Initial context mode
+    const initialMode = propContextMode || repository.getLastContextMode();
+    setActiveMode(initialMode);
+
+    // Listen for context mode updates from preview tabs or route changes
+    const handleContextChange = (e: any) => {
+      if (e.detail) {
+        setActiveMode(e.detail);
+      }
+    };
+    window.addEventListener("contextModeChange", handleContextChange);
+    return () => window.removeEventListener("contextModeChange", handleContextChange);
+  }, [propContextMode]);
+
+  // Keep in sync if prop changes
+  useEffect(() => {
+    if (propContextMode) {
+      setActiveMode(propContextMode);
+    }
+  }, [propContextMode]);
+
+  // Close dropdowns and collapse on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsSchoolMenuOpen(false);
         setIsNotifMenuOpen(false);
         setIsProfileMenuOpen(false);
+        setIsExpanded(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSelectSchool = (schoolId: string) => {
-    repository.setActiveSchoolId(schoolId);
-    const selected = repository.getSchool(schoolId);
-    if (selected) {
-      setActiveSchool(selected);
-    }
-    setIsSchoolMenuOpen(false);
-    // Reload active page to refresh school context
-    window.location.reload();
-  };
 
   const handleSwitchToStudent = () => {
     repository.setCurrentRole("STUDENT");
@@ -96,131 +117,223 @@ export function GlobalControls() {
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
+  const isQuestion = activeMode === "question";
+
+  // Pill wrapper styles based on active feature
+  const pillWrapperClass = isQuestion
+    ? "bg-[#FFD36D] text-[#251E2B] border-2 border-[#ECC159] shadow-2xl"
+    : "bg-[#51465B] text-white border-2 border-[#6A5D75] shadow-2xl";
+
+  const iconButtonHoverClass = isQuestion
+    ? "hover:bg-black/10 active:bg-black/15 text-[#251E2B]"
+    : "hover:bg-white/20 active:bg-white/30 text-white";
+
+  // Initials for avatar fallback
+  const userInitials =
+    currentUser?.full_name
+      ?.split(" ")
+      .slice(0, 2)
+      .map((w: string) => w[0])
+      .join("")
+      .toUpperCase() || "DG";
+
   return (
     <>
       <div
         ref={containerRef}
-        className="fixed top-3 sm:top-4 right-4 sm:right-6 z-40 flex items-center bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-md px-3 py-1.5 gap-2.5 select-none"
+        className="fixed top-4 right-6 z-50 select-none flex items-center justify-end"
         aria-label="Kontrol Utama Ruang Kerja"
       >
-        {/* Depaskan Logo (Identical to Landing Page) */}
-        <div className="flex items-center pr-2.5 border-r border-slate-200">
-          <PahamiPuzzleLogo size="sm" href="/teacher/dashboard" />
-        </div>
-
-        {/* 1. NOTIFICATIONS */}
-        <div className="relative">
+        {/* ====================================================================
+            1. COLLAPSED STATE: ONLY FLOATING CIRCULAR PROFILE AVATAR
+            If there are unread notifications, badge indicator is displayed on it.
+            ==================================================================== */}
+        {!isExpanded ? (
           <button
             type="button"
-            onClick={() => {
-              setIsNotifMenuOpen(!isNotifMenuOpen);
-              setIsSchoolMenuOpen(false);
-              setIsProfileMenuOpen(false);
-            }}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors relative"
-            title="Notifikasi"
-            aria-label="Buka Notifikasi"
+            onClick={() => setIsExpanded(true)}
+            className="w-13 h-13 rounded-full overflow-hidden border-2 border-white/90 shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 relative flex items-center justify-center cursor-pointer bg-gradient-to-tr from-[#3E3547] to-[#51465B]"
+            title="Buka Menu Guru (Profil, Pengaturan, Notifikasi)"
+            aria-label="Buka Kontrol Profil dan Notifikasi"
           >
-            <Bell className="w-4 h-4" />
+            <img
+              src="/images/dashboard/teacher-avatar.jpg"
+              alt={currentUser?.full_name || "Profil Guru"}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = "none";
+              }}
+            />
+            <span className="text-white font-extrabold text-xs">
+              {userInitials}
+            </span>
+
+            {/* Notification Badge on Profile Circle when Collapsed */}
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white shadow-md animate-bounce">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
             )}
           </button>
-
-          {/* Notifications Dropdown */}
-          {isNotifMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 p-3 z-50">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-900">Notifikasi</span>
+        ) : (
+          /* ====================================================================
+             2. EXPANDED STATE: EXPANDS TO THE LEFT INTO A ROUNDED-FULL PILL
+             Wrapped in the theme color of the active feature (#FFD36D or #51465B).
+             Contains larger Notifikasi, Settings, and Profile with Logout.
+             ==================================================================== */
+          <div
+            className={`flex items-center gap-3 py-2 px-3 rounded-full ${pillWrapperClass} backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-right-4`}
+          >
+            {/* 1. NOTIFIKASI BUTTON (LEBIH BESAR) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNotifMenuOpen(!isNotifMenuOpen);
+                  setIsProfileMenuOpen(false);
+                }}
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${iconButtonHoverClass}`}
+                title="Notifikasi"
+                aria-label="Buka Notifikasi"
+              >
+                <Bell className="w-5 h-5 stroke-[2.2]" />
                 {unreadCount > 0 && (
-                  <span className="text-[10px] font-semibold bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded">
-                    {unreadCount} baru
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow-xs">
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
-              </div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 mt-1">
-                {notifications.length === 0 ? (
-                  <div className="py-4 text-center text-xs text-slate-500">
-                    Tidak ada notifikasi saat ini.
+              </button>
+
+              {/* Notifications Dropdown Panel */}
+              {isNotifMenuOpen && (
+                <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 text-left text-slate-800">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-900">Notifikasi</span>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] font-bold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full">
+                        {unreadCount} baru
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      onClick={() => handleMarkNotifRead(notif.id)}
-                      className={`p-2 rounded-lg text-xs cursor-pointer transition-colors ${
-                        notif.read ? "opacity-70 hover:bg-slate-50" : "bg-indigo-50/50 hover:bg-indigo-50"
-                      }`}
-                    >
-                      <div className="font-semibold text-slate-900">{notif.title}</div>
-                      <div className="text-[11px] text-slate-600 mt-0.5">{notif.message}</div>
-                    </div>
-                  ))
-                )}
-              </div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 mt-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-5 text-center text-xs text-slate-500">
+                        Tidak ada notifikasi saat ini.
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleMarkNotifRead(notif.id)}
+                          className={`p-2.5 rounded-xl text-xs cursor-pointer transition-colors ${
+                            notif.read ? "opacity-70 hover:bg-slate-50" : "bg-amber-50/60 hover:bg-amber-50"
+                          }`}
+                        >
+                          <div className="font-bold text-slate-900">{notif.title}</div>
+                          <div className="text-[11px] text-slate-600 mt-0.5">{notif.message}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* 3. SETTINGS */}
-        <button
-          type="button"
-          onClick={() => setIsSettingsModalOpen(true)}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors"
-          title="Pengaturan"
-          aria-label="Pengaturan"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+            {/* 2. SETTINGS BUTTON (LEBIH BESAR) */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSettingsModalOpen(true);
+                setIsNotifMenuOpen(false);
+                setIsProfileMenuOpen(false);
+              }}
+              className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer ${iconButtonHoverClass}`}
+              title="Pengaturan Workspace"
+              aria-label="Buka Pengaturan"
+            >
+              <Settings className="w-5 h-5 stroke-[2.2]" />
+            </button>
 
-        {/* 4. USER PROFILE */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setIsProfileMenuOpen(!isProfileMenuOpen);
-              setIsSchoolMenuOpen(false);
-              setIsNotifMenuOpen(false);
-            }}
-            className="flex items-center gap-1.5 pl-1 pr-1.5 py-1 rounded-xl hover:bg-slate-100/80 transition-colors"
-            title="Menu Akun"
-            aria-label="Menu Akun Pengguna"
-          >
-            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
-              SA
-            </div>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
-          </button>
-
-          {/* Profile Dropdown */}
-          {isProfileMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 p-2 z-50">
-              <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                <div className="font-bold text-xs text-slate-900">Ibu Siti Aminah, S.Pd.</div>
-                <div className="text-[11px] text-slate-500">Guru Kelas 5</div>
-                <span className="inline-block mt-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded">
-                  Role: GURU
+            {/* 3. PROFILE BUTTON (LEBIH BESAR + DROPDOWN DENGAN LOGOUT) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileMenuOpen(!isProfileMenuOpen);
+                  setIsNotifMenuOpen(false);
+                }}
+                className={`w-11 h-11 rounded-full overflow-hidden border-2 transition-all cursor-pointer relative flex items-center justify-center ${
+                  isQuestion ? "border-[#251E2B]/50 hover:scale-105" : "border-white/80 hover:scale-105"
+                }`}
+                title="Menu Akun Guru"
+                aria-label="Menu Akun Guru"
+              >
+                <img
+                  src="/images/dashboard/teacher-avatar.jpg"
+                  alt={currentUser?.full_name || "Profil Guru"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+                <span className="text-white font-extrabold text-xs">
+                  {userInitials}
                 </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleSwitchToStudent}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-left"
-              >
-                <GraduationCap className="w-4 h-4 text-indigo-600" />
-                <span>Beralih ke Tampilan Murid</span>
               </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-xs text-rose-600 hover:bg-rose-50 transition-colors text-left"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Keluar Aplikasi</span>
-              </button>
+
+              {/* Profile & Logout Dropdown */}
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2.5 z-50 text-left text-slate-800">
+                  <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
+                    <div className="font-extrabold text-xs text-slate-900 truncate">
+                      {currentUser?.full_name || "Ibu Siti Aminah, S.Pd."}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                      {activeSchool?.name || "SD Negeri 1 Ponorogo"}
+                    </div>
+                    <span className="inline-block mt-1.5 text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200/60">
+                      Wilayah: {activeSchool?.region_name || "Kota Madiun"}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSwitchToStudent}
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs text-slate-700 hover:bg-slate-100 transition-colors text-left font-medium cursor-pointer"
+                  >
+                    <GraduationCap className="w-4 h-4 text-[#51465B]" />
+                    <span>Beralih ke Tampilan Siswa</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs text-rose-600 hover:bg-rose-50 transition-colors text-left font-semibold cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>Keluar (Log out)</span>
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* 4. CLOSE / COLLAPSE BUTTON */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsExpanded(false);
+                setIsNotifMenuOpen(false);
+                setIsProfileMenuOpen(false);
+              }}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                isQuestion ? "hover:bg-black/10 text-[#251E2B]/70" : "hover:bg-white/20 text-white/70"
+              }`}
+              title="Ciutkan Menu"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* SETTINGS MODAL */}

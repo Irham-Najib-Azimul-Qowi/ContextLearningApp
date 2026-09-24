@@ -15,13 +15,19 @@ interface IconNavigationRailProps {
   activeGroupId?: string | null;
   openGroupId?: string | null;
   onSelectGroup?: (groupId: string) => void;
+  contextMode?: "material" | "question";
 }
 
 export function IconNavigationRail({
   activeGroupId = "dashboard",
+  contextMode = "material",
 }: IconNavigationRailProps) {
   const router = useRouter();
   const pathname = usePathname();
+
+  const isQuestion = contextMode === "question";
+  const railBg = isQuestion ? "bg-[#FFD36D]" : "bg-[#51465B]";
+  const railBorder = isQuestion ? "border-r border-[#E5BE60]" : "border-r border-[#645770]/40";
 
   // Accordion state: keep track of which menu groups are expanded
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -45,20 +51,31 @@ export function IconNavigationRail({
 
   return (
     <aside
-      className="w-64 sm:w-72 bg-[#3E3547] flex flex-col justify-between py-6 px-4 shrink-0 z-30 select-none min-h-screen text-white border-r border-[#4E4358]/40 overflow-y-auto"
+      className={`w-64 sm:w-72 ${railBg} ${railBorder} flex flex-col justify-start py-6 px-4 shrink-0 z-30 select-none h-screen max-h-screen overflow-hidden transition-colors duration-300`}
       aria-label="Navigasi Menu Guru DEPASKAN"
     >
-      <div className="space-y-6">
+      <div className="flex-1 flex flex-col min-h-0 space-y-6">
         {/* 1. BRAND LOGO & NAME "DEPASKAN" (Matching Landing Page) */}
-        <div className="px-1">
-          <PahamiPuzzleLogo size="md" theme="dark" href="/teacher/dashboard" />
-          <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase block mt-1 ml-1">
+        <div className="px-1 shrink-0">
+          <PahamiPuzzleLogo
+            size="md"
+            theme={isQuestion ? "light" : "dark"}
+            href="/teacher/dashboard"
+          />
+          <span
+            className={`text-[10px] font-extrabold tracking-wider uppercase block mt-1 ml-1 ${
+              isQuestion ? "text-[#51465B]/80" : "text-white/60"
+            }`}
+          >
             Ruang Kerja Guru
           </span>
         </div>
 
-        {/* 2. INLINE ACCORDION NAVIGATION (No more floating flyout) */}
-        <nav className="space-y-1.5" aria-label="Menu Utama">
+        {/* 2. INLINE ACCORDION NAVIGATION (Fits desktop screen, scrollable internally if small display) */}
+        <nav
+          className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin"
+          aria-label="Menu Utama"
+        >
           {TEACHER_NAV_GROUPS.map((group) => {
             const isGroupActive =
               group.id === activeGroupId ||
@@ -73,7 +90,11 @@ export function IconNavigationRail({
                   type="button"
                   onClick={() => toggleGroup(group.id, group.href, group.hasSubmenu)}
                   className={`w-full py-2.5 px-3.5 rounded-2xl flex items-center justify-between transition-all duration-200 cursor-pointer text-left ${
-                    isGroupActive
+                    isQuestion
+                      ? isGroupActive
+                        ? "bg-[#251E2B]/15 text-[#251E2B] font-black shadow-xs"
+                        : "text-[#3E3547]/85 hover:text-[#251E2B] hover:bg-[#251E2B]/10 font-bold"
+                      : isGroupActive
                       ? "bg-white/15 text-[#FFD36D] font-extrabold shadow-xs"
                       : "text-white/80 hover:text-white hover:bg-white/10 font-semibold"
                   }`}
@@ -82,7 +103,13 @@ export function IconNavigationRail({
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className={`w-6 h-6 flex items-center justify-center shrink-0 ${
-                        isGroupActive ? "text-[#FFD36D]" : "text-white/70"
+                        isQuestion
+                          ? isGroupActive
+                            ? "text-[#251E2B]"
+                            : "text-[#3E3547]/70"
+                          : isGroupActive
+                          ? "text-[#FFD36D]"
+                          : "text-white/70"
                       }`}
                     >
                       <Icon className="w-5 h-5 stroke-[2.2]" />
@@ -95,8 +122,14 @@ export function IconNavigationRail({
                   {/* Accordion Chevron Indicator */}
                   {group.hasSubmenu && (
                     <ChevronDown
-                      className={`w-4 h-4 text-white/50 transition-transform duration-200 shrink-0 ${
-                        isExpanded ? "rotate-180 text-[#FFD36D]" : ""
+                      className={`w-4 h-4 transition-transform duration-200 shrink-0 ${
+                        isQuestion
+                          ? isExpanded
+                            ? "rotate-180 text-[#251E2B]"
+                            : "text-[#3E3547]/60"
+                          : isExpanded
+                          ? "rotate-180 text-[#FFD36D]"
+                          : "text-white/50"
                       }`}
                     />
                   )}
@@ -104,7 +137,11 @@ export function IconNavigationRail({
 
                 {/* Submenu: Indented inside the navigation bar ("menjorok indentasinya") */}
                 {group.hasSubmenu && isExpanded && group.subitems && (
-                  <div className="ml-5 pl-4 border-l-2 border-white/15 space-y-1 py-1 transition-all">
+                  <div
+                    className={`ml-5 pl-4 border-l-2 space-y-1 py-1 transition-all ${
+                      isQuestion ? "border-[#251E2B]/20" : "border-white/15"
+                    }`}
+                  >
                     {group.subitems.map((sub) => {
                       const isSubActive = pathname === sub.href;
                       return (
@@ -112,14 +149,24 @@ export function IconNavigationRail({
                           key={sub.id}
                           href={sub.href}
                           className={`flex items-center gap-2 py-1.5 px-2.5 rounded-xl text-xs transition-colors ${
-                            isSubActive
+                            isQuestion
+                              ? isSubActive
+                                ? "bg-[#251E2B]/20 text-[#251E2B] font-black"
+                                : "text-[#3E3547]/80 hover:text-[#251E2B] hover:bg-[#251E2B]/10 font-semibold"
+                              : isSubActive
                               ? "bg-white/20 text-[#FFD36D] font-bold"
                               : "text-white/70 hover:text-white hover:bg-white/10 font-medium"
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              isSubActive ? "bg-[#FFD36D]" : "bg-white/30"
+                              isQuestion
+                                ? isSubActive
+                                  ? "bg-[#251E2B]"
+                                  : "bg-[#3E3547]/40"
+                                : isSubActive
+                                ? "bg-[#FFD36D]"
+                                : "bg-white/30"
                             }`}
                           />
                           <span className="truncate">{sub.label}</span>
@@ -132,45 +179,6 @@ export function IconNavigationRail({
             );
           })}
         </nav>
-      </div>
-
-      {/* 3. BOTTOM: TEACHER PROFILE CARD & LOGOUT */}
-      <div className="pt-6 border-t border-white/15 space-y-3">
-        {/* Teacher Profile Info */}
-        <div className="flex items-center gap-3 px-2 py-1">
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#F47D83] shadow-xs shrink-0">
-            <img
-              src="/images/dashboard/teacher-avatar.jpg"
-              alt="Profil Guru"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = "none";
-              }}
-            />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-white truncate">
-              Bu Siti Aminah, S.Pd.
-            </span>
-            <span className="text-[10px] text-gray-400 font-medium truncate">
-              Guru SD Kelas 5
-            </span>
-          </div>
-        </div>
-
-        {/* Logout Button */}
-        <Link
-          href="/login"
-          className="w-full py-2.5 px-3 rounded-2xl flex items-center gap-3 text-white/70 hover:text-rose-300 hover:bg-rose-500/15 transition-colors group cursor-pointer"
-          title="Keluar dari akun"
-        >
-          <div className="w-6 h-6 flex items-center justify-center shrink-0">
-            <LogOut className="w-4 h-4 text-white/70 group-hover:text-rose-300 transition-colors stroke-[2]" />
-          </div>
-          <span className="text-xs font-semibold truncate">
-            Keluar (Log out)
-          </span>
-        </Link>
       </div>
     </aside>
   );

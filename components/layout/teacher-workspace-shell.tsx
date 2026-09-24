@@ -1,29 +1,79 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { IconNavigationRail } from "./icon-navigation-rail";
 import { GlobalControls } from "./global-controls";
+import { repository } from "@/lib/db/repository";
 
 interface TeacherWorkspaceShellProps {
   children: React.ReactNode;
   activeGroupId?: string;
+  forcedContextMode?: "material" | "question";
 }
 
 export function TeacherWorkspaceShell({
   children,
   activeGroupId = "dashboard",
+  forcedContextMode,
 }: TeacherWorkspaceShellProps) {
+  const pathname = usePathname();
+
+  // Resolve initial context mode:
+  // 1. Forced prop if given
+  // 2. Route matching: /teacher/questions -> "question", /teacher/materials -> "material"
+  // 3. Last used context mode from repository
+  const getInitialMode = (): "material" | "question" => {
+    if (forcedContextMode) return forcedContextMode;
+    if (pathname && pathname.startsWith("/teacher/questions")) {
+      return "question";
+    }
+    if (pathname && pathname.startsWith("/teacher/materials")) {
+      return "material";
+    }
+    return repository.getLastContextMode();
+  };
+
+  const [contextMode, setContextMode] = useState<"material" | "question">(getInitialMode());
+
+  useEffect(() => {
+    // If route specifies feature, set and persist it
+    if (pathname && pathname.startsWith("/teacher/questions")) {
+      setContextMode("question");
+      repository.setLastContextMode("question");
+    } else if (pathname && pathname.startsWith("/teacher/materials")) {
+      setContextMode("material");
+      repository.setLastContextMode("material");
+    } else {
+      setContextMode(repository.getLastContextMode());
+    }
+
+    // Listen to live context mode changes (e.g. from Preview tabs toggle on dashboard)
+    const handleContextChange = (e: any) => {
+      if (e.detail) {
+        setContextMode(e.detail);
+      }
+    };
+    window.addEventListener("contextModeChange", handleContextChange);
+    return () => window.removeEventListener("contextModeChange", handleContextChange);
+  }, [pathname]);
+
+  const isQuestion = contextMode === "question";
+  const shellBg = isQuestion ? "bg-[#FFD36D]" : "bg-[#51465B]";
+
   return (
-    <div className="min-h-screen w-full bg-[#3E3547] flex flex-row relative overflow-x-hidden text-[#23212A] antialiased">
-      {/* 1. Left Vertical Navigation Sidebar (Dark Gray #3E3547, Inline Accordion) */}
-      <IconNavigationRail activeGroupId={activeGroupId} />
+    <div
+      className={`h-screen max-h-screen w-full ${shellBg} flex flex-row relative overflow-hidden text-[#23212A] antialiased transition-colors duration-300`}
+    >
+      {/* 1. Left Vertical Navigation Sidebar (Desktop fixed screen height, fits without page scroll) */}
+      <IconNavigationRail activeGroupId={activeGroupId} contextMode={contextMode} />
 
-      {/* 2. Floating Top-Right Controls (Profile, Settings, Notifikasi - no SD location switcher) */}
-      <GlobalControls />
+      {/* 2. Floating Top-Right Controls (Collapsible Profile Circle -> Feature Themed Pill) */}
+      <GlobalControls contextMode={contextMode} />
 
-      {/* 3. Main Content Section (Layered Stacking Card with rounded top-left & bottom-left corners) */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#3E3547]">
-        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[32px] sm:rounded-tl-[42px] rounded-bl-[32px] sm:rounded-bl-[42px] shadow-2xl p-5 sm:p-7 lg:p-9 min-h-screen relative overflow-y-auto">
+      {/* 3. Main Content Section (Layered Stacking Card with rounded corners revealing theme background) */}
+      <div className={`flex-1 flex flex-col min-w-0 ${shellBg} h-screen max-h-screen overflow-hidden transition-colors duration-300`}>
+        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[32px] sm:rounded-tl-[42px] rounded-bl-[32px] sm:rounded-bl-[42px] shadow-2xl p-5 sm:p-7 lg:p-9 h-screen max-h-screen overflow-y-auto">
           {children}
         </main>
       </div>

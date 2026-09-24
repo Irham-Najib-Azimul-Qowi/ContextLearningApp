@@ -25,9 +25,23 @@ function LoginForm() {
       }
     }
 
-    // Auto-redirect if existing valid session exists
+    // Auto-redirect if existing valid session exists or user has already completed onboarding
     const checkExistingSession = async () => {
       try {
+        if (typeof window !== "undefined") {
+          const completed = localStorage.getItem("pahami_v2_onboarding_completed");
+          if (completed === "true") {
+            if (intent === "material") {
+              router.replace("/teacher/materials/new");
+            } else if (intent === "question") {
+              router.replace("/teacher/questions/new");
+            } else {
+              router.replace("/teacher/dashboard");
+            }
+            return;
+          }
+        }
+
         const supabase = createClient();
         const { data } = await supabase.auth.getSession();
         if (data?.session?.user) {

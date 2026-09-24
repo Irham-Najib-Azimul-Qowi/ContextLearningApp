@@ -34,7 +34,7 @@ export default function TeacherDashboardPage() {
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
 
   // Preview tab state: "question" (Quentext) or "material" (Mattext)
-  const [activePreviewTab, setActivePreviewTab] = useState<"question" | "material">("question");
+  const [activePreviewTab, setActivePreviewTab] = useState<"question" | "material">("material");
   const [selectedSampleIndex, setSelectedSampleIndex] = useState(0);
   const [copiedNotice, setCopiedNotice] = useState(false);
 
@@ -44,6 +44,7 @@ export default function TeacherDashboardPage() {
     setUser(repository.getCurrentUser());
     setQuestions(repository.getQuestions({ schoolId: activeSchool.id }));
     setMaterials(repository.getMaterials(activeSchool.id));
+    setActivePreviewTab(repository.getLastContextMode());
   }, []);
 
   const todayFormatted = new Intl.DateTimeFormat("id-ID", {
@@ -53,7 +54,7 @@ export default function TeacherDashboardPage() {
     year: "numeric",
   }).format(new Date());
 
-  const teacherFirstName = user?.full_name?.split(" ")[0]?.replace(",", "") || "Bu Siti";
+  const teacherFirstName = user?.full_name?.split(" ")[0]?.replace(",", "") || "Guru";
 
   // Samples of Quentext (Soal)
   const SAMPLE_QUESTIONS = [
@@ -341,7 +342,10 @@ export default function TeacherDashboardPage() {
             <div className="grid grid-cols-2 p-1 rounded-2xl bg-black/10 backdrop-blur-xs">
               <button
                 type="button"
-                onClick={() => setActivePreviewTab("question")}
+                onClick={() => {
+                  setActivePreviewTab("question");
+                  repository.setLastContextMode("question");
+                }}
                 className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   activePreviewTab === "question"
                     ? "bg-white text-[#23212A] shadow-sm"
@@ -354,7 +358,10 @@ export default function TeacherDashboardPage() {
 
               <button
                 type="button"
-                onClick={() => setActivePreviewTab("material")}
+                onClick={() => {
+                  setActivePreviewTab("material");
+                  repository.setLastContextMode("material");
+                }}
                 className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   activePreviewTab === "material"
                     ? "bg-white text-[#23212A] shadow-sm"

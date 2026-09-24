@@ -344,7 +344,40 @@ class PahamiRepository {
     this.setItem<string>("active_school_id", id);
   }
 
+  addSchool(school: School): void {
+    const schools = this.getSchools();
+    const existingIndex = schools.findIndex((s) => s.id === school.id);
+    if (existingIndex >= 0) {
+      schools[existingIndex] = school;
+    } else {
+      schools.unshift(school);
+    }
+    this.setItem<School[]>("schools", schools);
+    this.setActiveSchoolId(school.id);
+  }
+
   getActiveSchool(): School {
+    if (this.isBrowser()) {
+      try {
+        const storedProfile = localStorage.getItem("pahami_v2_teacher_profile");
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          if (parsed && parsed.schoolName) {
+            return {
+              id: parsed.schoolId || "school-active",
+              name: parsed.schoolName,
+              slug: parsed.schoolName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+              region_id: parsed.regionId || "35.77",
+              region_name: parsed.regionName || "Kota Madiun",
+              address: `${parsed.regionName || "Kota Madiun"}, ${parsed.province || "Jawa Timur"}`,
+              created_at: new Date().toISOString(),
+            };
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
     const id = this.getActiveSchoolId();
     return this.getSchool(id) || SEED_SCHOOLS[0];
   }
@@ -366,11 +399,59 @@ class PahamiRepository {
     this.setItem<UserRole>("current_role", role);
   }
 
+  setCurrentUser(profile: UserProfile): void {
+    const profiles = this.getProfiles();
+    const existingIndex = profiles.findIndex((p) => p.role === profile.role);
+    if (existingIndex >= 0) {
+      profiles[existingIndex] = { ...profiles[existingIndex], ...profile };
+    } else {
+      profiles.unshift(profile);
+    }
+    this.setItem<UserProfile[]>("profiles", profiles);
+    this.setCurrentRole(profile.role);
+  }
+
   getCurrentUser(): UserProfile {
     const role = this.getCurrentRole();
+    if (role === "TEACHER" && this.isBrowser()) {
+      try {
+        const storedProfile = localStorage.getItem("pahami_v2_teacher_profile");
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          if (parsed && parsed.fullName) {
+            return {
+              id: parsed.id || "usr-teacher-active",
+              email: parsed.email || "guru@depaskan.id",
+              full_name: parsed.fullName,
+              role: "TEACHER",
+              avatar_url: parsed.avatarUrl || "",
+              school_id: parsed.schoolId || "school-active",
+            };
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
     const profiles = this.getProfiles();
     const active = profiles.find((p) => p.role === role);
     return active || (role === "TEACHER" ? SEED_USERS[0] : SEED_USERS[1]);
+  }
+
+  // --- LAST CONTEXT MODE (Material vs Question) ---
+  getLastContextMode(): "material" | "question" {
+    return this.getItem<"material" | "question">("last_context_mode", "material");
+  }
+
+  setLastContextMode(mode: "material" | "question"): void {
+    this.setItem<"material" | "question">("last_context_mode", mode);
+    if (this.isBrowser()) {
+      try {
+        window.dispatchEvent(new CustomEvent("contextModeChange", { detail: mode }));
+      } catch {
+        // Fallback
+      }
+    }
   }
 
   // --- CLASSES ---
