@@ -37,11 +37,13 @@ const SUPPORTED_REGIONS: RegionOption[] = [
   { code: "33.74", name: "Kota Semarang", province: "Jawa Tengah", centerCoords: [-6.9667, 110.4167] },
 ];
 
+type OnboardingStep = "name" | "usage" | "school_name" | "region" | "confirm";
+
 export default function OnboardingPage() {
   const router = useRouter();
 
-  // Multi-step flow: 1 (Identitas), 2 (Jenis Penggunaan), 3 (Lokasi & Wilayah), 4 (Konfirmasi)
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  // Multi-step flow: name -> usage -> (school_name if school) -> region -> confirm
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>("name");
   const [roleMode, setRoleMode] = useState<"TEACHER" | "STUDENT">("TEACHER");
   const [usageMode, setUsageMode] = useState<"individual" | "school">("individual");
 
@@ -51,7 +53,6 @@ export default function OnboardingPage() {
   const [selectedRegionId, setSelectedRegionId] = useState<string>("35.77");
   const [districtName, setDistrictName] = useState("");
   const [schoolName, setSchoolName] = useState("");
-  const [teacherPasscode, setTeacherPasscode] = useState("GURU-PAHAMI-2026");
   const [classCode, setClassCode] = useState("");
 
   // Geolocation states
@@ -139,24 +140,54 @@ export default function OnboardingPage() {
     );
   };
 
+  const stepsList: OnboardingStep[] =
+    usageMode === "school"
+      ? ["name", "usage", "school_name", "region", "confirm"]
+      : ["name", "usage", "region", "confirm"];
+
+  const currentStepIndex = stepsList.indexOf(currentStep);
+
   const handleNextStep = () => {
-    if (step === 1) {
+    setErrorMessage(null);
+
+    if (currentStep === "name") {
       if (!fullName.trim()) {
         setErrorMessage("Silakan masukkan nama lengkap Anda.");
         return;
       }
-      setErrorMessage(null);
-      setStep(2);
-    } else if (step === 2) {
-      setErrorMessage(null);
-      setStep(3);
-    } else if (step === 3) {
-      if (usageMode === "school" && !schoolName.trim()) {
+      setCurrentStep("usage");
+    } else if (currentStep === "usage") {
+      if (usageMode === "school") {
+        setCurrentStep("school_name");
+      } else {
+        setCurrentStep("region");
+      }
+    } else if (currentStep === "school_name") {
+      if (!schoolName.trim()) {
         setErrorMessage("Silakan masukkan nama sekolah SD Anda.");
         return;
       }
-      setErrorMessage(null);
-      setStep(4);
+      setCurrentStep("region");
+    } else if (currentStep === "region") {
+      setCurrentStep("confirm");
+    }
+  };
+
+  const handlePrevStep = () => {
+    setErrorMessage(null);
+
+    if (currentStep === "usage") {
+      setCurrentStep("name");
+    } else if (currentStep === "school_name") {
+      setCurrentStep("usage");
+    } else if (currentStep === "region") {
+      if (usageMode === "school") {
+        setCurrentStep("school_name");
+      } else {
+        setCurrentStep("usage");
+      }
+    } else if (currentStep === "confirm") {
+      setCurrentStep("region");
     }
   };
 
@@ -179,8 +210,7 @@ export default function OnboardingPage() {
           regionId: selectedRegionId,
           regionName,
           schoolId: usageMode === "school" ? "school-madiun-1" : "school-individual",
-          schoolName: usageMode === "school" ? schoolName : `Workspace Mandiri (${fullName})`,
-          teacherPasscode: usageMode === "school" ? teacherPasscode : "GURU-PAHAMI-2026",
+          schoolName: usageMode === "school" ? schoolName.trim() : `Workspace Mandiri (${fullName})`,
           classCode: roleMode === "STUDENT" ? classCode : undefined,
           intent: userIntent,
         }),
@@ -227,17 +257,22 @@ export default function OnboardingPage() {
         {/* Header: Pertanyaan Form & Progress Bar */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/15">
           <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
-            {step === 1 && "Siapa Nama Anda?"}
-            {step === 2 && "Pilih Jenis Penggunaan"}
-            {step === 3 && "Pilih Wilayah Pembelajaran"}
-            {step === 4 && "Konfirmasi Ringkasan"}
+            {currentStep === "name" && "Siapa Nama Anda?"}
+            {currentStep === "usage" && "Pilih Jenis Penggunaan"}
+            {currentStep === "school_name" && "Masukkan Nama Sekolah"}
+            {currentStep === "region" && "Pilih Wilayah Pembelajaran"}
+            {currentStep === "confirm" && "Konfirmasi Ringkasan"}
           </h2>
           <div className="flex items-center gap-1.5 shrink-0">
-            {[1, 2, 3, 4].map((s) => (
+            {stepsList.map((s, idx) => (
               <div
                 key={s}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  s === step ? "w-6 bg-[#FFD36D]" : s < step ? "w-2 bg-[#FFD36D]/50" : "w-2 bg-white/20"
+                  idx === currentStepIndex
+                    ? "w-6 bg-[#FFD36D]"
+                    : idx < currentStepIndex
+                    ? "w-2 bg-[#FFD36D]/50"
+                    : "w-2 bg-white/20"
                 }`}
               />
             ))}
@@ -258,7 +293,7 @@ export default function OnboardingPage() {
         {/* ====================================================================
             LANGKAH 1: IDENTITAS PENGGUNA
             ==================================================================== */}
-        {step === 1 && (
+        {currentStep === "name" && (
           <div className="space-y-6 pt-2">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-2xl bg-white/10 text-white flex items-center justify-center border border-white/15 shadow-sm">
@@ -271,6 +306,9 @@ export default function OnboardingPage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleNextStep();
+                }}
                 placeholder="Masukkan nama Anda..."
                 className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-sm sm:text-base font-semibold text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
                 autoFocus
@@ -294,7 +332,7 @@ export default function OnboardingPage() {
         {/* ====================================================================
             LANGKAH 2: JENIS PENGGUNAAN (HORIZONTAL 2 CARDS)
             ==================================================================== */}
-        {step === 2 && (
+        {currentStep === "usage" && (
           <div className="space-y-5 pt-2">
             {/* 2 Opsi Horizontal: Ikon di atas, teks di bawah */}
             <div className="grid grid-cols-2 gap-3.5">
@@ -361,7 +399,7 @@ export default function OnboardingPage() {
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={handlePrevStep}
                 className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -380,9 +418,56 @@ export default function OnboardingPage() {
         )}
 
         {/* ====================================================================
-            LANGKAH 3: LOKASI & KONTEKS WILAYAH
+            LANGKAH 3 (KHUSUS SEKOLAH): NAMA SEKOLAH SAJA (TANPA ID GURU)
             ==================================================================== */}
-        {step === 3 && (
+        {currentStep === "school_name" && (
+          <div className="space-y-6 pt-2">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-2xl bg-white/10 text-white flex items-center justify-center border border-white/15 shadow-sm">
+                <Building2 className="w-8 h-8 text-[#FFD36D]" />
+              </div>
+            </div>
+
+            <div>
+              <input
+                type="text"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleNextStep();
+                }}
+                placeholder="Masukkan nama sekolah SD Anda..."
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-sm sm:text-base font-semibold text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
+                autoFocus
+              />
+            </div>
+
+            {/* Bottom Navigation Buttons (Equal 50/50: Kembali & Lanjut) */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handlePrevStep}
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleNextStep}
+                className="w-1/2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Lanjut</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================================
+            LANGKAH: LOKASI & KONTEKS WILAYAH
+            ==================================================================== */}
+        {currentStep === "region" && (
           <div className="space-y-4 pt-1">
             {/* Clean compact GPS CTA button */}
             <div className="flex items-center justify-end">
@@ -443,47 +528,11 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* School Name & Verification (only if School mode) */}
-            {usageMode === "school" && (
-              <div className="space-y-3 pt-2 border-t border-white/15">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5">
-                    Nama Sekolah SD
-                  </label>
-                  <input
-                    type="text"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
-                    placeholder="Contoh: SD Negeri 1 Kartoharjo"
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-gray-400 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5">
-                    Kode Sandi Guru (Verifikasi Tim)
-                  </label>
-                  <input
-                    type="text"
-                    value={teacherPasscode}
-                    onChange={(e) => setTeacherPasscode(e.target.value)}
-                    placeholder="GURU-PAHAMI-2026"
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-mono text-white placeholder:text-gray-400 focus:outline-none"
-                    required
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    Gunakan kode bawaan: <code className="bg-white/10 text-[#FFD36D] px-1 py-0.5 rounded font-mono font-bold">GURU-PAHAMI-2026</code>
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Bottom Navigation Buttons (Equal 50/50: Kembali & Lanjut) */}
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={handlePrevStep}
                 className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -502,9 +551,9 @@ export default function OnboardingPage() {
         )}
 
         {/* ====================================================================
-            LANGKAH 4: KONFIRMASI RINGKASAN DATA
+            LANGKAH: KONFIRMASI RINGKASAN DATA
             ==================================================================== */}
-        {step === 4 && (
+        {currentStep === "confirm" && (
           <div className="space-y-5 pt-1">
             {/* Summary Cards */}
             <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/15 space-y-3">
@@ -547,7 +596,7 @@ export default function OnboardingPage() {
             <div className="flex items-center gap-3 pt-3">
               <button
                 type="button"
-                onClick={() => setStep(3)}
+                onClick={handlePrevStep}
                 className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />

@@ -35,16 +35,6 @@ export async function POST(request: Request) {
     if (role === "TEACHER") {
       const isIndividual = usageMode === "individual";
 
-      // Validate teacher verification code only if school mode
-      if (!isIndividual) {
-        if (!teacherPasscode || teacherPasscode.trim() !== VALID_TEACHER_PASSCODE) {
-          return NextResponse.json(
-            { error: "Kode sandi guru tidak valid. Hubungi pengelola sekolah atau gunakan 'GURU-PAHAMI-2026'." },
-            { status: 403 }
-          );
-        }
-      }
-
       const assignedSchoolId = schoolId || (isIndividual ? "school-individual" : "sch-ponorogo-01");
 
       // If Supabase is connected, write to user_profiles table
