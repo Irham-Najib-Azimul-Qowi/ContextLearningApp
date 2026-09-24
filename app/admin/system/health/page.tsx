@@ -219,9 +219,9 @@ export default function AdminSystemHealthPage() {
         </div>
 
         {/* System Topology Diagram / Notice */}
-        <div className="bg-[#FAF7F3] border border-[#E9E5E8] rounded-3xl p-6">
+        <div className="clay-card p-6">
           <h3 className="text-xs font-black text-[#51465B] uppercase tracking-wider mb-2">
-            Topologi Arsitektur PAHAMI V2 (Vercel + Supabase)
+            Topologi Arsitektur DEPASKAN V2 (Vercel + Supabase)
           </h3>
           <p className="text-xs text-neutral-600 leading-relaxed">
             Aplikasi berjalan sepenuhnya tanpa ketergantungan VPS atau Python runtime mandiri saat melayani pengguna. RAG retrieval, kalkulasi embedding similarity, failover multi-provider AI, enkripsi kredensial AES-256-GCM, dan verifikasi auth scrypt dijalankan secara native di dalam runtime Next.js 16 Vercel Serverless.

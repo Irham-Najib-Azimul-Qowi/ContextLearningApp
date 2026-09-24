@@ -79,50 +79,51 @@ export default function AdminAIUsagePage() {
     : 100;
 
   return (
-    <AdminWorkspaceShell>
-      <div className="space-y-6">
+    <AdminWorkspaceShell activeGroupId="ai">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E9E5E8]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#51465B]/60 uppercase tracking-wider mb-1">
-              <span>Multi-Provider AI</span>
-              <span>•</span>
-              <span>Pemantauan & Audit Konsumsi</span>
+        <div className="clay-card p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  Penggunaan Token &amp; Telemetri AI
+                </h1>
+                <p className="text-xs text-[#756F7A] mt-0.5 max-w-2xl">
+                  Pantau volume token, distribusi fitur kuis &amp; materi kontekstual, performa latensi rata-rata, dan histori request AI secara mendalam.
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-black text-[#51465B] flex items-center gap-2.5">
-              <BarChart3 className="w-6 h-6 text-[#FFD36D]" />
-              Penggunaan Token & Telemetri AI
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-              Pantau volume token, distribusi fitur kuis & visi, performa latensi rata-rata, dan histori request AI secara mendalam.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchUsage}
-              disabled={loading}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Segarkan Data
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchUsage}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-2xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                Segarkan Data
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Top Metric KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {/* Total Requests */}
-          <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
+          <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Total Request</span>
-              <div className="w-8 h-8 rounded-xl bg-neutral-100 text-[#51465B] flex items-center justify-center font-black">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Total Request</span>
+              <div className="w-9 h-9 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] flex items-center justify-center font-black shadow-xs">
                 <Cpu className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-3xl font-black text-[#51465B]">{metrics?.totalRequests ?? 0}</div>
-              <div className="text-[11px] text-neutral-500 font-medium mt-1 flex items-center gap-1.5">
+              <div className="text-2xl sm:text-3xl font-black text-[#23212A]">{metrics?.totalRequests ?? 0}</div>
+              <div className="text-[11px] text-[#756F7A] font-medium mt-1 flex items-center gap-1.5">
                 <span className="font-bold text-emerald-600">{successRate}% Berhasil</span>
                 <span>• {metrics?.failedRequests ?? 0} error</span>
               </div>
@@ -130,18 +131,18 @@ export default function AdminAIUsagePage() {
           </div>
 
           {/* Total Tokens */}
-          <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
+          <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Total Token</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Total Token</span>
+              <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-black shadow-xs">
                 <Layers className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-3xl font-black text-[#51465B]">
+              <div className="text-2xl sm:text-3xl font-black text-[#23212A]">
                 {((metrics?.totalTokens ?? 0) / 1000).toFixed(1)}k
               </div>
-              <div className="text-[11px] text-neutral-500 font-medium mt-1">
+              <div className="text-[11px] text-[#756F7A] font-medium mt-1">
                 In: {metrics?.totalInputTokens ?? 0} • Out: {metrics?.totalOutputTokens ?? 0}
               </div>
             </div>

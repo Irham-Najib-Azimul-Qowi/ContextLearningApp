@@ -141,25 +141,25 @@ export default function AdminAIOverviewPage() {
         </div>
 
         {/* Architecture Details Card */}
-        <div className="bg-[#FAF7F3] rounded-[28px] sm:rounded-[36px] border border-[#E9E5E8] p-6 sm:p-8">
+        <div className="clay-card p-6 sm:p-8">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-[#F47D83]" />
             <h2 className="text-sm font-black text-[#51465B] uppercase tracking-wider">
-              Prinsip Operasional AI Provider Manager PAHAMI V2
+              Prinsip Operasional AI Provider Manager DEPASKAN V2
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#756F7A] leading-relaxed">
-            <div className="p-4 bg-white rounded-[20px] border border-[#E9E5E8]">
+            <div className="p-4 bg-white rounded-[20px] border border-[#E9E5E8] shadow-xs">
               <span className="font-black text-[#23212A] block mb-1">1. Quota Group Awareness</span>
               Jika sebuah API key menerima status 429 karena batas kuota proyek habis, sistem tidak akan merotasi ke key lain yang berada pada proyek yang sama demi mematuhi ketentuan kuota penyedia.
             </div>
-            <div className="p-4 bg-white rounded-[20px] border border-[#E9E5E8]">
+            <div className="p-4 bg-white rounded-[20px] border border-[#E9E5E8] shadow-xs">
               <span className="font-black text-[#23212A] block mb-1">2. Enkripsi AES-256-GCM</span>
               Seluruh API key disimpan terenkripsi di server dengan IV unik dan auth tag integritas. Plaintext key tidak pernah dikirim ke browser atau dicetak pada log.
             </div>
-            <div className="p-4 bg-white rounded-[20px] border border-[#E9E5E8]">
+            <div className="p-4 bg-white rounded-[20px] border border-[#E9E5E8] shadow-xs">
               <span className="font-black text-[#23212A] block mb-1">3. Mode Pemulihan Terpadu</span>
-              Jika seluruh layanan penyedia AI sedang mengalami gangguan global, sistem otomatis mengaktifkan respons pemulihan pedagogis agar aktivitas siswa tidak terhenti.
+              Jika seluruh layanan penyedia AI sedang mengalami gangguan global, sistem otomatis mengaktifkan respons pemulihan pedagogis agar aktivitas belajar tidak terhenti.
             </div>
           </div>
         </div>

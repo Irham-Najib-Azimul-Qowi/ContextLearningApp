@@ -147,7 +147,7 @@ export default function AdminAIModelsPage() {
               Model Mapping & Feature Routing
             </h1>
             <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-              Atur model Gemini primer dan sekunder untuk masing-masing kapabilitas sistem PAHAMI V2. Sistem akan mengalihkan request secara otomatis jika kuota atau latency melebihi ambang batas.
+              Atur model Gemini primer dan sekunder untuk masing-masing kapabilitas sistem DEPASKAN V2. Sistem akan mengalihkan request secara otomatis jika kuota atau latency melebihi ambang batas.
             </p>
           </div>
 
@@ -182,9 +182,9 @@ export default function AdminAIModelsPage() {
         )}
 
         {/* Architecture Notice */}
-        <div className="bg-[#FAF7F3] border border-[#E9E5E8] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="clay-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-black shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-black shrink-0 shadow-xs">
               <Cpu className="w-4 h-4" />
             </div>
             <div>
@@ -210,7 +210,7 @@ export default function AdminAIModelsPage() {
             {models.map((cfg) => {
               const meta = FEATURE_TITLES[cfg.feature_key] || {
                 label: cfg.feature_key,
-                desc: "Fitur AI PAHAMI",
+                desc: "Fitur AI DEPASKAN",
                 icon: "⚙️",
               };
               const isSaving = savingKey === cfg.feature_key;
@@ -218,7 +218,7 @@ export default function AdminAIModelsPage() {
               return (
                 <div
                   key={cfg.id}
-                  className="bg-white rounded-3xl border border-[#E9E5E8] p-5 shadow-xs hover:border-[#51465B]/30 transition-all flex flex-col"
+                  className="clay-card p-6 flex flex-col"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-[#E9E5E8] gap-3">
                     <div className="flex items-center gap-3">

@@ -141,41 +141,42 @@ export default function AdminSystemSettingsPage() {
   };
 
   return (
-    <AdminWorkspaceShell>
-      <div className="space-y-6">
+    <AdminWorkspaceShell activeGroupId="sys">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E9E5E8]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#51465B]/60 uppercase tracking-wider mb-1">
-              <span>Sistem & Keamanan</span>
-              <span>•</span>
-              <span>Konfigurasi Global & Mode Operasi</span>
+        <div className="clay-card p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
+                <Settings className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  Pengaturan Sistem &amp; Feature Flags
+                </h1>
+                <p className="text-xs text-[#756F7A] mt-0.5 max-w-2xl">
+                  Kontrol status pemeliharaan aplikasi (Maintenance Mode), sakelar global panggilan AI Gemini, dan pembatas anggaran pengeluaran kuota.
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-black text-[#51465B] flex items-center gap-2.5">
-              <Settings className="w-6 h-6 text-[#FFD36D]" />
-              Pengaturan Sistem & Feature Flags
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-              Kontrol status pemeliharaan aplikasi (Maintenance Mode), sakelar global panggilan AI Gemini, dan pembatas anggaran pengeluaran kuota.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchSettings}
-              disabled={loading}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Muat Ulang
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchSettings}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-2xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                Muat Ulang
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Message Banner */}
         {message && (
           <div
-            className={`p-3.5 rounded-2xl text-xs font-bold flex items-center gap-2.5 transition-all ${
+            className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-2.5 transition-all shadow-xs ${
               message.type === "success"
                 ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                 : "bg-rose-50 text-rose-800 border border-rose-200"
@@ -192,11 +193,11 @@ export default function AdminSystemSettingsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Card 1: Maintenance Mode */}
-          <div className="bg-white rounded-3xl p-6 border border-[#E9E5E8] shadow-xs flex flex-col justify-between space-y-5">
+          <div className="clay-card p-6 sm:p-8 flex flex-col justify-between space-y-5">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#E9E5E8]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-black shadow-xs">
                     <ShieldAlert className="w-5 h-5 text-amber-700" />
                   </div>
                   <div>

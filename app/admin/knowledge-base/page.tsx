@@ -114,132 +114,133 @@ export default function AdminKnowledgeBasePage() {
   };
 
   return (
-    <AdminWorkspaceShell>
-      <div className="space-y-6">
+    <AdminWorkspaceShell activeGroupId="kb">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E9E5E8]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#51465B]/60 uppercase tracking-wider mb-1">
-              <span>Local Knowledge Base</span>
-              <span>•</span>
-              <span>Karesidenan Madiun + Kota Semarang</span>
+        <div className="clay-card p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
+                <Database className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  Dataset Kontekstual &amp; Indeks Vektor Local Knowledge Base
+                </h1>
+                <p className="text-xs text-[#756F7A] mt-0.5 max-w-2xl">
+                  Pusat penyimpanan entitas kontekstual lokal untuk materi dan butir soal Kurikulum Merdeka Fase C (Ponorogo, Madiun Raya, &amp; Semarang).
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-black text-[#51465B] flex items-center gap-2.5">
-              <Database className="w-6 h-6 text-[#FFD36D]" />
-              Dataset Kontekstual & Indeks Vektor
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-              Pusat penyimpanan entitas kontekstual lokal untuk materi dan butir soal Kurikulum Merdeka Fase C. Terintegrasi dengan pgvector Supabase di Seoul AWS cluster.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchKB}
-              disabled={loading}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Segarkan Status
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchKB}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-2xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                Segarkan Status
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Top Metric KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Cakupan Wilayah</span>
-              <div className="w-8 h-8 rounded-xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-black">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Cakupan Wilayah</span>
+              <div className="w-9 h-9 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-black shadow-xs">
                 <MapPin className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-3xl font-black text-[#51465B]">{stats?.total_regions ?? 7} Kab/Kota</div>
-              <div className="text-[11px] text-emerald-600 font-bold mt-1">
-                100% Sesuai Scope IT Comp 2026
+              <div className="text-2xl sm:text-3xl font-black text-[#23212A]">{stats?.total_regions ?? 7} Wilayah</div>
+              <div className="text-[11px] text-emerald-700 font-bold mt-1">
+                Fokus Pengujian Ponorogo &amp; Madiun
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
+          <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Entitas Terverifikasi</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Entitas Terverifikasi</span>
+              <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black shadow-xs">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-3xl font-black text-[#51465B]">{stats?.total_entities ?? 22} Entitas</div>
-              <div className="text-[11px] text-neutral-500 font-medium mt-1">
-                Geografi, Industri & Budaya Lokal
+              <div className="text-2xl sm:text-3xl font-black text-[#23212A]">{stats?.total_entities ?? 22} Entitas</div>
+              <div className="text-[11px] text-[#756F7A] font-semibold mt-1">
+                Geografi, Industri &amp; Budaya Lokal
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
+          <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Model Embedding</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Model Embedding</span>
+              <div className="w-9 h-9 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-black shadow-xs">
                 <Cpu className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-sm font-black text-[#51465B]">text-embedding-3-small</div>
-              <div className="text-[11px] text-neutral-500 font-mono mt-1">
+              <div className="text-sm font-black text-[#23212A]">text-embedding-3-small</div>
+              <div className="text-[11px] text-[#756F7A] font-mono mt-1">
                 1536 Dimensi Vektor Cosine
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
+          <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Vector Storage</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Vector Storage</span>
+              <div className="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black shadow-xs">
                 <Layers className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-sm font-black text-[#51465B]">Supabase pgvector v0.8.2</div>
-              <div className="text-[11px] text-emerald-600 font-bold mt-1">
-                Active in Seoul (ap-northeast-2)
+              <div className="text-sm font-black text-[#23212A]">Supabase pgvector v0.8.2</div>
+              <div className="text-[11px] text-emerald-700 font-bold mt-1">
+                Active in Seoul Cluster
               </div>
             </div>
           </div>
         </div>
 
         {/* Semantic Search Test Sandbox */}
-        <div className="bg-white rounded-3xl p-6 border border-[#E9E5E8] shadow-xs space-y-4">
+        <div className="clay-card p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-black text-[#51465B] flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-black text-[#23212A] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#F47D83]" />
                 Uji Retrieval Semantik Vektor
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Simulasikan bagaimana AI mencocokkan kueri guru dengan entitas kearifan lokal.
+              <p className="text-xs text-[#756F7A] mt-0.5">
+                Simulasikan bagaimana AI mencocokkan materi pembelajaran dengan entitas kearifan lokal.
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
-              SIMILARITY THRESHOLD: 0.70
+            <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B]">
+              THRESHOLD: 0.70
             </span>
           </div>
 
           <form onSubmit={handleSemanticSearch} className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#756F7A] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={testQuery}
                 onChange={(e) => setTestQuery(e.target.value)}
                 placeholder="Masukkan kueri pembelajaran kontekstual..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-[#E9E5E8] bg-[#FAF7F3] focus:bg-white text-xs font-bold text-[#51465B] focus:outline-none focus:ring-2 focus:ring-[#51465B]"
+                className="clay-input pl-10 pr-4 text-xs font-semibold text-[#23212A]"
               />
             </div>
             <button
               type="submit"
               disabled={isSearching}
-              className="px-5 py-2.5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all disabled:opacity-50 shrink-0"
+              className="clay-btn-primary px-5 py-2.5 text-xs font-bold flex items-center gap-2 shadow-xs shrink-0"
             >
               {isSearching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5 text-[#FFD36D]" />}
               <span>Cari Vektor</span>
@@ -282,7 +283,7 @@ export default function AdminKnowledgeBasePage() {
               return (
                 <div
                   key={r.id}
-                  className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between hover:border-[#51465B]/30 transition-all"
+                  className="clay-card p-6 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">

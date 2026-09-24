@@ -1,21 +1,53 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, ArrowRight, ShieldCheck, AlertCircle, School, GraduationCap } from "lucide-react";
+import { ArrowRight, AlertCircle, ArrowLeft } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { createClient } from "@/lib/supabase/client";
-import { repository } from "@/lib/db/repository";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const errorMsg = searchParams.get("error");
+  const intent = searchParams.get("intent");
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(errorMsg);
 
+  useEffect(() => {
+    // Preserve service intent if provided from hero cards (material / question)
+    if (intent) {
+      try {
+        localStorage.setItem("pahami_user_intent", intent);
+      } catch {
+        // Fallback silently
+      }
+    }
+
+    // Auto-redirect if existing valid session exists
+    const checkExistingSession = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.user) {
+          if (intent === "material") {
+            router.replace("/teacher/materials/new");
+          } else if (intent === "question") {
+            router.replace("/teacher/questions/new");
+          } else {
+            router.replace("/teacher/dashboard");
+          }
+        }
+      } catch {
+        // Continue to show login form
+      }
+    };
+    checkExistingSession();
+  }, [intent, router]);
+
   const handleGoogleLogin = async () => {
+    if (loading) return;
     setLoading(true);
     setAuthError(null);
 
@@ -44,59 +76,71 @@ function LoginForm() {
     }
   };
 
-  const handleQuickDemo = (role: "TEACHER" | "STUDENT") => {
-    repository.setCurrentRole(role);
-    if (role === "TEACHER") {
-      router.push("/teacher/dashboard");
-    } else {
-      router.push("/student/dashboard");
-    }
-  };
-
   return (
-    <div className="w-full max-w-md bg-white rounded-[32px] sm:rounded-[36px] border border-[#E9E5E8] shadow-xl p-8 sm:p-10 relative overflow-hidden">
-      {/* Decorative top accent */}
-      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#51465B] via-[#F47D83] to-[#FFD36D]" />
+    <div className="w-full max-w-[440px] bg-white/95 backdrop-blur-md rounded-[36px] sm:rounded-[40px] border border-[#E9E5E8] shadow-2xl p-8 sm:p-11 relative overflow-hidden flex flex-col items-center text-center">
+      {/* Subtle top claymorphism border line */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#51465B] via-[#F47D83] to-[#FFD36D]" />
 
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="flex justify-center mb-4">
+      {/* ===================================================================== */}
+      {/* 1. PERTAMA: JUDUL DENGAN IDENTITAS TIPOGRAFI DEPASKAN                 */}
+      {/* ===================================================================== */}
+      <div className="flex flex-col items-center mb-8 pt-2">
+        <div className="mb-4 transform hover:scale-105 transition-transform duration-200">
           <PahamiPuzzleLogo size="md" />
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B] text-xs font-bold mb-3">
-          <Sparkles className="w-3.5 h-3.5 text-[#F47D83]" />
-          <span>Depaskan &bull; Autentikasi Tunggal</span>
-        </div>
+
         <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
-          Selamat datang di Depaskan.
+          Masuk ke DEPASKAN
         </h1>
-        <p className="text-xs sm:text-sm text-[#756F7A] mt-2 leading-relaxed">
+        <p className="text-xs sm:text-sm text-[#756F7A] mt-2 font-medium leading-relaxed max-w-xs">
           Platform pembelajaran kontekstual berbasis AI untuk sekolah dasar.
         </p>
       </div>
 
-      {/* Error Alert */}
+      {/* Error Alert Display */}
       {authError && (
-        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+        <div className="w-full mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 text-left">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
           <div className="leading-relaxed">
-            <span className="font-semibold">Autentikasi Gagal: </span>
+            <span className="font-bold">Autentikasi Gagal: </span>
             {authError}
           </div>
         </div>
       )}
 
-      {/* Google OAuth Button — Primary Method */}
-      <div className="space-y-4">
+      {/* ===================================================================== */}
+      {/* 2. KEDUA: SATU CTA UTAMA LOGIN GOOGLE (Menarik & Jelas)               */}
+      {/* ===================================================================== */}
+      <div className="w-full space-y-5">
         <button
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3.5 px-6 py-4 rounded-2xl bg-white hover:bg-[#FAF7F3] border-2 border-[#E9E5E8] hover:border-[#51465B] text-[#23212A] font-bold text-sm shadow-xs hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+          className="w-full py-4 px-6 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FFD36D] disabled:opacity-60 disabled:pointer-events-none group"
         >
           {loading ? (
-            <div className="w-5 h-5 border-2 border-[#51465B] border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center gap-2.5 py-1">
+              <div className="w-4 h-4 border-2 border-[#FFD36D] border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm font-extrabold text-white">Menghubungkan ke Google...</span>
+            </div>
           ) : (
+            <div className="flex flex-col items-center justify-center gap-0.5">
+              <span className="text-sm sm:text-base font-black text-[#FFD36D] tracking-wide group-hover:text-white transition-colors">
+                Lanjutkan perjalanan belajarmu
+              </span>
+              <span className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
+                Masuk dengan Google
+                <ArrowRight className="w-3.5 h-3.5 text-[#FFD36D] group-hover:translate-x-1 transition-transform" />
+              </span>
+            </div>
+          )}
+        </button>
+
+        {/* =================================================================== */}
+        {/* 3. KETIGA: LOGO GOOGLE DI BAWAH CTA DALAM LINGKARAN BERSIH          */}
+        {/* =================================================================== */}
+        <div className="flex flex-col items-center justify-center pt-1">
+          <div className="w-11 h-11 rounded-full bg-white shadow-md border border-[#E9E5E8] flex items-center justify-center">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
@@ -115,56 +159,21 @@ function LoginForm() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-          )}
-          <span>{loading ? "Menghubungkan ke Google..." : "Lanjutkan dengan Google"}</span>
-        </button>
-
-        <p className="text-[11px] text-center text-[#756F7A]">
-          Satu akun Google untuk peran Guru maupun Murid SD
-        </p>
-      </div>
-
-      {/* Security notice */}
-      <div className="mt-8 pt-6 border-t border-[#E9E5E8] flex items-center justify-center gap-2 text-[#756F7A] text-xs">
-        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-        <span>Terproteksi Supabase Auth & RLS Terisolasi</span>
-      </div>
-
-      {/* Fast Demo Evaluator Access */}
-      <div className="mt-6 pt-5 border-t border-dashed border-[#E9E5E8]">
-        <div className="text-center mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#756F7A]">
-            Akses Cepat Pengujian Juri / Evaluator
+          </div>
+          <span className="text-[11px] font-medium text-[#756F7A] mt-2">
+            Autentikasi resmi via Google Account
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("TEACHER")}
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#51465B]/10 hover:bg-[#51465B]/15 text-[#51465B] text-xs font-bold transition-colors"
-          >
-            <School className="w-3.5 h-3.5" />
-            <span>Guru Demo</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("STUDENT")}
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#F47D83]/15 hover:bg-[#F47D83]/25 text-[#23212A] text-xs font-bold transition-colors"
-          >
-            <GraduationCap className="w-3.5 h-3.5 text-[#F47D83]" />
-            <span>Murid Demo</span>
-          </button>
-        </div>
       </div>
 
-      {/* Return home link */}
-      <div className="text-center mt-6">
+      {/* Return to home link */}
+      <div className="mt-8 pt-6 border-t border-[#E9E5E8] w-full text-center">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-[#756F7A] hover:text-[#23212A] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#756F7A] hover:text-[#51465B] transition-colors"
         >
+          <ArrowLeft className="w-3.5 h-3.5" />
           <span>Kembali ke Beranda</span>
-          <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
     </div>
@@ -173,14 +182,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-[#FAF7F3] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Ambient pastel decorative blobs */}
-      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-[#DFAEB3]/20 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-[#FFD36D]/20 blur-3xl pointer-events-none" />
+    <main className="min-h-screen bg-[#FAF7F3] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
+      {/* Background with calm, subtle pastel geometric forms (Soft Rose, Coral, Warm Yellow) */}
+      <div className="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#DFAEB3]/25 blur-3xl pointer-events-none" />
+      <div className="fixed top-1/2 -right-40 w-80 h-80 rounded-full bg-[#FFD36D]/25 blur-3xl pointer-events-none" />
+      <div className="fixed -bottom-40 left-1/3 w-96 h-96 rounded-full bg-[#F47D83]/15 blur-3xl pointer-events-none" />
 
+      {/* Floating Card */}
       <Suspense
         fallback={
-          <div className="w-full max-w-md bg-white rounded-[32px] border border-[#E9E5E8] p-8 text-center text-[#756F7A]">
+          <div className="w-full max-w-[440px] bg-white rounded-[36px] border border-[#E9E5E8] p-10 text-center text-xs font-bold text-[#756F7A] shadow-xl animate-pulse">
             Memuat formulir masuk...
           </div>
         }

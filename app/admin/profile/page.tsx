@@ -134,7 +134,7 @@ export default function AdminProfilePage() {
                 {adminUser?.username?.substring(0, 2).toUpperCase() || "AD"}
               </div>
               <div>
-                <h2 className="text-base font-black text-[#51465B]">{adminUser?.full_name || "Admin PAHAMI"}</h2>
+                <h2 className="text-base font-black text-[#51465B]">{adminUser?.full_name || "Admin DEPASKAN"}</h2>
                 <span className="text-xs text-neutral-400 font-mono block">@{adminUser?.username}</span>
                 <span className="mt-1 inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#FFD36D] text-[#51465B]">
                   {adminUser?.role || "SUPER_ADMIN"}

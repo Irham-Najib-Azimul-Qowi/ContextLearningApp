@@ -67,57 +67,58 @@ export default function AdminAuditLogsPage() {
   });
 
   return (
-    <AdminWorkspaceShell>
-      <div className="space-y-6">
+    <AdminWorkspaceShell activeGroupId="sys">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E9E5E8]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#51465B]/60 uppercase tracking-wider mb-1">
-              <span>Sistem & Keamanan</span>
-              <span>•</span>
-              <span>Forensik & Jejak Audit Kredensial</span>
+        <div className="clay-card p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  Immutable Audit Logs &amp; Security Trails
+                </h1>
+                <p className="text-xs text-[#756F7A] mt-0.5 max-w-2xl">
+                  Catatan riwayat seluruh aktivitas pengembang: login admin, modifikasi kredensial API key AI, reset circuit breaker, perubahan setting, dan manajemen user.
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-black text-[#51465B] flex items-center gap-2.5">
-              <ShieldAlert className="w-6 h-6 text-[#FFD36D]" />
-              Immutable Audit Logs & Security Trails
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-              Catatan riwayat seluruh aktivitas developer: login admin, modifikasi kredensial API key AI, reset circuit breaker, perubahan setting, dan manajemen user.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchLogs}
-              disabled={loading}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Segarkan Log
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchLogs}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-2xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                Segarkan Log
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="bg-white rounded-3xl p-4 border border-[#E9E5E8] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-white rounded-[24px] border border-[#E9E5E8] p-4 shadow-[0_4px_16px_rgba(81,70,91,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#756F7A] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari aksi, username, atau target ID..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] focus:bg-white text-xs font-bold text-[#51465B] focus:outline-none focus:ring-2 focus:ring-[#51465B]"
+              className="clay-input pl-10 pr-4 text-xs font-semibold text-[#23212A]"
             />
           </div>
 
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-neutral-400" />
+              <Filter className="w-3.5 h-3.5 text-[#756F7A]" />
               <select
                 value={filterAction}
                 onChange={(e) => setFilterAction(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-bold text-[#51465B] focus:outline-none"
+                className="clay-input py-1.5 px-3 text-xs font-bold text-[#51465B]"
               >
                 <option value="ALL">Semua Aksi</option>
                 <option value="LOGIN">Aktivitas Login</option>
@@ -129,14 +130,14 @@ export default function AdminAuditLogsPage() {
               </select>
             </div>
 
-            <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-neutral-100 text-neutral-600 font-bold">
+            <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] font-bold shadow-xs">
               {filteredLogs.length} Log
             </span>
           </div>
         </div>
 
         {/* Audit Log Table */}
-        <div className="bg-white rounded-3xl border border-[#E9E5E8] shadow-xs overflow-hidden">
+        <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-[#E9E5E8] shadow-[0_10px_30px_rgba(81,70,91,0.05)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#FAF7F3] border-b border-[#E9E5E8] text-[#51465B] font-extrabold uppercase text-[10px] tracking-wider">

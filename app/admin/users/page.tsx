@@ -72,24 +72,24 @@ export default function AdminUsersPage() {
     <AdminWorkspaceShell activeGroupId="users">
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-[#E9E5E8] p-6 sm:p-8 shadow-xs">
+        <div className="clay-card p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
                 <Users className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  Manajemen Pengguna Aplikasi (Guru & Murid)
+                  Manajemen Pengguna Aplikasi (Guru &amp; Pengguna Mandiri)
                 </h1>
-                <p className="text-xs text-[#756F7A]">
-                  Pantau akun terdaftar, keanggotaan satuan pendidikan, dan kelola status akses pengguna.
+                <p className="text-xs text-[#756F7A] mt-0.5">
+                  Pantau akun aktif Guru dan pengguna mandiri, afiliasi satuan pendidikan, dan kelola status otorisasi.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#51465B] bg-[#FAF7F3] border border-[#E9E5E8] px-3.5 py-1.5 rounded-full">
+              <span className="text-xs font-bold text-[#51465B] bg-[#FAF7F3] border border-[#E9E5E8] px-4 py-2 rounded-full shadow-xs">
                 Total Akun Terkelola: {users.length}
               </span>
             </div>
@@ -98,14 +98,14 @@ export default function AdminUsersPage() {
 
         {/* Action message */}
         {actionMessage && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 shadow-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{actionMessage}</span>
           </div>
         )}
 
         {/* Filter and Search Bar */}
-        <div className="bg-white rounded-[24px] border border-[#E9E5E8] p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-white rounded-[24px] border border-[#E9E5E8] p-4 shadow-[0_4px_16px_rgba(81,70,91,0.03)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
             <input
@@ -114,40 +114,44 @@ export default function AdminUsersPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fetchUsers()}
               placeholder="Cari nama, email, atau sekolah..."
-              className="w-full pl-10 pr-4 py-2 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs text-[#23212A] font-medium focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+              className="clay-input pl-10 pr-4 text-xs font-medium text-[#23212A]"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {["ALL", "TEACHER", "STUDENT"].map((r) => (
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {[
+              { id: "ALL", label: "Semua Pengguna" },
+              { id: "TEACHER", label: "Guru / Pendidik" },
+              { id: "STUDENT", label: "Data Historis (Legacy)" },
+            ].map((tab) => (
               <button
-                key={r}
+                key={tab.id}
                 type="button"
-                onClick={() => setRoleFilter(r)}
+                onClick={() => setRoleFilter(tab.id)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  roleFilter === r
-                    ? "bg-[#51465B] text-white shadow-xs"
+                  roleFilter === tab.id
+                    ? "bg-[#51465B] text-white shadow-[0_4px_12px_rgba(81,70,91,0.25)]"
                     : "bg-[#FAF7F3] text-[#756F7A] border border-[#E9E5E8] hover:bg-slate-100"
                 }`}
               >
-                {r === "ALL" ? "Semua Peran" : r === "TEACHER" ? "Pendidik / Guru" : "Siswa SD"}
+                {tab.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Users Table */}
-        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-[#E9E5E8] p-6 shadow-xs overflow-hidden">
+        {/* Users Table Container */}
+        <div className="bg-white rounded-[32px] sm:rounded-[36px] border border-[#E9E5E8] p-6 shadow-[0_10px_30px_rgba(81,70,91,0.05)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#E9E5E8] text-[#756F7A] uppercase text-[10px] tracking-wider">
-                  <th className="pb-3 font-bold">Identitas Pengguna</th>
-                  <th className="pb-3 font-bold">Peran (Role)</th>
-                  <th className="pb-3 font-bold">Sekolah Terafiliasi</th>
-                  <th className="pb-3 font-bold">Wilayah</th>
-                  <th className="pb-3 font-bold">Status</th>
-                  <th className="pb-3 font-bold text-right">Tindakan</th>
+                  <th className="pb-3.5 font-bold">Identitas Pengguna</th>
+                  <th className="pb-3.5 font-bold">Peran (Role)</th>
+                  <th className="pb-3.5 font-bold">Sekolah / Afiliasi</th>
+                  <th className="pb-3.5 font-bold">Wilayah</th>
+                  <th className="pb-3.5 font-bold">Status</th>
+                  <th className="pb-3.5 font-bold text-right">Tindakan</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E9E5E8]">
@@ -166,35 +170,39 @@ export default function AdminUsersPage() {
                   </tr>
                 ) : (
                   users.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#FAF7F3]/60 transition-colors">
-                      <td className="py-3.5">
+                    <tr key={u.id} className="hover:bg-[#FAF7F3]/70 transition-colors">
+                      <td className="py-4">
                         <div className="font-extrabold text-[#23212A]">{u.full_name}</div>
                         <div className="text-[11px] text-[#756F7A] font-mono">{u.email}</div>
                       </td>
-                      <td className="py-3.5">
-                        <span
-                          className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
-                            u.role === "TEACHER"
-                              ? "bg-[#51465B] text-white"
-                              : "bg-[#FFD36D] text-[#23212A]"
-                          }`}
-                        >
-                          {u.role === "TEACHER" ? "Pendidik (Guru)" : "Murid Kelas 5 SD"}
-                        </span>
+                      <td className="py-4">
+                        {u.role === "TEACHER" ? (
+                          <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-[#51465B] text-white shadow-xs">
+                            Pendidik (Guru)
+                          </span>
+                        ) : u.role === "STUDENT" ? (
+                          <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            Data Historis (Siswa)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-[#FFD36D]/30 text-[#51465B] border border-[#FFD36D]">
+                            Pengguna Mandiri
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5 font-medium text-[#23212A]">{u.school_name}</td>
-                      <td className="py-3.5 text-[#756F7A]">{u.region_name}</td>
-                      <td className="py-3.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <td className="py-4 font-medium text-[#23212A]">{u.school_name}</td>
+                      <td className="py-4 text-[#756F7A]">{u.region_name}</td>
+                      <td className="py-4">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shadow-xs">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           <span>Aktif</span>
                         </span>
                       </td>
-                      <td className="py-3.5 text-right">
+                      <td className="py-4 text-right">
                         <button
                           type="button"
                           onClick={() => setSelectedUser(u)}
-                          className="px-3 py-1.5 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-[#FAF7F3] transition-colors"
+                          className="px-3.5 py-1.5 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-[#FAF7F3] hover:border-[#51465B]/30 transition-all shadow-xs"
                         >
                           Kelola Akses
                         </button>
@@ -210,7 +218,7 @@ export default function AdminUsersPage() {
         {/* Modal: Deactivate / Action Dialog */}
         {selectedUser && (
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-[32px] max-w-md w-full p-6 sm:p-8 shadow-2xl border border-[#E9E5E8] space-y-4">
+            <div className="bg-white rounded-[32px] sm:rounded-[36px] max-w-md w-full p-6 sm:p-8 shadow-[0_20px_60px_rgba(81,70,91,0.25)] border border-[#E9E5E8] space-y-4 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
                 <h3 className="font-black text-base text-[#23212A]">Kelola Akses Akun</h3>
                 <button
@@ -235,8 +243,8 @@ export default function AdminUsersPage() {
                   rows={3}
                   value={actionReason}
                   onChange={(e) => setActionReason(e.target.value)}
-                  placeholder="Contoh: Permintaan rotasi akun oleh sekolah atau pelanggaran penggunaan..."
-                  className="w-full p-3 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs text-[#23212A] font-medium focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                  placeholder="Contoh: Permintaan rotasi akun oleh sekolah atau pembaruan profil pengajar..."
+                  className="clay-input p-3 text-xs text-[#23212A] font-medium"
                 />
               </div>
 
@@ -244,14 +252,14 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedUser(null)}
-                  className="px-4 py-2 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#756F7A]"
+                  className="px-4 py-2 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#756F7A] hover:bg-slate-50 transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
                   onClick={() => handleToggleStatus(selectedUser)}
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
                 >
                   Simpan Status Akses
                 </button>

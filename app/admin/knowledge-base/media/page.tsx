@@ -60,53 +60,54 @@ export default function AdminKBMetaMediaPage() {
   );
 
   return (
-    <AdminWorkspaceShell>
-      <div className="space-y-6">
+    <AdminWorkspaceShell activeGroupId="kb">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E9E5E8]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#51465B]/60 uppercase tracking-wider mb-1">
-              <span>Local Knowledge Base</span>
-              <span>•</span>
-              <span>Aset Visual Pembelajaran Kontekstual</span>
+        <div className="clay-card p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
+                <ImageIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  Media Aset Creative Commons &amp; Wikimedia
+                </h1>
+                <p className="text-xs text-[#756F7A] mt-0.5 max-w-2xl">
+                  Katalog media visual terkurasi dengan atribusi sah (CC BY-SA) untuk mendukung pembelajaran visual, stimulus soal matematika/IPS berbasis kearifan lokal.
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-black text-[#51465B] flex items-center gap-2.5">
-              <ImageIcon className="w-6 h-6 text-[#FFD36D]" />
-              Media Aset Creative Commons & Wikimedia
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-              Katalog media visual terkurasi dengan atribusi sah (CC BY-SA) untuk mendukung pembelajaran visual, stimulus soal matematika/IPS berbasis kearifan lokal.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchMedia}
-              disabled={loading}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Segarkan Aset
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchMedia}
+                disabled={loading}
+                className="px-4 py-2.5 rounded-2xl bg-white border border-[#E9E5E8] hover:bg-neutral-50 text-xs font-bold text-[#51465B] flex items-center gap-2 shadow-xs transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                Segarkan Aset
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="bg-white rounded-3xl p-4 border border-[#E9E5E8] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-white rounded-[24px] border border-[#E9E5E8] p-4 shadow-[0_4px_16px_rgba(81,70,91,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#756F7A] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari entitas, kota, atau kata kunci gambar..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] focus:bg-white text-xs font-bold text-[#51465B] focus:outline-none focus:ring-2 focus:ring-[#51465B]"
+              className="clay-input pl-10 pr-4 text-xs font-semibold text-[#23212A]"
             />
           </div>
 
           <div className="flex items-center gap-2 text-xs">
             <span className="font-bold text-[#51465B]">{filteredMedia.length} Media Terdaftar</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+            <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold shadow-xs">
               100% Attribution Compliant
             </span>
           </div>
@@ -119,7 +120,7 @@ export default function AdminKBMetaMediaPage() {
             <p className="text-xs text-neutral-400 font-medium">Memuat katalog media visual...</p>
           </div>
         ) : filteredMedia.length === 0 ? (
-          <div className="py-16 text-center bg-white rounded-3xl border border-[#E9E5E8]">
+          <div className="py-16 text-center clay-card">
             <ImageIcon className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
             <p className="text-xs text-neutral-400 font-bold">Tidak ada media yang cocok dengan pencarian.</p>
           </div>
@@ -128,7 +129,7 @@ export default function AdminKBMetaMediaPage() {
             {filteredMedia.map((m) => (
               <div
                 key={m.id}
-                className="bg-white rounded-3xl border border-[#E9E5E8] overflow-hidden shadow-xs hover:border-[#51465B]/30 hover:shadow-md transition-all flex flex-col justify-between"
+                className="bg-white rounded-[28px] border border-[#E9E5E8] overflow-hidden shadow-[0_8px_24px_rgba(81,70,91,0.04)] hover:shadow-[0_12px_32px_rgba(81,70,91,0.08)] hover:border-[#51465B]/30 transition-all flex flex-col justify-between"
               >
                 <div>
                   {/* Image Container */}
