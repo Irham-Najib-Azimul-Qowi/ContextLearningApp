@@ -18,6 +18,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
+import { createClient } from "@/lib/supabase/client";
 
 interface RegionOption {
   code: string;
@@ -67,10 +68,29 @@ export default function OnboardingPage() {
       const intent = localStorage.getItem("pahami_user_intent") || "general";
       setUserIntent(intent);
     }
-    // Default user name proposal if empty
-    if (!fullName) {
-      setFullName("Bapak / Ibu Guru");
-    }
+
+    // Auto-fill user name from Google account if logged in
+    const fetchGoogleUserName = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const meta = user.user_metadata || {};
+          const googleName =
+            meta.full_name ||
+            meta.name ||
+            meta.display_name ||
+            meta.user_name;
+          if (googleName && typeof googleName === "string" && googleName.trim()) {
+            setFullName(googleName.trim());
+          }
+        }
+      } catch {
+        // Fallback silently if offline or mock
+      }
+    };
+
+    fetchGoogleUserName();
   }, []);
 
   // Filter regions by selected province
@@ -204,20 +224,15 @@ export default function OnboardingPage() {
       {/* Consistent Card (Same 480px max-width & #3E3547 theme as Login) */}
       <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-7 sm:p-9 relative overflow-hidden text-white z-10">
         
-        {/* Stepper Header (Clean indicator, no top back button) */}
+        {/* Header: Pertanyaan Form & Progress Bar */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/15">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-[#FFD36D] bg-[#FFD36D]/15 px-3 py-1 rounded-full border border-[#FFD36D]/20">
-              Langkah {step} dari 4
-            </span>
-            <span className="text-xs text-gray-300 font-semibold">
-              {step === 1 && "Identitas"}
-              {step === 2 && "Penggunaan"}
-              {step === 3 && "Lokasi & Wilayah"}
-              {step === 4 && "Konfirmasi"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
+          <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
+            {step === 1 && "Siapa Nama Anda?"}
+            {step === 2 && "Pilih Jenis Penggunaan"}
+            {step === 3 && "Pilih Wilayah Pembelajaran"}
+            {step === 4 && "Konfirmasi Ringkasan"}
+          </h2>
+          <div className="flex items-center gap-1.5 shrink-0">
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
@@ -245,14 +260,11 @@ export default function OnboardingPage() {
             ==================================================================== */}
         {step === 1 && (
           <div className="space-y-5">
-            <div>
-              <div className="w-11 h-11 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-3 border border-white/15">
-                <User className="w-5 h-5 text-[#FFD36D]" />
+            <div className="flex flex-col items-center text-center">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-3 border border-white/15 shadow-sm">
+                <User className="w-7 h-7 text-[#FFD36D]" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Siapa nama Anda?
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-sm">
                 Nama ini akan dicantumkan pada naskah soal dan modul materi pembelajaran yang Anda susun.
               </p>
             </div>
@@ -282,20 +294,6 @@ export default function OnboardingPage() {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Student shortcut */}
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setRoleMode("STUDENT");
-                  router.push("/student/dashboard");
-                }}
-                className="text-xs text-gray-400 hover:text-white transition-colors underline underline-offset-4"
-              >
-                Saya adalah Murid SD yang ingin mengerjakan ujian &rarr;
-              </button>
-            </div>
           </div>
         )}
 
@@ -304,14 +302,9 @@ export default function OnboardingPage() {
             ==================================================================== */}
         {step === 2 && (
           <div className="space-y-5">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Pilih Jenis Penggunaan
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
-                Sesuaikan fokus pembuatan materi pembelajaran kontekstual Anda.
-              </p>
-            </div>
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+              Sesuaikan fokus pembuatan materi pembelajaran kontekstual Anda.
+            </p>
 
             {/* 2 Opsi Horizontal: Ikon di atas, teks di bawah */}
             <div className="grid grid-cols-2 gap-3.5 pt-1">
@@ -407,14 +400,9 @@ export default function OnboardingPage() {
             ==================================================================== */}
         {step === 3 && (
           <div className="space-y-4">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Wilayah Kontekstual Siswa
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
-                AI akan merujuk data komoditas, lingkungan alam, dan cagar budaya dari wilayah terpilih.
-              </p>
-            </div>
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+              AI akan merujuk data komoditas, lingkungan alam, dan cagar budaya dari wilayah terpilih.
+            </p>
 
             {/* Geolocation Button Assistance */}
             <div className="p-3.5 rounded-2xl bg-white/5 border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -543,14 +531,11 @@ export default function OnboardingPage() {
             ==================================================================== */}
         {step === 4 && (
           <div className="space-y-5">
-            <div>
-              <div className="w-11 h-11 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-3 border border-white/15">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-11 h-11 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-2 border border-white/15 shadow-sm">
                 <CheckCircle2 className="w-5 h-5 text-[#FFD36D]" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Konfirmasi Ringkasan Akun
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                 Periksa kembali data Anda sebelum mulai menggunakan workspace pembelajaran Depaskan.
               </p>
             </div>

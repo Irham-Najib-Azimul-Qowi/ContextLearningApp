@@ -143,16 +143,6 @@ function LoginForm() {
             </>
           )}
         </button>
-
-        {/* Direct link to Onboarding for fast evaluation/demo */}
-        <div className="pt-1">
-          <Link
-            href="/auth/onboarding"
-            className="text-[11px] text-gray-300 hover:text-[#FFD36D] font-medium transition-colors underline underline-offset-4"
-          >
-            Lengkapi data profil / onboarding guru &rarr;
-          </Link>
-        </div>
       </div>
 
       {/* 4. BAWAHNYA: KEMBALI KE BERANDA */}
