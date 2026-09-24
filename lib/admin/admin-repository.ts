@@ -18,13 +18,28 @@ import { encryptSecret, maskApiKey, hashPasswordSync } from "./crypto";
 
 // Default Super Admin for Dev / Initial Seed
 const DEFAULT_SALT = "a1b2c3d4e5f67890";
-const DEFAULT_HASH = hashPasswordSync("AdminPahami2026!", DEFAULT_SALT).hash;
+const ADMIN_HASH = hashPasswordSync("admin123", DEFAULT_SALT).hash;
+const SUPERADMIN_HASH = hashPasswordSync("AdminPahami2026!", DEFAULT_SALT).hash;
 
 let ADMIN_ACCOUNTS: AdminAccount[] = [
   {
+    id: "adm-admin-01",
+    username: "admin",
+    password_hash: ADMIN_HASH,
+    salt: DEFAULT_SALT,
+    full_name: "Administrator",
+    role: "SUPER_ADMIN",
+    is_active: true,
+    failed_login_attempts: 0,
+    locked_until: null,
+    last_login_at: "2026-09-24T12:00:00Z",
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-24T12:00:00Z",
+  },
+  {
     id: "adm-super-01",
     username: "superadmin",
-    password_hash: DEFAULT_HASH,
+    password_hash: SUPERADMIN_HASH,
     salt: DEFAULT_SALT,
     full_name: "Super Administrator Developer",
     role: "SUPER_ADMIN",
