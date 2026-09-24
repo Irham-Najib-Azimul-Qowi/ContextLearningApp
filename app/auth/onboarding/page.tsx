@@ -511,7 +511,7 @@ export default function OnboardingPage() {
               </div>
               <h2 className="text-2xl font-black text-[#23212A]">Konfirmasi Ringkasan Akun</h2>
               <p className="text-sm text-[#756F7A] mt-1">
-                Periksa kembali data Anda sebelum mulai menggunakan workspace pembelajaran kontekstual PAHAMI.
+                Periksa kembali data Anda sebelum mulai menggunakan workspace pembelajaran kontekstual Depaskan.
               </p>
             </div>
 
@@ -563,7 +563,7 @@ export default function OnboardingPage() {
                   <span>Menyiapkan Workspace Pembelajaran...</span>
                 ) : (
                   <>
-                    <span>Mulai Menggunakan PAHAMI</span>
+                    <span>Mulai Menggunakan Depaskan</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

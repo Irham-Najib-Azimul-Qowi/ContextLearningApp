@@ -38,7 +38,7 @@ export function IconNavigationRail({
         <Link
           href="/teacher/dashboard"
           className="w-12 h-12 rounded-full border-2 border-[#F47D83] bg-[#FAF7F3] text-[#51465B] flex items-center justify-center font-extrabold shadow-sm hover:scale-105 transition-all cursor-pointer overflow-hidden"
-          title="Profil Guru PAHAMI"
+          title="Profil Guru Depaskan"
           aria-label="Profil Guru"
         >
           <span className="text-sm font-black text-[#51465B]">SD5</span>

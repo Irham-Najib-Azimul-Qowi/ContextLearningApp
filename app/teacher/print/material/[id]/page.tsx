@@ -178,7 +178,7 @@ export default function PrintMaterialPage({ params }: PrintMaterialPageProps) {
 
         {/* FOOTER ATRIBUSI HUKUM */}
         <footer className="mt-8 pt-4 border-t border-slate-300 flex items-center justify-between text-[10px] text-slate-500">
-          <span>PAHAMI V2 — Platform Pembelajaran Kontekstual Berbasis AI</span>
+          <span>Depaskan — Platform Pembelajaran Kontekstual Berbasis AI</span>
           <span>Dokumen Modul Resmi A4</span>
         </footer>
       </main>

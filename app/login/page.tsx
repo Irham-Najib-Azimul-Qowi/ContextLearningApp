@@ -4,6 +4,7 @@ import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, ArrowRight, ShieldCheck, AlertCircle, School, GraduationCap } from "lucide-react";
+import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { createClient } from "@/lib/supabase/client";
 import { repository } from "@/lib/db/repository";
 
@@ -59,15 +60,15 @@ function LoginForm() {
 
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mx-auto mb-4 shadow-sm">
-          <span className="text-2xl font-black text-[#FFD36D]">P</span>
+        <div className="flex justify-center mb-4">
+          <PahamiPuzzleLogo size="md" />
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B] text-xs font-bold mb-3">
           <Sparkles className="w-3.5 h-3.5 text-[#F47D83]" />
-          <span>PAHAMI V2 &bull; Autentikasi Tunggal</span>
+          <span>Depaskan &bull; Autentikasi Tunggal</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
-          Selamat datang di PAHAMI.
+          Selamat datang di Depaskan.
         </h1>
         <p className="text-xs sm:text-sm text-[#756F7A] mt-2 leading-relaxed">
           Platform pembelajaran kontekstual berbasis AI untuk sekolah dasar.

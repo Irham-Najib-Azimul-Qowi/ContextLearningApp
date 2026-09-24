@@ -54,7 +54,7 @@ export default function StudentDashboardPage() {
               Halo, Budi Santoso! 👋
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1.5 max-w-xl leading-relaxed">
-              Selamat datang di PAHAMI! Belajar materi dan kerjakan latihan soal seru yang dekat dengan lingkungan nyata sekitarmu di Ponorogo & Karesidenan Madiun.
+              Selamat datang di Depaskan! Belajar materi dan kerjakan latihan soal seru yang dekat dengan lingkungan nyata sekitarmu di Ponorogo & Karesidenan Madiun.
             </p>
           </div>
 

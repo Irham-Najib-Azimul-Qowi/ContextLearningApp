@@ -92,7 +92,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-black text-lg tracking-tight text-white">PAHAMI</span>
+                    <span className="font-black text-lg tracking-tight text-white">Depaskan</span>
                     <span className="text-[10px] font-black uppercase tracking-wider bg-rose-500 text-white px-2 py-0.5 rounded-full">
                       Control Center
                     </span>
@@ -334,7 +334,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             <header className="bg-white border-b border-[#E9E5E8] px-6 py-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold text-[#756F7A] uppercase tracking-wider">
-                  PAHAMI V2 &bull; Developer Administration
+                  Depaskan &bull; Developer Administration
                 </span>
               </div>
 

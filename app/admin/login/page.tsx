@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white">
-              PAHAMI Control Center
+              Depaskan Control Center
             </h1>
 
             <p className="text-white/80 text-xs sm:text-sm mt-3 leading-relaxed">
@@ -79,7 +79,7 @@ export default function AdminLoginPage() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-white/10 text-[11px] text-white/60">
-            <span>PAHAMI V2 Architecture &bull; Hackathon IT Comp 2026</span>
+            <span>Depaskan Architecture &bull; Hackathon IT Comp 2026</span>
           </div>
         </div>
 

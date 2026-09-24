@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
                 <span>Status Sistem: Terverifikasi & Aktif</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                Pusat Kendali Pengembang PAHAMI V2
+                Pusat Kendali Pengembang Depaskan
               </h1>
               <p className="text-white/80 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
                 Kelola kredensial AI multi-provider, pantau circuit breaker failover, administrasi akun pengguna sekolah, dan sinkronisasi Local Knowledge Base Karesidenan Madiun & Kota Semarang secara remote.

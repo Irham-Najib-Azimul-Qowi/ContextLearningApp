@@ -117,7 +117,7 @@ export function LandingFooter() {
         {/* Bottom Tier: Attribution & Copyright */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[11px] text-white/60">
           <div>
-            <span>&copy; 2026 Tim PAHAMI &bull; Hackathon IT Comp 2026. Hak Cipta Dilindungi.</span>
+            <span>&copy; 2026 Tim Depaskan &bull; Hackathon IT Comp 2026. Hak Cipta Dilindungi.</span>
           </div>
           <div className="flex items-center gap-3">
             <span>Aset Visual: Wikimedia Commons (CC BY-SA)</span>
@@ -132,7 +132,7 @@ export function LandingFooter() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 text-[#23212A]">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E9E5E8] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
-              <h3 className="font-black text-base text-[#51465B]">Kebijakan Privasi Siswa PAHAMI V2</h3>
+              <h3 className="font-black text-base text-[#51465B]">Kebijakan Privasi Siswa Depaskan</h3>
               <button
                 onClick={() => setShowPrivacyModal(false)}
                 className="w-7 h-7 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold text-xs"
@@ -142,7 +142,7 @@ export function LandingFooter() {
             </div>
             <div className="space-y-2.5 text-xs text-[#756F7A] leading-relaxed">
               <p>
-                PAHAMI V2 berkomitmen penuh melindungi privasi siswa sekolah dasar (Kelas 5 Fase C):
+                Depaskan berkomitmen penuh melindungi privasi siswa sekolah dasar (Kelas 5 Fase C):
               </p>
               <ul className="list-disc list-inside space-y-1 pl-1 text-[#23212A] font-medium">
                 <li>Kami tidak mengumpulkan nomor identitas kependudukan anak (NIK) ataupun alamat rumah pribadi.</li>
@@ -178,7 +178,7 @@ export function LandingFooter() {
             </div>
             <div className="space-y-2.5 text-xs text-[#756F7A] leading-relaxed">
               <p>
-                Ketentuan operasional platform PAHAMI V2 untuk kegiatan belajar mengajar:
+                Ketentuan operasional platform Depaskan untuk kegiatan belajar mengajar:
               </p>
               <ul className="list-disc list-inside space-y-1 pl-1 text-[#23212A] font-medium">
                 <li>Platform ini digunakan oleh guru dan siswa untuk menyusun dan mengerjakan materi pembelajaran kontekstual berbasis Kurikulum Merdeka.</li>

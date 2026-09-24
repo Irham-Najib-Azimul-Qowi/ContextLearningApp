@@ -67,7 +67,7 @@ export function StudentWorkspaceShell({ children }: StudentWorkspaceShellProps) 
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-black text-[#23212A] text-lg leading-tight tracking-tight">
-                    PAHAMI Siswa
+                    Depaskan Siswa
                   </span>
                   <span className="text-[10px] font-black uppercase tracking-wider bg-[#FFD36D] text-[#23212A] px-2 py-0.5 rounded-full">
                     Kelas 5 SD

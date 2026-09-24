@@ -301,7 +301,7 @@ export default function PrintExamPage({ params }: PrintExamPageProps) {
 
         {/* FOOTER ATRIBUSI HUKUM & NOMOR DOKUMEN */}
         <footer className="mt-8 pt-4 border-t border-slate-300 flex items-center justify-between text-[10px] text-slate-500">
-          <span>PAHAMI V2 — Basis Pengetahuan Lokal Karesidenan Madiun & Semarang</span>
+          <span>Depaskan — Basis Pengetahuan Lokal Karesidenan Madiun & Semarang</span>
           <span>Lembar Asesmen Resmi Kelas 5 SD</span>
         </footer>
       </main>

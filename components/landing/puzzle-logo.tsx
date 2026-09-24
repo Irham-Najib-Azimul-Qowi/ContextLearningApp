@@ -11,9 +11,9 @@ interface PahamiPuzzleLogoProps {
 }
 
 /**
- * PahamiPuzzleLogo
- * Custom brand identity logo: Capital letter 'D' constructed as a rounded puzzle piece,
- * backed by an exact-match hard offset silhouette shadow that mirrors the puzzle contour.
+ * DepaskanLogo / PahamiPuzzleLogo
+ * Brand identity logo: Capital letter 'D' constructed as a rounded puzzle piece,
+ * followed directly by lowercase text "epaskan" in exact vertical center alignment so it reads "Depaskan".
  */
 export function PahamiPuzzleLogo({
   size = "md",
@@ -21,11 +21,11 @@ export function PahamiPuzzleLogo({
   className = "",
   theme = "light",
 }: PahamiPuzzleLogoProps) {
-  // Dimensions scale
+  // Dimensions scale: tuned so the 'D' puzzle glyph and 'epaskan' text align in the exact vertical center
   const sizeMap = {
-    sm: { icon: 34, text: "text-lg", badge: "text-[9px]" },
-    md: { icon: 44, text: "text-2xl", badge: "text-[10px]" },
-    lg: { icon: 56, text: "text-3xl", badge: "text-xs" },
+    sm: { icon: 34, text: "text-2xl" },
+    md: { icon: 44, text: "text-3xl" },
+    lg: { icon: 56, text: "text-4xl" },
   };
 
   const currentSize = sizeMap[size];
@@ -59,12 +59,12 @@ export function PahamiPuzzleLogo({
   return (
     <Link
       href="/"
-      className={`inline-flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
-      aria-label="Beranda PAHAMI V2"
+      className={`inline-flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
+      aria-label="Beranda Depaskan"
     >
-      {/* Puzzle D SVG Icon */}
+      {/* Puzzle D SVG Icon (Acts as the capital letter 'D') */}
       <div
-        className="relative shrink-0 select-none group-hover:-translate-y-0.5 transition-transform duration-200"
+        className="relative shrink-0 select-none group-hover:-translate-y-0.5 transition-transform duration-200 flex items-center justify-center"
         style={{ width: currentSize.icon, height: currentSize.icon }}
       >
         <svg
@@ -82,7 +82,7 @@ export function PahamiPuzzleLogo({
             className="opacity-95"
           />
 
-          {/* 2. Main Puzzle Letter D Body in Warm Yellow (#FFD36D) or Coral (#F47D83) */}
+          {/* 2. Main Puzzle Letter D Body in Warm Yellow (#FFD36D) */}
           <path
             d={puzzleDPath}
             fill="#FFD36D"
@@ -106,36 +106,19 @@ export function PahamiPuzzleLogo({
         </svg>
       </div>
 
-      {/* Brand Typography */}
+      {/* Brand Typography: Lowercase "epaskan" perfectly centered vertically with the 'D' puzzle glyph */}
       {showText && (
-        <div className="flex flex-col text-left">
-          <div className="flex items-center gap-2">
-            <span
-              className={`font-black tracking-tight leading-none ${currentSize.text} ${
-                theme === "dark" ? "text-white" : "text-[#51465B]"
-              }`}
-            >
-              PAHAMI
-            </span>
-            <span
-              className={`font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${currentSize.badge} ${
-                theme === "dark"
-                  ? "bg-white/15 text-[#FFD36D] border border-white/20"
-                  : "bg-[#FFD36D] text-[#51465B] border border-[#51465B]/20 shadow-2xs"
-              }`}
-            >
-              V2
-            </span>
-          </div>
-          <span
-            className={`text-[10px] sm:text-[11px] font-semibold tracking-normal mt-0.5 ${
-              theme === "dark" ? "text-white/70" : "text-[#756F7A]"
-            }`}
-          >
-            Pembelajaran Kontekstual AI
-          </span>
-        </div>
+        <span
+          className={`font-black tracking-tight leading-none lowercase select-none ${currentSize.text} ${
+            theme === "dark" ? "text-white" : "text-[#51465B]"
+          }`}
+          style={{ transform: "translateY(-1px)" }}
+        >
+          epaskan
+        </span>
       )}
     </Link>
   );
 }
+
+export const DepaskanLogo = PahamiPuzzleLogo;
