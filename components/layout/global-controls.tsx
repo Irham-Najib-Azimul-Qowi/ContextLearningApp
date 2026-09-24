@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
 import { School, AppNotification } from "@/lib/db/types";
+import { createClient } from "@/lib/supabase/client";
 
 export function GlobalControls() {
   const router = useRouter();
@@ -76,8 +77,14 @@ export function GlobalControls() {
     router.push("/student/dashboard");
   };
 
-  const handleLogout = () => {
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn("Sign out exception:", e);
+    }
+    router.push("/login");
   };
 
   const handleMarkNotifRead = (id: string) => {
