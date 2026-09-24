@@ -77,7 +77,21 @@ export const TEACHER_NAV_GROUPS: NavGroup[] = [
     label: "Materi (Mattext)",
     icon: BookOpen,
     href: "/teacher/materials",
-    hasSubmenu: false,
+    hasSubmenu: true,
+    subitems: [
+      {
+        id: "materials-all",
+        label: "Semua Modul Materi",
+        href: "/teacher/materials",
+        description: "Modul ajar kurikulum terkontekstualisasi",
+      },
+      {
+        id: "materials-new",
+        label: "Buat Materi Baru",
+        href: "/teacher/materials/new",
+        description: "Susun modul ajar berbasis konteks lokal",
+      },
+    ],
   },
   {
     id: "classes",
@@ -93,16 +107,31 @@ export const TEACHER_NAV_GROUPS: NavGroup[] = [
         description: "Kelola kelas dan kode gabung siswa",
       },
       {
-        id: "classes-materials",
-        label: "Materi Pembelajaran",
-        href: "/teacher/materials",
-        description: "Materi ajar berkonteks lokal",
-      },
-      {
         id: "classes-exams",
         label: "Ujian Kelas",
         href: "/teacher/examinations",
         description: "Jadwal dan sesi ujian kelas",
+      },
+    ],
+  },
+  {
+    id: "evaluation",
+    label: "Evaluasi & Hasil",
+    icon: ClipboardCheck,
+    href: "/teacher/examinations",
+    hasSubmenu: true,
+    subitems: [
+      {
+        id: "eval-exams",
+        label: "Daftar Ujian",
+        href: "/teacher/examinations",
+        description: "Ruang ujian aktif dan terjadwal",
+      },
+      {
+        id: "eval-essay",
+        label: "Pemeriksaan Jawaban",
+        href: "/teacher/examinations/review-essay",
+        description: "Penilaian esai dengan bantuan AI",
       },
     ],
   },
