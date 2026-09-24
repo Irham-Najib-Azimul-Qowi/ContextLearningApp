@@ -202,13 +202,14 @@ ALTER TABLE public.exam_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- Schools: Anyone authenticated can read registered schools
+DROP POLICY IF EXISTS "Schools are viewable by authenticated users" ON public.schools;
 CREATE POLICY "Schools are viewable by authenticated users"
     ON public.schools FOR SELECT
     TO authenticated
     USING (true);
 
 -- User Profiles:
--- Users can view their own profile or profiles within their school
+DROP POLICY IF EXISTS "Users can read relevant profiles" ON public.user_profiles;
 CREATE POLICY "Users can read relevant profiles"
     ON public.user_profiles FOR SELECT
     TO authenticated
@@ -217,25 +218,28 @@ CREATE POLICY "Users can read relevant profiles"
         school_id IN (SELECT school_id FROM public.user_profiles WHERE id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.user_profiles;
 CREATE POLICY "Users can update their own profile"
     ON public.user_profiles FOR UPDATE
     TO authenticated
     USING (id = auth.uid())
     WITH CHECK (id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert their own initial profile" ON public.user_profiles;
 CREATE POLICY "Users can insert their own initial profile"
     ON public.user_profiles FOR INSERT
     TO authenticated
     WITH CHECK (id = auth.uid());
 
 -- Classrooms:
--- Teachers can manage their classrooms; enrolled students can read their classrooms
+DROP POLICY IF EXISTS "Teachers can manage classrooms" ON public.classrooms;
 CREATE POLICY "Teachers can manage classrooms"
     ON public.classrooms FOR ALL
     TO authenticated
     USING (teacher_id = auth.uid())
     WITH CHECK (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Students can read their enrolled classrooms" ON public.classrooms;
 CREATE POLICY "Students can read their enrolled classrooms"
     ON public.classrooms FOR SELECT
     TO authenticated
@@ -244,11 +248,13 @@ CREATE POLICY "Students can read their enrolled classrooms"
     );
 
 -- Class Memberships:
+DROP POLICY IF EXISTS "Students can enroll via class code" ON public.class_memberships;
 CREATE POLICY "Students can enroll via class code"
     ON public.class_memberships FOR INSERT
     TO authenticated
     WITH CHECK (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can view memberships of their classes" ON public.class_memberships;
 CREATE POLICY "Users can view memberships of their classes"
     ON public.class_memberships FOR SELECT
     TO authenticated
@@ -258,7 +264,7 @@ CREATE POLICY "Users can view memberships of their classes"
     );
 
 -- Questions:
--- Teachers can manage questions belonging to their school
+DROP POLICY IF EXISTS "Teachers manage questions" ON public.questions;
 CREATE POLICY "Teachers manage questions"
     ON public.questions FOR ALL
     TO authenticated
@@ -270,6 +276,7 @@ CREATE POLICY "Teachers manage questions"
     );
 
 -- Learning Materials:
+DROP POLICY IF EXISTS "Teachers manage learning materials" ON public.learning_materials;
 CREATE POLICY "Teachers manage learning materials"
     ON public.learning_materials FOR ALL
     TO authenticated
@@ -280,6 +287,7 @@ CREATE POLICY "Teachers manage learning materials"
         )
     );
 
+DROP POLICY IF EXISTS "Students view published learning materials" ON public.learning_materials;
 CREATE POLICY "Students view published learning materials"
     ON public.learning_materials FOR SELECT
     TO authenticated
@@ -292,6 +300,7 @@ CREATE POLICY "Students view published learning materials"
     );
 
 -- Exams:
+DROP POLICY IF EXISTS "Teachers manage exams" ON public.exams;
 CREATE POLICY "Teachers manage exams"
     ON public.exams FOR ALL
     TO authenticated
@@ -303,6 +312,7 @@ CREATE POLICY "Teachers manage exams"
         )
     );
 
+DROP POLICY IF EXISTS "Students view published exams for their class" ON public.exams;
 CREATE POLICY "Students view published exams for their class"
     ON public.exams FOR SELECT
     TO authenticated
@@ -315,12 +325,14 @@ CREATE POLICY "Students view published exams for their class"
     );
 
 -- Exam Attempts:
+DROP POLICY IF EXISTS "Students manage their own exam attempts" ON public.exam_attempts;
 CREATE POLICY "Students manage their own exam attempts"
     ON public.exam_attempts FOR ALL
     TO authenticated
     USING (student_id = auth.uid())
     WITH CHECK (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers view and grade attempts of their exams" ON public.exam_attempts;
 CREATE POLICY "Teachers view and grade attempts of their exams"
     ON public.exam_attempts FOR ALL
     TO authenticated
@@ -331,6 +343,7 @@ CREATE POLICY "Teachers view and grade attempts of their exams"
     );
 
 -- Notifications:
+DROP POLICY IF EXISTS "Users manage their own notifications" ON public.notifications;
 CREATE POLICY "Users manage their own notifications"
     ON public.notifications FOR ALL
     TO authenticated
