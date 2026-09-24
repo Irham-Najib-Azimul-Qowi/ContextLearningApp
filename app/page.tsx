@@ -28,6 +28,45 @@ export default function HomePage() {
           <p className="text-base sm:text-lg text-slate-700 leading-relaxed max-w-2xl">
             Pahami membantu guru membuat dan menyesuaikan materi serta soal pembelajaran dengan konteks lokal wilayah Keresidenan Madiun.
           </p>
+
+          {/* Quick Entry Portals */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mt-8">
+            <a
+              href="/teacher/dashboard"
+              className="inline-flex items-center justify-between gap-3 px-6 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md hover:shadow-lg transition-all group"
+            >
+              <div className="text-left">
+                <div className="text-xs uppercase tracking-wider text-indigo-200 font-bold">
+                  Akses Utama
+                </div>
+                <div className="text-base font-extrabold">Portal Workspace Guru</div>
+                <div className="text-xs text-indigo-100 font-normal">
+                  Bank Soal, Generator AI, Kontekstualisasi & Kelas
+                </div>
+              </div>
+              <span className="p-2 rounded-xl bg-white/20 group-hover:translate-x-1 transition-transform">
+                &rarr;
+              </span>
+            </a>
+
+            <a
+              href="/student/dashboard"
+              className="inline-flex items-center justify-between gap-3 px-6 py-4 rounded-2xl bg-white hover:bg-sky-50 border-2 border-sky-400 text-sky-950 font-semibold shadow-sm hover:shadow transition-all group"
+            >
+              <div className="text-left">
+                <div className="text-xs uppercase tracking-wider text-sky-600 font-bold">
+                  Siswa SD
+                </div>
+                <div className="text-base font-extrabold text-slate-900">Portal Belajar Murid</div>
+                <div className="text-xs text-slate-500 font-normal">
+                  Materi Bacaan Lokal & Pengerjaan Ujian
+                </div>
+              </div>
+              <span className="p-2 rounded-xl bg-sky-100 text-sky-700 group-hover:translate-x-1 transition-transform">
+                &rarr;
+              </span>
+            </a>
+          </div>
         </header>
 
         {/* Regional Focus Grid */}
