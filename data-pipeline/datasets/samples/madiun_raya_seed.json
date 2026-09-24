@@ -1,6 +1,14 @@
 {
   "regions": [
     {
+      "region_id": "35",
+      "name": "Jawa Timur",
+      "popular_name": "Provinsi Jawa Timur",
+      "level": "province",
+      "parent_id": null,
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
       "region_id": "35.77",
       "name": "Kota Madiun",
       "popular_name": "Kota Pendekar",
@@ -46,6 +54,206 @@
       "popular_name": "Kota 1001 Goa",
       "level": "regency",
       "parent_id": "35",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.77.01",
+      "name": "Kecamatan Kartoharjo",
+      "popular_name": "Kartoharjo",
+      "level": "district",
+      "parent_id": "35.77",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.77.02",
+      "name": "Kecamatan Manguharjo",
+      "popular_name": "Manguharjo",
+      "level": "district",
+      "parent_id": "35.77",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.77.03",
+      "name": "Kecamatan Taman",
+      "popular_name": "Taman",
+      "level": "district",
+      "parent_id": "35.77",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19.01",
+      "name": "Kecamatan Kebonsari",
+      "popular_name": "Kebonsari",
+      "level": "district",
+      "parent_id": "35.19",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19.02",
+      "name": "Kecamatan Geger",
+      "popular_name": "Geger",
+      "level": "district",
+      "parent_id": "35.19",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19.03",
+      "name": "Kecamatan Dolopo",
+      "popular_name": "Dolopo",
+      "level": "district",
+      "parent_id": "35.19",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19.04",
+      "name": "Kecamatan Dagangan",
+      "popular_name": "Dagangan",
+      "level": "district",
+      "parent_id": "35.19",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19.05",
+      "name": "Kecamatan Wungu",
+      "popular_name": "Wungu",
+      "level": "district",
+      "parent_id": "35.19",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.19.06",
+      "name": "Kecamatan Saradan",
+      "popular_name": "Saradan",
+      "level": "district",
+      "parent_id": "35.19",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.21.01",
+      "name": "Kecamatan Sine",
+      "popular_name": "Sine",
+      "level": "district",
+      "parent_id": "35.21",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.21.02",
+      "name": "Kecamatan Ngrambe",
+      "popular_name": "Ngrambe",
+      "level": "district",
+      "parent_id": "35.21",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.21.03",
+      "name": "Kecamatan Jogorogo",
+      "popular_name": "Jogorogo",
+      "level": "district",
+      "parent_id": "35.21",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.21.04",
+      "name": "Kecamatan Kendal",
+      "popular_name": "Kendal",
+      "level": "district",
+      "parent_id": "35.21",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.20.01",
+      "name": "Kecamatan Poncol",
+      "popular_name": "Poncol",
+      "level": "district",
+      "parent_id": "35.20",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.20.02",
+      "name": "Kecamatan Parang",
+      "popular_name": "Parang",
+      "level": "district",
+      "parent_id": "35.20",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.20.03",
+      "name": "Kecamatan Lembeyan",
+      "popular_name": "Lembeyan",
+      "level": "district",
+      "parent_id": "35.20",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.20.04",
+      "name": "Kecamatan Plaosan",
+      "popular_name": "Plaosan",
+      "level": "district",
+      "parent_id": "35.20",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.02.01",
+      "name": "Kecamatan Slahung",
+      "popular_name": "Slahung",
+      "level": "district",
+      "parent_id": "35.02",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.02.02",
+      "name": "Kecamatan Ngrayun",
+      "popular_name": "Ngrayun",
+      "level": "district",
+      "parent_id": "35.02",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.02.03",
+      "name": "Kecamatan Bungkal",
+      "popular_name": "Bungkal",
+      "level": "district",
+      "parent_id": "35.02",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.02.04",
+      "name": "Kecamatan Sambit",
+      "popular_name": "Sambit",
+      "level": "district",
+      "parent_id": "35.02",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.01.01",
+      "name": "Kecamatan Donorojo",
+      "popular_name": "Donorojo",
+      "level": "district",
+      "parent_id": "35.01",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.01.02",
+      "name": "Kecamatan Pringkuku",
+      "popular_name": "Pringkuku",
+      "level": "district",
+      "parent_id": "35.01",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.01.03",
+      "name": "Kecamatan Punung",
+      "popular_name": "Punung",
+      "level": "district",
+      "parent_id": "35.01",
+      "code_source": "BPS_KEMENDAGRI_2024"
+    },
+    {
+      "region_id": "35.01.04",
+      "name": "Kecamatan Pacitan",
+      "popular_name": "Pacitan",
+      "level": "district",
+      "parent_id": "35.01",
       "code_source": "BPS_KEMENDAGRI_2024"
     }
   ],

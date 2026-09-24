@@ -1,4 +1,5 @@
 import { ContextCandidateEntity } from "./types";
+import { getLkbSupabaseClient, isLkbConfigured } from "../supabase/lkb-client";
 
 export interface RetrievalRequest {
   region_id: string; // e.g. "35.02" for Ponorogo
@@ -7,10 +8,16 @@ export interface RetrievalRequest {
   subject?: string | null;
   grade?: number | null;
   limit?: number;
+  mode?: "structured_lexical" | "semantic" | "hybrid";
 }
 
 export interface RetrievalResponse {
   results: ContextCandidateEntity[];
+  requested_region_id?: string;
+  matched_region_id?: string;
+  region_fallback_level?: "exact" | "district_to_regency" | "regency_to_residency" | "none";
+  retrieval_mode_used?: "structured_lexical" | "semantic" | "hybrid";
+  warnings?: string[];
 }
 
 export interface LocalContextRetriever {
@@ -180,23 +187,39 @@ export class MockLocalContextRetriever implements LocalContextRetriever {
   async retrieve(request: RetrievalRequest): Promise<RetrievalResponse> {
     const limit = request.limit || 5;
     let candidates = MOCK_KNOWLEDGE_BASE;
+    let matchedRegionId = request.region_id;
+    let fallbackLevel: "exact" | "district_to_regency" | "regency_to_residency" | "none" = "exact";
 
-    // Filter by Region ID if provided
+    // Filter by Region ID if provided (including district fallback)
     if (request.region_id) {
-      const regionMatches = candidates.filter((item) => item.region_id === request.region_id);
-      if (regionMatches.length > 0) {
-        candidates = regionMatches;
+      let targetRegion = request.region_id;
+      let regionMatches = candidates.filter((item) => item.region_id === targetRegion);
+      if (regionMatches.length === 0 && targetRegion.includes(".")) {
+        const parts = targetRegion.split(".");
+        if (parts.length >= 3) {
+          targetRegion = `${parts[0]}.${parts[1]}`;
+          regionMatches = candidates.filter((item) => item.region_id === targetRegion);
+          if (regionMatches.length > 0) {
+            fallbackLevel = "district_to_regency";
+            matchedRegionId = targetRegion;
+          }
+        }
       }
+      candidates = regionMatches;
     }
 
-    // Filter by Category if provided
-    if (request.category) {
-      const catMatches = candidates.filter(
-        (item) => item.category.toLowerCase() === request.category?.toLowerCase()
-      );
-      if (catMatches.length > 0) {
-        candidates = catMatches;
-      }
+    // Filter by Category if provided (strict matching with alias mapping)
+    if (request.category && candidates.length > 0) {
+      const catLower = request.category.toLowerCase();
+      candidates = candidates.filter((item) => {
+        const itemCat = item.category.toLowerCase();
+        return (
+          itemCat === catLower ||
+          (catLower === "commodity" && (itemCat === "commodity" || itemCat === "livelihood")) ||
+          (catLower === "tradition" && (itemCat === "tradition" || itemCat === "culture")) ||
+          (catLower === "location" && (itemCat === "location" || itemCat === "built_environment" || itemCat === "geography"))
+        );
+      });
     }
 
     // Query relevance matching
@@ -217,8 +240,72 @@ export class MockLocalContextRetriever implements LocalContextRetriever {
 
     return {
       results: scored.slice(0, limit).map((s) => s.item),
+      requested_region_id: request.region_id,
+      matched_region_id: request.region_id,
+      region_fallback_level: "exact",
+      retrieval_mode_used: "structured_lexical",
+      warnings: [],
     };
   }
 }
 
-export const defaultRetriever: LocalContextRetriever = new MockLocalContextRetriever();
+export class SupabaseLocalContextRetriever implements LocalContextRetriever {
+  private fallbackRetriever = new MockLocalContextRetriever();
+
+  async retrieve(request: RetrievalRequest): Promise<RetrievalResponse> {
+    if (!isLkbConfigured()) {
+      return this.fallbackRetriever.retrieve(request);
+    }
+
+    try {
+      const supabase = getLkbSupabaseClient();
+      if (!supabase) {
+        return this.fallbackRetriever.retrieve(request);
+      }
+
+      const { data, error } = await supabase.rpc("lkb_retrieve_context", {
+        p_region_id: request.region_id,
+        p_category: request.category || null,
+        p_subcategory: null,
+        p_query: request.query || "",
+        p_grade: request.grade || null,
+        p_subject: request.subject || null,
+        p_limit: request.limit || 5,
+        p_mode: request.mode || "structured_lexical",
+      });
+
+      if (error) {
+        console.warn("[LKB Supabase] RPC call failed, falling back to local verified cache:", error.message);
+        return this.fallbackRetriever.retrieve(request);
+      }
+
+      const rawResults = data?.results || [];
+      const results: ContextCandidateEntity[] = rawResults.map((item: any) => ({
+        entity_id: item.entity_id,
+        region_id: item.region_id,
+        region_name: item.region_name || request.region_id,
+        name: item.name || item.canonical_name,
+        category: item.category,
+        description: item.description || item.short_description || item.educational_usage || "",
+        source_url: item.source_url || (item.evidence && item.evidence[0]?.url) || undefined,
+        verification_status: item.verification_status || "verified",
+      }));
+
+      return {
+        results,
+        requested_region_id: data?.requested_region_id || request.region_id,
+        matched_region_id: data?.matched_region_id || request.region_id,
+        region_fallback_level: data?.region_fallback_level || "exact",
+        retrieval_mode_used: data?.retrieval_mode_used || "structured_lexical",
+        warnings: data?.warnings || [],
+      };
+    } catch (err: any) {
+      console.warn("[LKB Supabase] Unexpected retrieval error, falling back:", err?.message || err);
+      return this.fallbackRetriever.retrieve(request);
+    }
+  }
+}
+
+export const defaultRetriever: LocalContextRetriever = isLkbConfigured()
+  ? new SupabaseLocalContextRetriever()
+  : new MockLocalContextRetriever();

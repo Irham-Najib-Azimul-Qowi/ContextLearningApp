@@ -56,9 +56,10 @@ def generate_sql_seed(
     lines.append("-- 1. Regions")
     for r in regions:
         p_name = f"'{r.popular_name}'" if r.popular_name else "NULL"
+        p_parent = f"'{r.parent_id}'" if r.parent_id else "NULL"
         lines.append(
             f"INSERT INTO lkb_regions (region_id, name, popular_name, level, parent_id, code_source) "
-            f"VALUES ('{r.region_id}', '{r.name}', {p_name}, '{r.level}', '{r.parent_id}', '{r.code_source}') "
+            f"VALUES ('{r.region_id}', '{r.name}', {p_name}, '{r.level}', {p_parent}, '{r.code_source}') "
             f"ON CONFLICT (region_id) DO UPDATE SET name = EXCLUDED.name, popular_name = EXCLUDED.popular_name;"
         )
     lines.append("")
