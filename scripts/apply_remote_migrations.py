@@ -72,6 +72,7 @@ def main():
         ("1. Local Knowledge Base & pgvector", project_root / "supabase" / "migrations" / "20260923140000_local_knowledge.sql"),
         ("2. Madiun Raya Verified Seed Dataset", project_root / "supabase" / "seed" / "20260923150000_madiun_raya_seed.sql"),
         ("3. Core LMS Schema & Multi-Tenant RLS", project_root / "supabase" / "migrations" / "20260924000000_pahami_core_schema.sql"),
+        ("4. Kota Semarang Expansion & Media Assets", project_root / "supabase" / "migrations" / "20260924010000_semarang_and_media.sql"),
     ]
 
     for title, filepath in migrations:
@@ -113,6 +114,8 @@ def main():
         ("Wilayah LKB (lkb_regions)", "SELECT count(*) FROM public.lkb_regions;"),
         ("Entitas Lokal (lkb_entities)", "SELECT count(*) FROM public.lkb_entities;"),
         ("Fakta & Bukti Sumber (lkb_entity_evidence)", "SELECT count(*) FROM public.lkb_entity_evidence;"),
+        ("Aset Media Visual (lkb_media_assets)", "SELECT count(*) FROM public.lkb_media_assets;"),
+        ("Relasi Media Entitas (lkb_entity_media_relations)", "SELECT count(*) FROM public.lkb_entity_media_relations;"),
         ("Sekolah Terdaftar (schools)", "SELECT count(*) FROM public.schools;"),
         ("Kelas (classrooms)", "SELECT count(*) FROM public.classrooms;"),
         ("Bank Soal (questions)", "SELECT count(*) FROM public.questions;"),

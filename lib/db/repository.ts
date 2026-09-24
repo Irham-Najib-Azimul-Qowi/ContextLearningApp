@@ -34,6 +34,24 @@ const SEED_SCHOOLS: School[] = [
     address: "Jl. Pahlawan No. 45, Kartoharjo, Madiun",
     created_at: "2026-09-01T08:00:00Z",
   },
+  {
+    id: "sch-semarang-01",
+    name: "SD Negeri 1 Semarang Tengah",
+    slug: "sdn-1-semarang-tengah",
+    region_id: "33.74",
+    region_name: "Kota Semarang",
+    address: "Jl. Pemuda No. 12, Semarang Tengah, Kota Semarang",
+    created_at: "2026-09-01T08:00:00Z",
+  },
+  {
+    id: "school-individual",
+    name: "Workspace Pembelajaran Mandiri",
+    slug: "workspace-mandiri",
+    region_id: "33.74",
+    region_name: "Kota Semarang",
+    address: "Penggunaan Mandiri / Perorangan",
+    created_at: "2026-09-01T08:00:00Z",
+  },
 ];
 
 const SEED_USERS: UserProfile[] = [

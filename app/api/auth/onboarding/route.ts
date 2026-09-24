@@ -7,7 +7,7 @@ const VALID_TEACHER_PASSCODE = "GURU-PAHAMI-2026";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { role, fullName, schoolId, teacherPasscode, classCode } = body;
+    const { role, fullName, schoolId, teacherPasscode, classCode, usageMode, regionId, regionName, schoolName, intent } = body;
 
     if (!role || !fullName) {
       return NextResponse.json(
@@ -33,20 +33,19 @@ export async function POST(request: Request) {
     const email = supabaseUser ? supabaseUser.email : `${role.toLowerCase()}.${Date.now()}@pahami.local`;
 
     if (role === "TEACHER") {
-      // Validate teacher verification code
-      if (!teacherPasscode || teacherPasscode.trim() !== VALID_TEACHER_PASSCODE) {
-        return NextResponse.json(
-          { error: "Kode verifikasi guru tidak valid. Hubungi pengelola sekolah atau gunakan 'GURU-PAHAMI-2026'." },
-          { status: 403 }
-        );
+      const isIndividual = usageMode === "individual";
+
+      // Validate teacher verification code only if school mode
+      if (!isIndividual) {
+        if (!teacherPasscode || teacherPasscode.trim() !== VALID_TEACHER_PASSCODE) {
+          return NextResponse.json(
+            { error: "Kode sandi guru tidak valid. Hubungi pengelola sekolah atau gunakan 'GURU-PAHAMI-2026'." },
+            { status: 403 }
+          );
+        }
       }
 
-      if (!schoolId) {
-        return NextResponse.json(
-          { error: "Sekolah penugasan guru wajib dipilih." },
-          { status: 400 }
-        );
-      }
+      const assignedSchoolId = schoolId || (isIndividual ? "school-individual" : "sch-ponorogo-01");
 
       // If Supabase is connected, write to user_profiles table
       if (supabase && supabaseUser) {
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
           email,
           full_name: fullName.trim(),
           role: "TEACHER",
-          school_id: schoolId,
+          school_id: assignedSchoolId,
           is_verified: true,
           updated_at: new Date().toISOString(),
         });
@@ -67,12 +66,21 @@ export async function POST(request: Request) {
 
       // Also persist in local repository state for client-side navigation
       repository.setCurrentRole("TEACHER");
-      repository.setActiveSchoolId(schoolId);
+      repository.setActiveSchoolId(assignedSchoolId);
+
+      let redirectUrl = "/teacher/dashboard";
+      if (intent === "question") {
+        redirectUrl = "/teacher/questions/new";
+      } else if (intent === "material") {
+        redirectUrl = "/teacher/materials/new";
+      }
 
       return NextResponse.json({
         success: true,
-        redirectUrl: "/teacher/dashboard",
-        message: "Profil guru berhasil diverifikasi dan didaftarkan.",
+        redirectUrl,
+        message: isIndividual
+          ? "Workspace mandiri Anda berhasil disiapkan."
+          : "Profil guru berhasil diverifikasi dan didaftarkan.",
       });
     } else if (role === "STUDENT") {
       if (!classCode) {

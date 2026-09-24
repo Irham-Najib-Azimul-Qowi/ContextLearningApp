@@ -30,38 +30,38 @@ export function IconNavigationRail({
 
   return (
     <aside
-      className="w-[72px] sm:w-[76px] bg-slate-50 border-r border-slate-200 flex flex-col items-center py-3.5 shrink-0 z-30 select-none h-screen sticky top-0"
+      className="w-[72px] sm:w-[76px] bg-[#51465B] border-r border-[#3E3547] flex flex-col items-center py-4 shrink-0 z-30 select-none h-screen sticky top-0 text-white"
       aria-label="Rel Navigasi Ruang Kerja Guru"
     >
-      {/* 1. BRAND LOGO AT TOP OF RAIL */}
-      <div className="relative flex items-center group/tooltip w-full justify-center pl-2 mb-2">
+      {/* 1. BRAND AVATAR / LOGO AT TOP OF RAIL */}
+      <div className="relative flex items-center group/tooltip w-full justify-center mb-3">
         <Link
           href="/teacher/dashboard"
-          className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xs hover:bg-indigo-700 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 active:scale-95"
-          title="Pahami"
-          aria-label="Pahami"
+          className="w-12 h-12 rounded-full border-2 border-[#F47D83] bg-[#FAF7F3] text-[#51465B] flex items-center justify-center font-extrabold shadow-sm hover:scale-105 transition-all cursor-pointer overflow-hidden"
+          title="Profil Guru PAHAMI"
+          aria-label="Profil Guru"
         >
-          <Sparkles className="w-5 h-5" />
+          <span className="text-sm font-black text-[#51465B]">SD5</span>
         </Link>
 
         {/* Accessible Tooltip */}
         <div
           role="tooltip"
-          className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
+          className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-[#23212A] text-white text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
         >
-          Pahami
+          Workspace Guru SD
           <div
-            className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-slate-900"
+            className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-[#23212A]"
             aria-hidden="true"
           />
         </div>
       </div>
 
       {/* Subtle Divider */}
-      <div className="w-8 h-[1px] bg-slate-200 shrink-0 mb-3 ml-2" aria-hidden="true" />
+      <div className="w-8 h-[1px] bg-white/15 shrink-0 mb-4" aria-hidden="true" />
 
       {/* 2. VERTICAL MENU GROUPS */}
-      <div className="flex-1 flex flex-col items-center gap-2.5 w-full">
+      <div className="flex-1 flex flex-col items-center gap-3 w-full">
         {TEACHER_NAV_GROUPS.map((group) => {
           const isHighlighted = openGroupId
             ? group.id === openGroupId
@@ -70,25 +70,25 @@ export function IconNavigationRail({
           const Icon = group.icon;
 
           return (
-            <div key={group.id} className="relative flex items-center group/tooltip w-full justify-center pl-2">
+            <div key={group.id} className="relative flex items-center group/tooltip w-full justify-center">
               {/* Left Active Indicator Bar */}
               <div
-                className={`absolute left-1 w-1 rounded-full transition-all duration-200 ${
+                className={`absolute left-0.5 w-1 rounded-full transition-all duration-200 ${
                   isHighlighted
-                    ? "h-8 bg-indigo-600 opacity-100"
-                    : "h-2 bg-slate-300 opacity-0 group-hover/tooltip:opacity-100 group-hover/tooltip:h-4"
+                    ? "h-8 bg-[#F47D83] opacity-100"
+                    : "h-2 bg-white/30 opacity-0 group-hover/tooltip:opacity-100 group-hover/tooltip:h-4"
                 }`}
                 aria-hidden="true"
               />
 
-              {/* Icon Button: Circular when inactive, morphs to squircle (rounded-2xl) when active */}
+              {/* Icon Button */}
               <button
                 type="button"
                 onClick={() => handleGroupClick(group)}
-                className={`w-11 h-11 flex items-center justify-center transition-all duration-200 ease-in-out relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-200 ease-in-out relative cursor-pointer focus:outline-hidden ${
                   isHighlighted
-                    ? "rounded-2xl bg-indigo-600 text-white shadow-xs font-semibold"
-                    : "rounded-full hover:rounded-2xl bg-white text-slate-600 hover:text-slate-950 hover:bg-slate-100 border border-slate-200 shadow-2xs"
+                    ? "rounded-2xl bg-[#F47D83] text-white shadow-md font-semibold"
+                    : "rounded-2xl bg-white/10 text-white/80 hover:text-white hover:bg-white/20"
                 }`}
                 aria-label={group.label}
                 aria-expanded={group.hasSubmenu ? isSubmenuOpen : undefined}
@@ -100,17 +100,28 @@ export function IconNavigationRail({
               {/* Accessible Floating Tooltip on Right */}
               <div
                 role="tooltip"
-                className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
+                className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-[#23212A] text-white text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
               >
                 {group.label}
                 <div
-                  className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-slate-900"
+                  className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-[#23212A]"
                   aria-hidden="true"
                 />
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* 3. LOG OUT BUTTON AT BOTTOM OF RAIL */}
+      <div className="w-full flex justify-center pb-2">
+        <Link
+          href="/login"
+          className="w-10 h-10 rounded-xl bg-white/10 hover:bg-red-500/20 hover:text-red-300 text-white/70 flex items-center justify-center transition-colors"
+          title="Keluar"
+        >
+          <span className="text-xs font-bold">&larr;</span>
+        </Link>
       </div>
     </aside>
   );

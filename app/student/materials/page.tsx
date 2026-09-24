@@ -136,6 +136,16 @@ export default function StudentMaterialsPage() {
                     {mat.title}
                   </h3>
 
+                  {(mat.image_url || mat.media_asset?.image_url) && (
+                    <div className="mb-3 rounded-xl overflow-hidden max-h-36 bg-slate-100 border border-slate-200">
+                      <img
+                        src={mat.image_url || mat.media_asset?.image_url}
+                        alt={mat.image_alt || mat.media_asset?.alt_text || mat.title}
+                        className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+
                   <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">
                     {mat.content}
                   </p>
@@ -144,7 +154,7 @@ export default function StudentMaterialsPage() {
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
                     <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Ponorogo & Sekitarnya</span>
+                    <span>Daerah Lokal Terpilih</span>
                   </div>
 
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 group-hover:translate-x-1 transition-transform">
@@ -187,10 +197,34 @@ export default function StudentMaterialsPage() {
 
               {/* Konten Bacaan Nyaman */}
               <div className="my-6 overflow-y-auto pr-2 space-y-4 text-slate-700 text-sm sm:text-base leading-relaxed font-normal">
+                {(selectedMaterial.image_url || selectedMaterial.media_asset?.image_url) && (
+                  <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50">
+                    <div className="max-h-72 w-full bg-slate-900/5 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={selectedMaterial.image_url || selectedMaterial.media_asset?.image_url}
+                        alt={selectedMaterial.image_alt || selectedMaterial.media_asset?.alt_text || selectedMaterial.title}
+                        className="w-full max-h-72 object-contain"
+                      />
+                    </div>
+                    {(selectedMaterial.image_caption || selectedMaterial.media_asset?.caption) && (
+                      <div className="px-3.5 py-2 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+                        <span className="font-medium text-slate-800">
+                          📷 {selectedMaterial.image_caption || selectedMaterial.media_asset?.caption}
+                        </span>
+                        {(selectedMaterial.image_attribution || selectedMaterial.media_asset?.attribution_text) && (
+                          <span className="text-[11px] text-slate-400">
+                            Sumber: {selectedMaterial.image_attribution || selectedMaterial.media_asset?.attribution_text}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="p-4 bg-sky-50/50 rounded-2xl border border-sky-100 flex items-center gap-3 text-xs text-sky-900 font-medium">
                   <Sparkles className="w-5 h-5 text-sky-600 shrink-0" />
                   <span>
-                    Materi ini dibuat khusus oleh Guru untuk siswa di wilayah Ponorogo agar pelajaran lebih mudah dipahami dan berkaitan dengan kegiatan sehari-hari.
+                    Materi ini dibuat khusus oleh Guru untuk siswa agar pelajaran lebih mudah dipahami dan berkaitan dengan kekayaan budaya serta lingkungan sehari-hari.
                   </span>
                 </div>
 

@@ -5,43 +5,131 @@ import { useRouter } from "next/navigation";
 import {
   GraduationCap,
   School,
+  User,
+  MapPin,
+  Compass,
+  ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  ArrowRight,
+  Sparkles,
   ShieldCheck,
-  KeyRound,
-  User,
+  Building2,
+  UserCheck,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
-import { School as SchoolType } from "@/lib/db/types";
+
+interface RegionOption {
+  code: string;
+  name: string;
+  province: "Jawa Timur" | "Jawa Tengah";
+  centerCoords: [number, number];
+}
+
+const SUPPORTED_REGIONS: RegionOption[] = [
+  { code: "35.77", name: "Kota Madiun", province: "Jawa Timur", centerCoords: [-7.6298, 111.5239] },
+  { code: "35.19", name: "Kabupaten Madiun", province: "Jawa Timur", centerCoords: [-7.5583, 111.6577] },
+  { code: "35.21", name: "Kabupaten Ngawi", province: "Jawa Timur", centerCoords: [-7.4039, 111.4452] },
+  { code: "35.20", name: "Kabupaten Magetan", province: "Jawa Timur", centerCoords: [-7.6528, 111.3283] },
+  { code: "35.02", name: "Kabupaten Ponorogo", province: "Jawa Timur", centerCoords: [-7.8692, 111.4622] },
+  { code: "35.01", name: "Kabupaten Pacitan", province: "Jawa Timur", centerCoords: [-8.2044, 111.0924] },
+  { code: "33.74", name: "Kota Semarang", province: "Jawa Tengah", centerCoords: [-6.9667, 110.4167] },
+];
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2>(1);
-  const [selectedRole, setSelectedRole] = useState<"TEACHER" | "STUDENT" | null>(null);
 
-  // Form fields
+  // Multi-step flow: 1 (Identity), 2 (Usage Mode: Perorangan vs Sekolah), 3 (Location & Profile)
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [roleMode, setRoleMode] = useState<"TEACHER" | "STUDENT">("TEACHER");
+  const [usageMode, setUsageMode] = useState<"individual" | "school">("individual");
+
+  // Form Fields
   const [fullName, setFullName] = useState("");
-  const [schoolId, setSchoolId] = useState("");
-  const [teacherPasscode, setTeacherPasscode] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState<string>("Jawa Timur");
+  const [selectedRegionId, setSelectedRegionId] = useState<string>("35.77");
+  const [schoolName, setSchoolName] = useState("");
+  const [teacherPasscode, setTeacherPasscode] = useState("GURU-PAHAMI-2026");
   const [classCode, setClassCode] = useState("");
 
-  const [schools, setSchools] = useState<SchoolType[]>([]);
+  // Geolocation states
+  const [isLocating, setIsLocating] = useState(false);
+  const [gpsNotice, setGpsNotice] = useState<string | null>(null);
+
+  // Submission states
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [userIntent, setUserIntent] = useState<string>("general");
 
   useEffect(() => {
-    const list = repository.getSchools();
-    setSchools(list);
-    if (list.length > 0) {
-      setSchoolId(list[0].id);
+    if (typeof window !== "undefined") {
+      const intent = localStorage.getItem("pahami_user_intent") || "general";
+      setUserIntent(intent);
+    }
+    // Default user name proposal if empty
+    if (!fullName) {
+      setFullName("Bapak / Ibu Guru");
     }
   }, []);
 
-  const handleSelectRole = (role: "TEACHER" | "STUDENT") => {
-    setSelectedRole(role);
-    setErrorMessage(null);
-    setStep(2);
+  // Filter regions by selected province
+  const availableRegions = SUPPORTED_REGIONS.filter(
+    (r) => r.province === selectedProvince
+  );
+
+  // Geolocation detection helper
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsNotice("Peramban Anda tidak mendukung sensor Geolocation.");
+      return;
+    }
+
+    setIsLocating(true);
+    setGpsNotice(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+
+        // Calculate nearest region center distance
+        let closest = SUPPORTED_REGIONS[0];
+        let minDistance = Number.MAX_VALUE;
+
+        SUPPORTED_REGIONS.forEach((r) => {
+          const dLat = latitude - r.centerCoords[0];
+          const dLon = longitude - r.centerCoords[1];
+          const dist = Math.sqrt(dLat * dLat + dLon * dLon);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closest = r;
+          }
+        });
+
+        setSelectedProvince(closest.province);
+        setSelectedRegionId(closest.code);
+        setIsLocating(false);
+        setGpsNotice(`Lokasi terdeteksi: ${closest.name} (${closest.province}). Silakan konfirmasi pilihan wilayah Anda.`);
+      },
+      (err) => {
+        setIsLocating(false);
+        setGpsNotice("Izin lokasi tidak diberikan. Anda tetap dapat memilih wilayah secara manual di bawah.");
+      },
+      { timeout: 8000 }
+    );
+  };
+
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (!fullName.trim()) {
+        setErrorMessage("Silakan masukkan nama lengkap Anda.");
+        return;
+      }
+      setErrorMessage(null);
+      setStep(2);
+    } else if (step === 2) {
+      setErrorMessage(null);
+      setStep(3);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,15 +138,23 @@ export default function OnboardingPage() {
     setErrorMessage(null);
 
     try {
+      const matchedRegion = SUPPORTED_REGIONS.find((r) => r.code === selectedRegionId);
+      const regionName = matchedRegion ? matchedRegion.name : "Kota Madiun";
+
       const res = await fetch("/api/auth/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          role: selectedRole,
-          fullName,
-          schoolId: selectedRole === "TEACHER" ? schoolId : undefined,
-          teacherPasscode: selectedRole === "TEACHER" ? teacherPasscode : undefined,
-          classCode: selectedRole === "STUDENT" ? classCode : undefined,
+          role: roleMode,
+          fullName: fullName.trim(),
+          usageMode,
+          regionId: selectedRegionId,
+          regionName,
+          schoolId: usageMode === "school" ? "school-madiun-1" : "school-individual",
+          schoolName: usageMode === "school" ? schoolName : `Workspace Mandiri (${fullName})`,
+          teacherPasscode: usageMode === "school" ? teacherPasscode : "GURU-PAHAMI-2026",
+          classCode: roleMode === "STUDENT" ? classCode : undefined,
+          intent: userIntent,
         }),
       });
 
@@ -70,244 +166,327 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Success
-      router.push(data.redirectUrl);
+      // Determine redirect destination based on initial intent
+      let targetUrl = data.redirectUrl || "/teacher/dashboard";
+      if (roleMode === "TEACHER") {
+        if (userIntent === "question") {
+          targetUrl = "/teacher/questions/new";
+        } else if (userIntent === "material") {
+          targetUrl = "/teacher/materials/new";
+        }
+      }
+
+      router.push(targetUrl);
     } catch (err: any) {
-      setErrorMessage(err?.message || "Terjadi kesalahan jaringan.");
+      setErrorMessage(err?.message || "Terjadi kendala jaringan.");
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-xl p-8 relative overflow-hidden">
+    <main className="min-h-screen bg-[#FAF7F3] flex items-center justify-center p-4 text-[#23212A]">
+      <div className="w-full max-w-xl bg-white rounded-3xl border border-[#E9E5E8] shadow-lg p-8 sm:p-10 relative overflow-hidden">
         {/* Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400" />
+        <div className="absolute top-0 left-0 right-0 h-2 bg-[#51465B]" />
 
-        {/* Stepper info */}
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+        {/* Stepper Header */}
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#E9E5E8]">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
-              Langkah {step} dari 2
+            <span className="text-xs font-black uppercase tracking-wider text-[#51465B] bg-[#51465B]/10 px-3 py-1 rounded-full">
+              Langkah {step} dari 3
             </span>
-            <span className="text-xs text-slate-500 font-medium">
-              {step === 1 ? "Pilih Peran Pengguna" : "Verifikasi Identitas"}
+            <span className="text-xs text-[#756F7A] font-semibold">
+              {step === 1 && "Identitas Pengguna"}
+              {step === 2 && "Jenis Penggunaan"}
+              {step === 3 && "Lokasi & Konteks Wilayah"}
             </span>
           </div>
-          {step === 2 && (
+          {step > 1 && (
             <button
               type="button"
-              onClick={() => {
-                setStep(1);
-                setErrorMessage(null);
-              }}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+              onClick={() => setStep((s) => (s - 1) as any)}
+              className="text-xs font-bold text-[#756F7A] hover:text-[#23212A] flex items-center gap-1"
             >
-              Ganti Peran
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Kembali</span>
             </button>
           )}
         </div>
 
-        {/* STEP 1: ROLE SELECTION */}
+        {errorMessage && (
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* ====================================================================
+            LANGKAH 1: IDENTITAS PENGGUNA
+            ==================================================================== */}
         {step === 1 && (
-          <div>
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Pilih Peran Anda di PAHAMI
-              </h1>
-              <p className="text-sm text-slate-500 mt-2">
-                Pilih peran untuk menyesuaikan ruang kerja pembelajaran kontekstual Anda
+          <div className="space-y-6">
+            <div className="text-center sm:text-left">
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mb-4 shadow-sm">
+                <User className="w-6 h-6 text-[#FFD36D]" />
+              </div>
+              <h2 className="text-2xl font-black text-[#23212A]">Siapa nama Anda?</h2>
+              <p className="text-sm text-[#756F7A] mt-1">
+                Nama ini akan dicantumkan pada naskah soal dan materi pembelajaran yang Anda susun.
               </p>
             </div>
 
-            <div className="space-y-4">
-              {/* Teacher Card */}
-              <button
-                type="button"
-                onClick={() => handleSelectRole("TEACHER")}
-                className="w-full p-5 rounded-2xl border-2 border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/40 text-left transition-all flex items-start gap-4 group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <School className="w-6 h-6" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-bold text-slate-900">Guru / Pendidik SD</h2>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    Kelola materi, buat soal dengan Contextual AI Gemini, publikasi ujian, dan nilai hasil belajar siswa.
-                  </p>
-                  <div className="mt-2 text-[11px] font-semibold text-indigo-600 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Memerlukan kode akses pendidik</span>
-                  </div>
-                </div>
-              </button>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#756F7A] mb-2">
+                Nama Lengkap / Nama Tampilan
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Contoh: Budi Santoso, S.Pd."
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] focus:outline-hidden text-base font-semibold text-[#23212A] transition-colors"
+                autoFocus
+              />
+            </div>
 
-              {/* Student Card */}
+            <div className="pt-4">
               <button
                 type="button"
-                onClick={() => handleSelectRole("STUDENT")}
-                className="w-full p-5 rounded-2xl border-2 border-slate-200 hover:border-sky-500 hover:bg-sky-50/40 text-left transition-all flex items-start gap-4 group"
+                onClick={handleNextStep}
+                className="w-full py-4 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
               >
-                <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-bold text-slate-900">Murid / Siswa SD</h2>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    Baca materi pelajaran lokal Karesidenan Madiun, kerjakan ujian online, dan lihat hasil evaluasi.
-                  </p>
-                  <div className="mt-2 text-[11px] font-semibold text-sky-600 flex items-center gap-1">
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>Memerlukan kode kelas dari guru</span>
-                  </div>
-                </div>
+                <span>Lanjutkan</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Switch to Student Flow */}
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRoleMode("STUDENT");
+                  router.push("/student/dashboard");
+                }}
+                className="text-xs text-[#756F7A] hover:text-[#51465B] font-semibold underline underline-offset-4"
+              >
+                Saya adalah Murid SD yang ingin mengerjakan ujian &rarr;
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 2: VERIFICATION & PROFILE SETUP */}
+        {/* ====================================================================
+            LANGKAH 2: JENIS PENGGUNAAN (PERORANGAN VS SEKOLAH)
+            ==================================================================== */}
         {step === 2 && (
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-6">
             <div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                {selectedRole === "TEACHER" ? "Verifikasi Profil Guru" : "Pendaftaran Kelas Murid"}
-              </h1>
-              <p className="text-xs text-slate-500 mt-1">
-                {selectedRole === "TEACHER"
-                  ? "Masukkan identitas pendidik dan kode verifikasi sekolah Anda."
-                  : "Masukkan nama Anda dan kode kelas yang diberikan oleh bapak/ibu guru."}
+              <h2 className="text-2xl font-black text-[#23212A]">Pilih Jenis Penggunaan</h2>
+              <p className="text-sm text-[#756F7A] mt-1">
+                Sesuaikan kebutuhan pembuatan materi pembelajaran Anda.
               </p>
             </div>
 
-            {errorMessage && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <div className="leading-relaxed">{errorMessage}</div>
+            <div className="grid grid-cols-1 gap-4">
+              {/* Option 1: Perorangan */}
+              <button
+                type="button"
+                onClick={() => setUsageMode("individual")}
+                className={`p-5 rounded-2xl border-2 text-left transition-all flex items-start gap-4 ${
+                  usageMode === "individual"
+                    ? "border-[#51465B] bg-[#51465B]/5 shadow-xs"
+                    : "border-[#E9E5E8] hover:border-slate-300 bg-white"
+                }`}
+              >
+                <div
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                    usageMode === "individual" ? "bg-[#51465B] text-white" : "bg-[#FAF7F3] text-[#756F7A]"
+                  }`}
+                >
+                  <UserCheck className="w-6 h-6 text-[#FFD36D]" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-base text-[#23212A]">Perorangan</span>
+                    {usageMode === "individual" && <CheckCircle2 className="w-5 h-5 text-[#51465B]" />}
+                  </div>
+                  <p className="text-xs sm:text-sm text-[#756F7A] mt-1 leading-relaxed">
+                    Untuk guru mandiri, tutor les, orang tua, atau pengajar bimbel yang ingin membuat soal dan materi pembelajaran kontekstual secara cepat.
+                  </p>
+                </div>
+              </button>
+
+              {/* Option 2: Sekolah */}
+              <button
+                type="button"
+                onClick={() => setUsageMode("school")}
+                className={`p-5 rounded-2xl border-2 text-left transition-all flex items-start gap-4 ${
+                  usageMode === "school"
+                    ? "border-[#51465B] bg-[#51465B]/5 shadow-xs"
+                    : "border-[#E9E5E8] hover:border-slate-300 bg-white"
+                }`}
+              >
+                <div
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                    usageMode === "school" ? "bg-[#51465B] text-white" : "bg-[#FAF7F3] text-[#756F7A]"
+                  }`}
+                >
+                  <Building2 className="w-6 h-6 text-[#F47D83]" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-base text-[#23212A]">Sekolah / Institusi</span>
+                    {usageMode === "school" && <CheckCircle2 className="w-5 h-5 text-[#51465B]" />}
+                  </div>
+                  <p className="text-xs sm:text-sm text-[#756F7A] mt-1 leading-relaxed">
+                    Untuk guru sekolah yang mengelola kelas formal, bank soal instansi, membagikan ujian daring, dan merekap penilaian kelas 5 SD.
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            <div className="pt-4">
+              <button
+                type="button"
+                onClick={handleNextStep}
+                className="w-full py-4 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <span>Lanjutkan ke Penentuan Lokasi</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================================
+            LANGKAH 3: LOKASI & KONTEKS WILAYAH
+            ==================================================================== */}
+        {step === 3 && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-black text-[#23212A]">Wilayah Pembelajaran Siswa</h2>
+              <p className="text-sm text-[#756F7A] mt-1">
+                AI akan merujuk data komoditas, lingkungan alam, dan cagar budaya dari wilayah yang Anda pilih.
+              </p>
+            </div>
+
+            {/* Geolocation Button Assistance */}
+            <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Compass className="w-5 h-5 text-[#F47D83]" />
+                <div>
+                  <div className="text-xs font-bold text-[#23212A]">Bantuan Deteksi Lokasi</div>
+                  <div className="text-[11px] text-[#756F7A]">Gunakan sensor perangkat untuk rekomendasi wilayah</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                disabled={isLocating}
+                className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:border-[#51465B] transition-colors shrink-0"
+              >
+                {isLocating ? "Mendeteksi..." : "Gunakan Lokasi Perangkat"}
+              </button>
+            </div>
+
+            {gpsNotice && (
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs">
+                {gpsNotice}
               </div>
             )}
 
-            {/* Nama Lengkap */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Nama Lengkap
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder={
-                    selectedRole === "TEACHER"
-                      ? "Contoh: Ibu Siti Aminah, S.Pd."
-                      : "Contoh: Budi Santoso"
-                  }
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                />
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            {/* Location Selectors */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#756F7A] mb-2">
+                  Provinsi
+                </label>
+                <select
+                  value={selectedProvince}
+                  onChange={(e) => {
+                    const prov = e.target.value as "Jawa Timur" | "Jawa Tengah";
+                    setSelectedProvince(prov);
+                    const firstRegion = SUPPORTED_REGIONS.find((r) => r.province === prov);
+                    if (firstRegion) setSelectedRegionId(firstRegion.code);
+                  }}
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] focus:outline-hidden text-sm font-bold text-[#23212A] bg-white"
+                >
+                  <option value="Jawa Timur">Jawa Timur</option>
+                  <option value="Jawa Tengah">Jawa Tengah</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#756F7A] mb-2">
+                  Kabupaten / Kota
+                </label>
+                <select
+                  value={selectedRegionId}
+                  onChange={(e) => setSelectedRegionId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] focus:outline-hidden text-sm font-bold text-[#23212A] bg-white"
+                >
+                  {availableRegions.map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.name} ({r.code})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* TEACHER SPECIFIC FIELDS */}
-            {selectedRole === "TEACHER" && (
-              <>
+            {/* School Name & Verification (only if School mode) */}
+            {usageMode === "school" && (
+              <div className="space-y-4 pt-2 border-t border-[#E9E5E8]">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Pilih Sekolah Penugasan
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#756F7A] mb-2">
+                    Nama Sekolah SD
                   </label>
-                  <select
-                    value={schoolId}
-                    onChange={(e) => setSchoolId(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:border-indigo-600"
-                  >
-                    {schools.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.region_name})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Kode Akses Pendidik
-                    </label>
-                    <span className="text-[10px] text-slate-400">
-                      Prototipe: GURU-PAHAMI-2026
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      required
-                      placeholder="Masukkan kode otorisasi guru"
-                      value={teacherPasscode}
-                      onChange={(e) => setTeacherPasscode(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                    />
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Kode ini mencegah akses sembarangan ke bank soal dan ruang kerja guru.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {/* STUDENT SPECIFIC FIELDS */}
-            {selectedRole === "STUDENT" && (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Kode Kelas dari Guru
-                  </label>
-                  <span className="text-[10px] text-slate-400">
-                    Contoh: PNR-5A atau PNR-5B
-                  </span>
-                </div>
-                <div className="relative">
                   <input
                     type="text"
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                    placeholder="Contoh: SD Negeri 1 Kartoharjo"
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] focus:outline-hidden text-sm font-medium text-[#23212A]"
                     required
-                    placeholder="Contoh: PNR-5A"
-                    value={classCode}
-                    onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                    className="w-full pl-9 pr-3 py-2.5 text-xs font-mono font-bold tracking-wider rounded-xl border border-slate-200 focus:outline-hidden focus:border-sky-500 focus:ring-1 focus:ring-sky-500 uppercase"
                   />
-                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Tanyakan kode 6 karakter ini kepada guru kelas Anda.
-                </p>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#756F7A] mb-2">
+                    Kode Sandi Guru (Verifikasi Tim Pengajar)
+                  </label>
+                  <input
+                    type="text"
+                    value={teacherPasscode}
+                    onChange={(e) => setTeacherPasscode(e.target.value)}
+                    placeholder="GURU-PAHAMI-2026"
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] focus:outline-hidden text-sm font-mono text-[#23212A]"
+                    required
+                  />
+                  <p className="text-[11px] text-[#756F7A] mt-1">
+                    Gunakan kode bawaan pengujian prototipe: <code className="bg-[#FAF7F3] px-1 py-0.5 rounded font-bold">GURU-PAHAMI-2026</code>
+                  </p>
+                </div>
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3 px-4 rounded-xl text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 ${
-                selectedRole === "TEACHER"
-                  ? "bg-indigo-600 hover:bg-indigo-700"
-                  : "bg-sky-600 hover:bg-sky-700"
-              } disabled:opacity-50`}
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Selesaikan Pendaftaran & Masuk</span>
-                </>
-              )}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <span>Menyiapkan Workspace Pembelajaran...</span>
+                ) : (
+                  <>
+                    <span>Selesai & Buka Workspace</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         )}
       </div>

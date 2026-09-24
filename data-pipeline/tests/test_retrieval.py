@@ -113,7 +113,7 @@ def test_zero_region_leakage():
 def test_outside_region_rejection():
     engine = setup_test_engine()
     req = RetrievalRequest(
-        region_id="33.74", # Semarang
+        region_id="31.71", # Jakarta Pusat (di luar cakupan PAHAMI V2)
         query="pasar",
         limit=5
     )
@@ -121,3 +121,16 @@ def test_outside_region_rejection():
     assert res.region_fallback_level == "none"
     assert len(res.results) == 0
     assert len(res.warnings) > 0
+
+
+def test_semarang_valid_region():
+    engine = setup_test_engine()
+    req = RetrievalRequest(
+        region_id="33.74", # Kota Semarang (Prioritas Baru PAHAMI V2)
+        query="lawang sewu",
+        limit=5
+    )
+    res = engine.retrieve(req)
+    assert res.matched_region_id == "33.74"
+    assert res.region_fallback_level == "exact"
+

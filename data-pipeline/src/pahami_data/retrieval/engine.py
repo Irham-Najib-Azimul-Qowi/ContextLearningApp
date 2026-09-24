@@ -14,7 +14,7 @@ from pahami_data.schemas.models import (
 from pahami_data.storage.database import LocalLkbStore
 from pahami_data.embedding.embedder import LocalE5Embedder
 
-VALID_REGIONS = {"35.77", "35.19", "35.21", "35.20", "35.02", "35.01"}
+VALID_REGIONS = {"35.77", "35.19", "35.21", "35.20", "35.02", "35.01", "33.74"}
 VALID_DISTRICTS = {
     # Kota Madiun (35.77)
     "35.77.01", "35.77.02", "35.77.03",
@@ -27,7 +27,11 @@ VALID_DISTRICTS = {
     # Kab Ponorogo (35.02)
     "35.02.01", "35.02.02", "35.02.03", "35.02.04",
     # Kab Pacitan (35.01)
-    "35.01.01", "35.01.02", "35.01.03", "35.01.04"
+    "35.01.01", "35.01.02", "35.01.03", "35.01.04",
+    # Kota Semarang (33.74)
+    "33.74.01", "33.74.02", "33.74.03", "33.74.04", "33.74.05", "33.74.06",
+    "33.74.07", "33.74.08", "33.74.09", "33.74.10", "33.74.11", "33.74.12",
+    "33.74.13", "33.74.14", "33.74.15", "33.74.16"
 }
 
 
@@ -43,7 +47,7 @@ class LkbRetrievalEngine:
 
         # 1. Region validation and hierarchy fallback
         if target_region_id not in VALID_REGIONS:
-            # Check district pattern: e.g. 35.77.01 -> 35.77
+            # Check district pattern: e.g. 35.77.01 -> 35.77 or 33.74.01 -> 33.74
             parts = target_region_id.split(".")
             if len(parts) >= 3:
                 if target_region_id not in VALID_DISTRICTS:
@@ -53,7 +57,7 @@ class LkbRetrievalEngine:
                         region_fallback_level="none",
                         retrieval_mode_used=request.mode,
                         results=[],
-                        warnings=["Kode kecamatan tidak terdaftar dalam basis data resmi Karesidenan Madiun."]
+                        warnings=["Kode kecamatan tidak terdaftar dalam basis data resmi Karesidenan Madiun dan Kota Semarang."]
                     )
                 parent_code = f"{parts[0]}.{parts[1]}"
                 if parent_code in VALID_REGIONS:

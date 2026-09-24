@@ -178,6 +178,8 @@ export class ContextualAIEngine {
       ? `${this.rewriteText(params.explanation, mappings)} (Dikontekstualisasikan untuk wilayah ${params.regionName}).`
       : `Soal disesuaikan dengan konteks wilayah ${params.regionName} tanpa mengubah relasi hitungan dan kompetensi inti.`;
 
+    const primaryMedia = mappings.find((m) => m.matched_entity?.primary_media)?.matched_entity.primary_media || null;
+
     return {
       original_text: params.questionText,
       contextualized_text: contextualizedText,
@@ -190,6 +192,7 @@ export class ContextualAIEngine {
       validation,
       updated_options: updatedOptions,
       updated_explanation: updatedExplanation,
+      primary_media: primaryMedia,
     };
   }
 }

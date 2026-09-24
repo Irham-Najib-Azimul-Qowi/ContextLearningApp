@@ -29,6 +29,18 @@ export interface QuestionUnderstanding {
   original_answer: string;
 }
 
+export interface MediaAsset {
+  media_id: string;
+  title: string;
+  caption: string;
+  alt_text: string;
+  image_url: string;
+  source_url: string;
+  author: string;
+  license_type: string;
+  attribution_text: string;
+}
+
 export interface ContextCandidateEntity {
   entity_id: string;
   region_id: string;
@@ -38,6 +50,7 @@ export interface ContextCandidateEntity {
   description: string;
   source_url?: string;
   verification_status: "verified" | "draft";
+  primary_media?: MediaAsset | null;
 }
 
 export interface ContextMapping {
@@ -69,4 +82,6 @@ export interface ContextualizationPipelineResult {
   validation: EducationalValidationResult;
   updated_options?: { key: string; text: string }[];
   updated_explanation: string;
+  primary_media?: MediaAsset | null;
 }
+

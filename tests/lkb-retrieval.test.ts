@@ -80,4 +80,34 @@ test("Local Knowledge Base (LKB) Retrieval & Verification Tests", async (t) => {
       "Should contain porang"
     );
   });
+
+  await t.test("Kota Semarang (33.74) Regional Context Retrieval & Administrative Isolation", async () => {
+    const response = await retriever.retrieve({
+      region_id: "33.74", // Kota Semarang
+      query: "Lawang Sewu kereta api",
+    });
+
+    assert.ok(response.results.length > 0, "Should retrieve Lawang Sewu for Kota Semarang");
+    const lawangSewu = response.results.find((r) => r.entity_id === "ctx_ent_3374_lawang_sewu_01");
+    assert.ok(lawangSewu, "Must find Lawang Sewu entity");
+    assert.strictEqual(lawangSewu.region_id, "33.74");
+    assert.strictEqual(lawangSewu.region_name, "Kota Semarang");
+    assert.strictEqual(lawangSewu.verification_status, "verified");
+  });
+
+  await t.test("Visual Context Learning: Attached media asset has legal Wikimedia/CC attribution", async () => {
+    const response = await retriever.retrieve({
+      region_id: "33.74",
+      query: "Lawang Sewu",
+    });
+
+    const entityWithMedia = response.results.find((r) => r.primary_media != null);
+    assert.ok(entityWithMedia, "Should contain entity with primary media");
+    const media = entityWithMedia.primary_media!;
+    assert.ok(media.image_url.startsWith("http"), "Image URL must be valid HTTP(S)");
+    assert.ok(media.title.length > 0, "Media must have title");
+    assert.ok(media.caption.length > 0, "Media must have educational caption");
+    assert.ok(media.attribution_text.length > 0, "Media must have legal attribution text");
+    assert.ok(media.license_type.includes("Creative Commons") || media.license_type.includes("Public Domain"), "Media must have open educational license");
+  });
 });

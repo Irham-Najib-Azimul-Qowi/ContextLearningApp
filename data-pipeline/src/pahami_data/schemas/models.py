@@ -41,7 +41,7 @@ class EvidenceRecord(BaseModel):
 
 class EntityRecord(BaseModel):
     entity_id: str = Field(..., pattern=r"^ctx_ent_\d{4}_[a-z0-9_]+$", description="Canonical unique ID")
-    region_id: str = Field(..., pattern=r"^35\.(77|19|21|20|02|01)(\.\d{2})?$", description="Official region code")
+    region_id: str = Field(..., pattern=r"^(35\.(77|19|21|20|02|01)|33\.74)(\.\d{2})?$", description="Official region code")
     category: CategoryType
     subcategory: str
     canonical_name: str = Field(..., min_length=2)
@@ -65,6 +65,21 @@ class EntityRecord(BaseModel):
         return sorted(list(set(v)))
 
 
+class MediaAssetRecord(BaseModel):
+    media_id: str = Field(..., pattern=r"^med_[a-z0-9_]+$", description="Canonical media ID")
+    entity_id: str
+    source_url: str
+    image_url: str
+    title: str
+    caption: str
+    alt_text: str
+    author: str
+    license_type: str = "Wikimedia Commons / CC-BY-SA"
+    license_url: Optional[str] = None
+    attribution_text: str
+    verification_status: VerificationStatus = "verified"
+
+
 class SourceRecord(BaseModel):
     source_id: str = Field(..., description="Stable identifier e.g. src_bps_madiun_2024")
     publisher: str
@@ -82,7 +97,7 @@ class RegionRecord(BaseModel):
     name: str
     popular_name: Optional[str] = None
     level: RegionLevel
-    parent_id: Optional[str] = "35"
+    parent_id: Optional[str] = None
     code_source: str = "BPS_KEMENDAGRI_2024"
 
 
@@ -129,6 +144,7 @@ class RetrievalEntityItem(BaseModel):
     educational_usage: str
     quantitative_constraints: Optional[QuantitativeConstraints] = None
     evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    media_assets: List[Dict[str, Any]] = Field(default_factory=list)
     verification_status: VerificationStatus
 
 

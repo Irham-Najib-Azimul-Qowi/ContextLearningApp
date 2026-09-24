@@ -115,6 +115,50 @@ SOURCE_REGISTRY: Dict[str, SourceRecord] = {
         license="Kementerian Kebudayaan Open Access",
         attribution_note="Data registrasi warisan budaya nasional dan cagar budaya Karesidenan Madiun.",
         import_mode="manual_curated"
+    ),
+    "src_bps_kota_semarang_2024": SourceRecord(
+        source_id="src_bps_kota_semarang_2024",
+        publisher="Badan Pusat Statistik (BPS) Kota Semarang",
+        title="Kota Semarang Dalam Angka 2024",
+        url="https://semarangkota.bps.go.id/publication/2024/02/28/kota-semarang-dalam-angka-2024.html",
+        published_at="2024-02-28",
+        retrieved_at="2026-09-24",
+        license="Open Government Data / BPS Public License",
+        attribution_note="Data statistik perekonomian, industri, mobilitas maritim, dan perdagangan Kota Semarang.",
+        import_mode="manual_curated"
+    ),
+    "src_pemkot_semarang_official": SourceRecord(
+        source_id="src_pemkot_semarang_official",
+        publisher="Pemerintah Kota Semarang & Satu Data Semarang",
+        title="Portal Informasi & Satu Data Kota Semarang",
+        url="https://data.semarangkota.go.id",
+        published_at="2024-03-10",
+        retrieved_at="2026-09-24",
+        license="Public Domain Government Portal",
+        attribution_note="Portal data resmi Pemerintah Kota Semarang mengenai sarana publik dan cagar budaya.",
+        import_mode="manual_curated"
+    ),
+    "src_pelabuhan_tanjung_emas": SourceRecord(
+        source_id="src_pelabuhan_tanjung_emas",
+        publisher="PT Pelabuhan Indonesia (Persero) Regional 3",
+        title="Profil Pelabuhan Tanjung Emas Semarang",
+        url="https://pelindo.co.id/fasilitas-pelabuhan/tanjung-emas",
+        published_at="2024-01-20",
+        retrieved_at="2026-09-24",
+        license="Corporate Public Profile",
+        attribution_note="Profil fasilitas logistik, bongkar muat peti kemas, dan terminal penumpang Tanjung Emas.",
+        import_mode="manual_curated"
+    ),
+    "src_wikimedia_commons_semarang": SourceRecord(
+        source_id="src_wikimedia_commons_semarang",
+        publisher="Wikimedia Commons Contributors",
+        title="Wikimedia Commons Educational Media Repository",
+        url="https://commons.wikimedia.org",
+        published_at="2026-01-01",
+        retrieved_at="2026-09-24",
+        license="Creative Commons Attribution-ShareAlike (CC-BY-SA 3.0 / 4.0 / Public Domain)",
+        attribution_note="Foto dokumentasi cagar budaya dan sarana transportasi publik dengan atribusi resmi.",
+        import_mode="curated_extraction"
     )
 }
 

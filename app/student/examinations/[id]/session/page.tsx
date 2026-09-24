@@ -159,10 +159,35 @@ export default function StudentExamSessionPage() {
               {currentQ.is_contextualized && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
                   <MapPin className="w-3 h-3 text-rose-500" />
-                  Konteks Ponorogo
+                  Konteks {currentQ.context_variables?.[0]?.region_name || "Lokal"}
                 </span>
               )}
             </div>
+
+            {/* Supporting Contextual Media Image (if available) */}
+            {(currentQ.image_url || currentQ.media_asset?.image_url) && (
+              <div className="mb-5 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50">
+                <div className="relative max-h-72 w-full bg-slate-900/5 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={currentQ.image_url || currentQ.media_asset?.image_url}
+                    alt={currentQ.image_alt || currentQ.media_asset?.alt_text || "Gambar Kontekstual"}
+                    className="w-full max-h-72 object-contain"
+                  />
+                </div>
+                {(currentQ.image_caption || currentQ.media_asset?.caption || currentQ.image_attribution || currentQ.media_asset?.attribution_text) && (
+                  <div className="px-3.5 py-2 bg-slate-100/80 border-t border-slate-200 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-1.5">
+                    <span className="font-medium text-slate-700">
+                      📷 {currentQ.image_caption || currentQ.media_asset?.caption || "Foto Konteks Pembelajaran"}
+                    </span>
+                    {(currentQ.image_attribution || currentQ.media_asset?.attribution_text) && (
+                      <span className="text-[10px] text-slate-400">
+                        Sumber: {currentQ.image_attribution || currentQ.media_asset?.attribution_text}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Question Text */}
             <div className="text-base sm:text-lg text-slate-900 font-medium leading-relaxed mb-6 whitespace-pre-line">

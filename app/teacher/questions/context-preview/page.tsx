@@ -31,6 +31,7 @@ function ContextPreviewContent() {
   const [pipelineResult, setPipelineResult] = useState<ContextualizationPipelineResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [includeImage, setIncludeImage] = useState<boolean>(true);
 
   // Alternative candidate selector
   const [selectedAlternative, setSelectedAlternative] = useState<string>("porang");
@@ -93,6 +94,11 @@ function ContextPreviewContent() {
       original_question_text: pipelineResult.original_text,
       options: pipelineResult.updated_options || question.options,
       explanation: pipelineResult.updated_explanation,
+      image_url: includeImage ? pipelineResult.primary_media?.image_url : undefined,
+      image_caption: includeImage ? pipelineResult.primary_media?.caption : undefined,
+      image_attribution: includeImage ? pipelineResult.primary_media?.attribution_text : undefined,
+      image_alt: includeImage ? pipelineResult.primary_media?.alt_text : undefined,
+      media_asset: includeImage ? (pipelineResult.primary_media || undefined) : undefined,
       context_variables: pipelineResult.mappings.map((m) => ({
         text: m.original_term,
         category: m.matched_entity.category,
@@ -269,6 +275,41 @@ function ContextPreviewContent() {
                 {pipelineResult.contextualized_text}
               </p>
             </div>
+
+            {/* Visual Supporting Image in Contextual Card */}
+            {pipelineResult.primary_media && (
+              <div className="mb-4 rounded-2xl border border-indigo-200 bg-white p-3">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-indigo-100">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-950">
+                    <span>Gambar Pendukung Kontekstual</span>
+                  </div>
+                  <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeImage}
+                      onChange={(e) => setIncludeImage(e.target.checked)}
+                      className="rounded accent-indigo-600"
+                    />
+                    <span>Sertakan Gambar</span>
+                  </label>
+                </div>
+                {includeImage && (
+                  <div>
+                    <img
+                      src={pipelineResult.primary_media.image_url}
+                      alt={pipelineResult.primary_media.alt_text}
+                      className="w-full h-44 object-cover rounded-xl"
+                    />
+                    <div className="text-xs font-semibold text-slate-800 mt-1.5">
+                      {pipelineResult.primary_media.caption}
+                    </div>
+                    <div className="text-[10px] text-slate-400 italic">
+                      {pipelineResult.primary_media.attribution_text} ({pipelineResult.primary_media.license_type})
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Contextualized Options */}
             {pipelineResult.updated_options && (

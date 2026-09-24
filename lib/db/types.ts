@@ -55,6 +55,18 @@ export interface QuestionContextVariable {
   region_name: string;
 }
 
+export interface MediaAsset {
+  media_id: string;
+  title: string;
+  caption: string;
+  alt_text: string;
+  image_url: string;
+  source_url: string;
+  author: string;
+  license_type: string;
+  attribution_text: string;
+}
+
 export interface Question {
   id: string;
   school_id: string;
@@ -71,6 +83,11 @@ export interface Question {
   is_contextualized: boolean;
   original_question_text?: string;
   context_variables?: QuestionContextVariable[];
+  image_url?: string;
+  image_caption?: string;
+  image_attribution?: string;
+  image_alt?: string;
+  media_asset?: MediaAsset;
   created_at: string;
 }
 
@@ -85,6 +102,11 @@ export interface LearningMaterial {
   is_contextualized: boolean;
   original_content?: string;
   published_to_classes: string[]; // Class IDs
+  image_url?: string;
+  image_caption?: string;
+  image_attribution?: string;
+  image_alt?: string;
+  media_asset?: MediaAsset;
   created_at: string;
 }
 

@@ -7,26 +7,31 @@
 :root {
   color-scheme: light;
 
-  /* Official Pahami V2 Palette */
-  --primary: #4F46E5;
-  --primary-hover: #4338CA;
-  --primary-subtle: #EEF2FF;
-  --secondary: #0EA5E9;
-  --secondary-hover: #0284C7;
-  --secondary-subtle: #F0F9FF;
+  /* Reference Design Theme Palette (PAHAMI V2) */
+  --primary: #51465B;
+  --primary-hover: #3E3547;
+  --primary-subtle: #F3EEF5;
+  --primary-dark: #51465B;
+  
+  --secondary: #F47D83;
+  --secondary-hover: #E0646B;
+  --secondary-subtle: #FEF0F1;
+  --accent-coral: #F47D83;
+  --accent-yellow: #FFD36D;
+  --accent-yellow-subtle: #FFF8E6;
 
-  --app-bg: #F8FAFC;
+  --app-bg: #FAF7F3;
   --surface: #FFFFFF;
-  --surface-hover: #F1F5F9;
-  --surface-active: #E2E8F0;
+  --surface-hover: #F5F1EB;
+  --surface-active: #EBE5DC;
 
-  --border: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --divider: #F1F5F9;
+  --border: #E9E5E8;
+  --border-strong: #D5CED4;
+  --divider: #F1ECEF;
 
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
+  --text-primary: #23212A;
+  --text-secondary: #756F7A;
+  --text-muted: #9F99A4;
 
   --success: #22C55E;
   --success-subtle: #F0FDF4;
@@ -35,8 +40,8 @@
   --error: #EF4444;
   --error-subtle: #FEF2F2;
 
-  --rail-bg: #F8FAFC;
-  --rail-active: #4F46E5;
+  --rail-bg: #51465B;
+  --rail-active: #F47D83;
 }
 
 @theme inline {

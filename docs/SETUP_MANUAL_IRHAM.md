@@ -70,17 +70,20 @@ Dokumen ini adalah panduan operasional langkah-demi-langkah terlengkap untuk men
 ---
 
 ### C. Penerapan Database Migrations
-- **Tujuan**: Membuat skema database terintegrasi (Local Knowledge Base + Core LMS PAHAMI V2).
-- **Apa yang harus dibuka**: Supabase Dashboard > **SQL Editor** > **New Query**.
+- **Tujuan**: Membuat skema database terintegrasi (Local Knowledge Base + Core LMS PAHAMI V2 + Visual Media & Kota Semarang).
+- **Apa yang harus dibuka**: Supabase Dashboard > **SQL Editor** > **New Query** (atau via script otomatis).
 - **Pengaturan yang perlu dibuat**:
   1. Buka file migration pertama: `supabase/migrations/20260923140000_local_knowledge.sql` di repository. Salin seluruh isinya, tempel ke SQL Editor Supabase, lalu klik **Run**.
   2. Buka file migration kedua: `supabase/migrations/20260924000000_pahami_core_schema.sql` di repository. Salin seluruh isinya, tempel ke SQL Editor Supabase, lalu klik **Run**.
+  3. Buka file migration ketiga: `supabase/migrations/20260924010000_semarang_and_media.sql` di repository. Salin seluruh isinya, tempel ke SQL Editor Supabase, lalu klik **Run**.
+  *(Catatan: Jika `DATABASE_URL` sudah dikonfigurasi di `.env.local`, Anda juga dapat menerapkan seluruh migrasi secara otomatis dalam sekali jalan dengan menjalankan `python scripts/apply_remote_migrations.py` di terminal).*
 - **Informasi yang diperoleh**: Status pesan `Success. No rows returned`.
 - **Cara memverifikasi**:
   Buka tab **Database** > **Tables** di Supabase. Pastikan tabel-tabel berikut ada:
   - `lkb_regions`, `lkb_entities`, `lkb_entity_facts`, `lkb_entity_embeddings`, `lkb_curriculum_mappings`, `lkb_retrieval_logs`
+  - `lkb_media_assets`, `lkb_entity_media_relations` (tabel aset media berlisensi Wikimedia Commons)
   - `schools`, `user_profiles`, `classrooms`, `class_memberships`, `questions`, `learning_materials`, `exams`, `exam_attempts`, `notifications`
-  Buka **Database** > **Functions**, pastikan fungsi `lkb_retrieve_context` terdaftar.
+  Buka **Database** > **Functions**, pastikan fungsi `lkb_retrieve_context` terdaftar dan mengembalikan kolom `primary_media`.
 - **Masalah umum**: *Error: type "vector" does not exist*. Solusi: Buka **Database** > **Extensions**, cari `vector`, dan aktifkan sebelum menjalankan migration.
 
 ---

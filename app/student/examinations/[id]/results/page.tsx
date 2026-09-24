@@ -242,6 +242,29 @@ export default function StudentExamResultsPage() {
                     {q.question_text}
                   </p>
 
+                  {/* Supporting Media (if available) */}
+                  {(q.image_url || q.media_asset?.image_url) && (
+                    <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                      <div className="max-h-60 w-full bg-slate-900/5 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={q.image_url || q.media_asset?.image_url}
+                          alt={q.image_alt || q.media_asset?.alt_text || "Foto Soal"}
+                          className="w-full max-h-60 object-contain"
+                        />
+                      </div>
+                      {(q.image_caption || q.media_asset?.caption) && (
+                        <div className="px-3 py-1.5 bg-slate-100/90 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+                          <span>📷 {q.image_caption || q.media_asset?.caption}</span>
+                          {(q.image_attribution || q.media_asset?.attribution_text) && (
+                            <span className="text-[10px] text-slate-400">
+                              {q.image_attribution || q.media_asset?.attribution_text}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Student Answer vs Key */}
                   <div className="p-3.5 bg-slate-50 rounded-xl text-xs space-y-2 border border-slate-100">
                     <div className="flex items-center justify-between">
