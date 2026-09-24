@@ -8,6 +8,7 @@ interface PahamiPuzzleLogoProps {
   showText?: boolean;
   className?: string;
   theme?: "light" | "dark";
+  href?: string;
 }
 
 /**
@@ -20,6 +21,7 @@ export function PahamiPuzzleLogo({
   showText = true,
   className = "",
   theme = "light",
+  href = "/",
 }: PahamiPuzzleLogoProps) {
   // Dimensions scale
   const sizeMap = {
@@ -58,7 +60,7 @@ export function PahamiPuzzleLogo({
 
   return (
     <Link
-      href="/"
+      href={href}
       className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
       aria-label="Beranda Depaskan"
     >

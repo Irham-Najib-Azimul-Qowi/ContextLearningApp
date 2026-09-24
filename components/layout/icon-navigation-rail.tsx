@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { TEACHER_NAV_GROUPS, NavGroup } from "./teacher-nav-config";
+import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
 interface IconNavigationRailProps {
   activeGroupId?: string | null;
@@ -48,25 +49,13 @@ export function IconNavigationRail({
       aria-label="Navigasi Menu Guru DEPASKAN"
     >
       <div className="space-y-6">
-        {/* 1. BRAND LOGO & NAME "DEPASKAN" (Top Header of Sidebar) */}
-        <Link
-          href="/teacher/dashboard"
-          className="flex items-center gap-3 px-2 py-1 group cursor-pointer"
-          title="DEPASKAN - Beranda Guru"
-        >
-          {/* Logo D Puzzle */}
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FFD36D] to-[#FDB040] text-[#251E2B] flex items-center justify-center font-black text-xl shadow-md group-hover:scale-105 transition-transform shrink-0">
-            D
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-lg font-black text-white tracking-tight group-hover:text-[#FFD36D] transition-colors leading-tight">
-              DEPASKAN
-            </span>
-            <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">
-              Ruang Kerja Guru
-            </span>
-          </div>
-        </Link>
+        {/* 1. BRAND LOGO & NAME "DEPASKAN" (Matching Landing Page) */}
+        <div className="px-1">
+          <PahamiPuzzleLogo size="md" theme="dark" href="/teacher/dashboard" />
+          <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase block mt-1 ml-1">
+            Ruang Kerja Guru
+          </span>
+        </div>
 
         {/* 2. INLINE ACCORDION NAVIGATION (No more floating flyout) */}
         <nav className="space-y-1.5" aria-label="Menu Utama">

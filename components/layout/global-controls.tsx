@@ -17,6 +17,7 @@ import {
 import { repository } from "@/lib/db/repository";
 import { School, AppNotification } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/client";
+import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
 export function GlobalControls() {
   const router = useRouter();
@@ -99,9 +100,14 @@ export function GlobalControls() {
     <>
       <div
         ref={containerRef}
-        className="fixed top-3 sm:top-4 right-4 sm:right-6 z-30 flex items-center bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-sm px-2.5 py-1.5 gap-2 select-none"
+        className="fixed top-3 sm:top-4 right-4 sm:right-6 z-40 flex items-center bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-md px-3 py-1.5 gap-2.5 select-none"
         aria-label="Kontrol Utama Ruang Kerja"
       >
+        {/* Depaskan Logo (Identical to Landing Page) */}
+        <div className="flex items-center pr-2.5 border-r border-slate-200">
+          <PahamiPuzzleLogo size="sm" href="/teacher/dashboard" />
+        </div>
+
         {/* 1. NOTIFICATIONS */}
         <div className="relative">
           <button
