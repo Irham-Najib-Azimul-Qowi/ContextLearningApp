@@ -354,6 +354,10 @@ class PahamiRepository {
     return this.getItem<UserProfile[]>("profiles", SEED_USERS);
   }
 
+  getUsers(): UserProfile[] {
+    return this.getProfiles();
+  }
+
   getCurrentRole(): UserRole {
     return this.getItem<UserRole>("current_role", "TEACHER");
   }

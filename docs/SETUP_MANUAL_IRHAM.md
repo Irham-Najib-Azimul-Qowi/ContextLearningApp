@@ -405,3 +405,27 @@ Pada implementasi V3, antarmuka PAHAMI telah disempurnakan dengan sistem desain 
 5. **Cetak Dokumen A4 (`/teacher/print`)**: Format terpisah untuk lembar siswa dan kunci jawaban/rubrik guru.
 6. **Portal Siswa SD (`/student/dashboard`)**: Disesuaikan khusus untuk anak kelas 5 SD dengan navigasi ceria dan ringkas.
 
+---
+
+### Y. Admin Control Center & Remote AI Management
+Pusat kendali internal pengembang untuk memantau dan mengelola aplikasi dari jarak jauh:
+1. **URL Login Admin**: `/admin/login` (atau `http://localhost:3000/admin/login`).
+2. **Kredensial Default**: Username `irham_admin` | Password `PahamiAdmin2026!`.
+3. **Fitur Kunci**:
+   - **Multi-Provider AI Management (`/admin/ai/*`)**: Simpan API Key Google Gemini terenkripsi AES-256-GCM, uji koneksi real-time, dan atur prioritas provider.
+   - **Automatic Failover & Circuit Breaker**: Rotasi cerdas saat kuota 429 tercapai, isolasi `quota_group`, serta Pedagogical Safe Fallback kurikuler tanpa error crash.
+   - **Model & Routing Engine (`/admin/ai/models`)**: Pemetaan model Gemini Flash/Pro per kapabilitas.
+   - **Telemetri & Token (`/admin/ai/usage`)**: Konsumsi token, latensi ms, dan estimasi biaya API.
+   - **Manajemen Pengguna & Sekolah (`/admin/users`, `/admin/schools`)**: Aktivasi akun guru/siswa dan status sekolah.
+   - **Local Knowledge Base & Media CC (`/admin/knowledge-base`, `/admin/knowledge-base/media`)**: Pemantauan 22 entitas wilayah Madiun Raya & Kota Semarang serta media visual Wikimedia Commons CC BY-SA.
+   - **Mode Pemeliharaan & Killswitch (`/admin/system/settings`)**: Kontrol Maintenance Mode dan sakelar global AI.
+   - **Immutable Audit Trail (`/admin/security/audit-logs`)**: Rekam jejak forensik seluruh operasi developer.
+
+**Dokumentasi Teknis Terkait**:
+- [Panduan Pengaturan Admin Lengkap](file:///x:/folder_website/contextlearning/docs/ADMIN_SETUP_MANUAL_IRHAM.md)
+- [Arsitektur Teknis Admin Control Center](file:///x:/folder_website/contextlearning/docs/ADMIN_ARCHITECTURE.md)
+- [Dokumentasi AI Provider Manager & Failover](file:///x:/folder_website/contextlearning/docs/AI_PROVIDER_MANAGER.md)
+- [Spesifikasi Keamanan & Kriptografi](file:///x:/folder_website/contextlearning/docs/ADMIN_SECURITY.md)
+- [Laporan Pengujian & Verifikasi](file:///x:/folder_website/contextlearning/docs/ADMIN_TEST_REPORT.md)
+
+

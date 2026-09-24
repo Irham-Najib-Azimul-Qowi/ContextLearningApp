@@ -73,6 +73,7 @@ def main():
         ("2. Madiun Raya Verified Seed Dataset", project_root / "supabase" / "seed" / "20260923150000_madiun_raya_seed.sql"),
         ("3. Core LMS Schema & Multi-Tenant RLS", project_root / "supabase" / "migrations" / "20260924000000_pahami_core_schema.sql"),
         ("4. Kota Semarang Expansion & Media Assets", project_root / "supabase" / "migrations" / "20260924010000_semarang_and_media.sql"),
+        ("5. Admin Control Center & Multi-Provider AI", project_root / "supabase" / "migrations" / "20260924020000_admin_control_center.sql"),
     ]
 
     for title, filepath in migrations:

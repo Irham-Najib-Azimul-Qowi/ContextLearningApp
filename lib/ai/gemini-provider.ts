@@ -1,5 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
-import { env, isGeminiConfigured } from "../env";
+import { aiProviderManager } from "./ai-provider-manager";
 
 export interface GenerateQuestionParams {
   subject: "Matematika" | "Bahasa Indonesia" | "IPS";
@@ -21,23 +20,10 @@ export interface GeneratedQuestionResult {
 }
 
 export class GeminiProvider {
-  private client: GoogleGenAI | null = null;
-  private modelName: string;
-
-  constructor() {
-    this.modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-    const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    if (apiKey) {
-      this.client = new GoogleGenAI({ apiKey });
-    }
-  }
-
   async generateQuestion(params: GenerateQuestionParams): Promise<GeneratedQuestionResult> {
-    if (this.client) {
-      try {
-        const prompt = `Anda adalah pakar kurikulum Sekolah Dasar (SD) di Indonesia.
+    const prompt = `Anda adalah pakar kurikulum Sekolah Dasar (SD) di Indonesia.
 Buat 1 butir soal ${params.type === "multiple_choice" ? "Pilihan Ganda (4 pilihan A-D)" : "Uraian / Esai"} bermutu tinggi untuk jenjang SD Kelas ${params.grade}, mata pelajaran ${params.subject}, dengan topik "${params.topic}".
-${params.localContextRegion ? `Gunakan konteks karakteristik wilayah ${params.localContextRegion} (Karesidenan Madiun) secara natural dan mendidik.` : ""}
+${params.localContextRegion ? `Gunakan konteks karakteristik wilayah ${params.localContextRegion} (Karesidenan Madiun & Jawa Tengah) secara natural dan mendidik.` : ""}
 
 KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT BERIKUT:
 {
@@ -53,28 +39,27 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT BERIKUT
   "explanation": "Penjelasan langkah penyelesaian yang jelas untuk siswa SD"
 }`;
 
-        const response = await this.client.models.generateContent({
-          model: this.modelName,
-          contents: prompt,
-        });
+    try {
+      const result = await aiProviderManager.execute({
+        featureKey: "question_generation",
+        prompt,
+        requiredCapabilities: ["text_generation", "structured_output"],
+      });
 
-        const text = response.text || "";
-        const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleanJson);
-
+      if (result.success && result.data && result.data.question_text) {
         return {
-          question_text: parsed.question_text,
+          question_text: result.data.question_text,
           type: params.type,
-          options: params.type === "multiple_choice" ? parsed.options : undefined,
-          correct_answer: parsed.correct_answer || (params.type === "multiple_choice" ? "A" : ""),
-          explanation: parsed.explanation || "Pembahasan terperinci.",
+          options: params.type === "multiple_choice" ? result.data.options : undefined,
+          correct_answer: result.data.correct_answer || (params.type === "multiple_choice" ? "A" : ""),
+          explanation: result.data.explanation || "Pembahasan terperinci.",
           topic: params.topic,
           subject: params.subject,
           grade: params.grade,
         };
-      } catch (err) {
-        console.warn("Gemini API call failed, using high-precision fallback:", err);
       }
+    } catch (err) {
+      console.warn("AIProviderManager failed, using high-precision pedagogical fallback:", err);
     }
 
     // High-Precision Fallback for Hackathon Demonstration
@@ -82,9 +67,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT BERIKUT
   }
 
   async scanQuestionImage(base64Data: string, mimeType: string): Promise<GeneratedQuestionResult> {
-    if (this.client) {
-      try {
-        const prompt = `Analisis foto naskah soal sekolah dasar ini. Ekstrak pertanyaan, opsi pilihan ganda (jika ada), kunci jawaban estimasi, dan topik materi dalam format JSON:
+    const prompt = `Analisis foto naskah soal sekolah dasar ini. Ekstrak pertanyaan, opsi pilihan ganda (jika ada), kunci jawaban estimasi, dan topik materi dalam format JSON:
 {
   "question_text": "Teks pertanyaan hasil pembacaan gambar",
   "type": "multiple_choice",
@@ -98,41 +81,36 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT BERIKUT
   "explanation": "Pembahasan soal"
 }`;
 
-        const response = await this.client.models.generateContent({
-          model: this.modelName,
-          contents: [
-            prompt,
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: mimeType,
-              },
-            },
-          ],
-        });
+    try {
+      const result = await aiProviderManager.execute({
+        featureKey: "question_scan",
+        prompt,
+        imagePart: {
+          base64Data,
+          mimeType,
+        },
+        requiredCapabilities: ["text_generation", "image_understanding", "structured_output"],
+      });
 
-        const text = response.text || "";
-        const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleanJson);
-
+      if (result.success && result.data && result.data.question_text) {
         return {
-          question_text: parsed.question_text || "Teks soal berhasil diekstraksi dari foto.",
-          type: parsed.type || "multiple_choice",
-          options: parsed.options || [
+          question_text: result.data.question_text,
+          type: "multiple_choice",
+          options: result.data.options || [
             { key: "A", text: "Pilihan A" },
             { key: "B", text: "Pilihan B" },
             { key: "C", text: "Pilihan C" },
             { key: "D", text: "Pilihan D" },
           ],
-          correct_answer: parsed.correct_answer || "B",
-          explanation: parsed.explanation || "Hasil pembacaan visual OCR cerdas.",
+          correct_answer: result.data.correct_answer || "B",
+          explanation: result.data.explanation || "Hasil pembacaan visual OCR cerdas.",
           topic: "Hasil Pindai Foto Soal",
           subject: "Matematika",
           grade: 5,
         };
-      } catch (err) {
-        console.warn("Gemini Vision API error, fallback to parsed result:", err);
       }
+    } catch (err) {
+      console.warn("AIProviderManager vision scan failed, using fallback:", err);
     }
 
     // Fallback OCR result
