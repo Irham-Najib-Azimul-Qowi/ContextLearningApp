@@ -100,13 +100,13 @@ export default function TeacherDashboardPage() {
             {/* Ambient Glow */}
             <div className="absolute -top-14 -right-14 w-40 h-40 rounded-full bg-white/40 blur-2xl pointer-events-none" />
 
-            {/* Bagian Atas: Ikon Besar + Judul, CTA & Deskripsi */}
-            <div className="flex items-start gap-4 sm:gap-5">
-              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:-rotate-1 transition-transform duration-300 shrink-0 mt-0.5">
+            {/* Bagian Konten: Ikon Besar + Judul, CTA & Deskripsi dipaskan di tengah secara vertikal */}
+            <div className="my-auto flex items-center gap-4 sm:gap-5 py-2">
+              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:-rotate-1 transition-transform duration-300 shrink-0">
                 <FileQuestion className="w-7 h-7 sm:w-9 sm:h-9 text-[#FFD36D] stroke-[2.4]" />
               </div>
-              <div className="min-w-0">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#23212A] tracking-tight">
+              <div className="min-w-0 flex flex-col justify-center">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#23212A] tracking-tight leading-tight">
                   Soal
                 </h2>
                 <div className="text-sm sm:text-base lg:text-lg font-black text-[#51465B] mt-0.5">
@@ -145,13 +145,13 @@ export default function TeacherDashboardPage() {
             {/* Ambient Glow */}
             <div className="absolute -top-14 -left-14 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
 
-            {/* Bagian Atas: Ikon Besar + Judul, CTA & Deskripsi */}
-            <div className="flex items-start gap-4 sm:gap-5">
-              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:rotate-1 transition-transform duration-300 shrink-0 mt-0.5">
+            {/* Bagian Konten: Ikon Besar + Judul, CTA & Deskripsi dipaskan di tengah secara vertikal */}
+            <div className="my-auto flex items-center gap-4 sm:gap-5 py-2">
+              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:rotate-1 transition-transform duration-300 shrink-0">
                 <BookOpen className="w-7 h-7 sm:w-9 sm:h-9 text-[#51465B] stroke-[2.4]" />
               </div>
-              <div className="min-w-0">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              <div className="min-w-0 flex flex-col justify-center">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
                   Materi
                 </h2>
                 <div className="text-sm sm:text-base lg:text-lg font-black text-[#FFD36D] mt-0.5">

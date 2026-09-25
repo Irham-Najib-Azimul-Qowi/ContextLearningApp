@@ -49,7 +49,7 @@ export default function TeacherExamResultsDetailPage() {
       <TeacherWorkspaceShell>
         <div className="p-8 text-center text-slate-500">
           Ujian tidak ditemukan.{" "}
-          <Link href="/teacher/examinations" className="text-indigo-600 underline">
+          <Link href="/teacher/examinations" className="text-[#51465B] font-bold underline">
             Kembali
           </Link>
         </div>
@@ -188,7 +188,7 @@ export default function TeacherExamResultsDetailPage() {
 
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <div className="text-sm font-extrabold text-indigo-600">
+                          <div className="text-sm font-extrabold text-[#51465B]">
                             {att.score !== undefined ? `${att.score}/100` : "Dalam Pengerjaan"}
                           </div>
                           <div className="text-[11px] text-slate-400">

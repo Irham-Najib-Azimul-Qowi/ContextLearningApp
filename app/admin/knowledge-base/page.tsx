@@ -196,7 +196,7 @@ export default function AdminKnowledgeBasePage() {
           <div className="clay-card p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">Vector Storage</span>
-              <div className="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black shadow-xs">
+              <div className="w-9 h-9 rounded-2xl bg-[#51465B]/10 text-[#51465B] flex items-center justify-center font-black shadow-xs">
                 <Layers className="w-4 h-4" />
               </div>
             </div>

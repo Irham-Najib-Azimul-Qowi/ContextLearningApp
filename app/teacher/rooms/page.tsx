@@ -198,8 +198,8 @@ export default function TeacherRoomsPage() {
                         isBoth
                           ? "bg-emerald-50 text-emerald-800"
                           : isMaterial
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "bg-amber-100 text-amber-900"
+                          ? "bg-[#51465B]/10 text-[#51465B]"
+                          : "bg-[#FFD36D]/30 text-[#51465B]"
                       }`}
                     >
                       {isBoth ? (

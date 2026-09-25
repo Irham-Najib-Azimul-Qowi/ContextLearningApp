@@ -221,7 +221,7 @@ export default function RoomViewerPage() {
             {/* Header Card */}
             <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-8 shadow-xs space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B] text-xs font-black uppercase tracking-wider">
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>{isBoth ? "Materi & Latihan Terpadu" : "Modul Ajar Kontekstual"}</span>
                 </span>

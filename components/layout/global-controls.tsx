@@ -554,14 +554,14 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                   type="button"
                   onClick={handleDetectGps}
                   disabled={isLocating}
-                  className="w-full py-2.5 px-3.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
+                  className="w-full py-2.5 px-3.5 rounded-2xl border border-[#51465B]/20 bg-[#51465B]/5 hover:bg-[#51465B]/10 text-[#51465B] font-black text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
                 >
-                  <Compass className={`w-4 h-4 text-indigo-600 ${isLocating ? "animate-spin" : ""}`} />
+                  <Compass className={`w-4 h-4 text-[#51465B] ${isLocating ? "animate-spin" : ""}`} />
                   <span>{isLocating ? "Mendeteksi Koordinat GPS..." : "Sinkronkan dengan Lokasi GPS Perangkat"}</span>
                 </button>
 
                 {gpsNotice && (
-                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] font-medium leading-relaxed">
+                  <div className="p-3 rounded-2xl bg-[#FFD36D]/20 border border-[#FFD36D] text-[#51465B] text-xs font-bold leading-relaxed">
                     {gpsNotice}
                   </div>
                 )}

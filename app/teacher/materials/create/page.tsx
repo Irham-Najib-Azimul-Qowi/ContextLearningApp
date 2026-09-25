@@ -802,7 +802,7 @@ function CreateMaterialContent() {
                 <div className="bg-white rounded-[32px] max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-[#E9E5E8] space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
                     <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                      <span className="w-8 h-8 rounded-xl bg-[#51465B]/10 text-[#51465B] flex items-center justify-center font-bold text-sm">
                         SD
                       </span>
                       <span className="text-xs font-bold text-[#756F7A]">

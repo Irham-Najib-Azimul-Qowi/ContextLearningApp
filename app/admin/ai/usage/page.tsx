@@ -152,7 +152,7 @@ export default function AdminAIUsagePage() {
           <div className="bg-white rounded-3xl p-5 border border-[#E9E5E8] shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">Latensi Rata-Rata</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black">
+              <div className="w-8 h-8 rounded-xl bg-[#51465B]/10 text-[#51465B] flex items-center justify-center font-black">
                 <Clock className="w-4 h-4" />
               </div>
             </div>

@@ -293,7 +293,7 @@ export default function AdminAIModelsPage() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label className="text-[11px] font-extrabold text-[#51465B] flex items-center gap-1.5">
-                          <Gauge className="w-3.5 h-3.5 text-indigo-500" />
+                          <Gauge className="w-3.5 h-3.5 text-[#51465B]" />
                           Temperatur Kreativitas
                         </label>
                         <span className="font-mono text-[10px] font-bold text-[#51465B]">

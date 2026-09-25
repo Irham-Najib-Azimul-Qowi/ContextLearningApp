@@ -238,8 +238,8 @@ export default function TeacherReviewEssayPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                    <label className="block text-xs font-bold text-[#23212A] mb-1.5 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-[#51465B]" />
                       <span>Catatan Umpan Balik Guru (Feedback untuk Murid)</span>
                     </label>
                     <textarea
@@ -247,7 +247,7 @@ export default function TeacherReviewEssayPage() {
                       value={feedback}
                       onChange={(e) => setFeedback(e.target.value)}
                       placeholder="Tuliskan apresiasi dan saran perbaikan untuk siswa..."
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      className="w-full px-3.5 py-2.5 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs font-semibold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                     />
                   </div>
 
@@ -261,7 +261,7 @@ export default function TeacherReviewEssayPage() {
                   <div className="flex justify-end pt-2">
                     <button
                       onClick={handleSaveGrade}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs hover:shadow transition-all"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer"
                     >
                       <Save className="w-4 h-4" />
                       <span>Simpan Penilaian Esai</span>

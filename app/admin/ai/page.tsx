@@ -87,7 +87,7 @@ export default function AdminAIOverviewPage() {
             className="p-6 rounded-[24px] bg-white border border-[#E9E5E8] hover:border-[#51465B] shadow-xs transition-all flex flex-col justify-between group"
           >
             <div>
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#51465B]/10 text-[#51465B] flex items-center justify-center font-bold mb-3">
                 <Sliders className="w-5 h-5" />
               </div>
               <h3 className="font-black text-sm text-[#23212A] mb-1">Model & Routing Fitur</h3>

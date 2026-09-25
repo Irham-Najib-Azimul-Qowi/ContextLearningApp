@@ -91,7 +91,7 @@ export default function AdminSchoolsPage() {
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="p-1.5 rounded-xl bg-indigo-50 text-indigo-700">
+                    <span className="p-1.5 rounded-xl bg-[#51465B]/10 text-[#51465B]">
                       <SchoolIcon className="w-4 h-4" />
                     </span>
                     <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
