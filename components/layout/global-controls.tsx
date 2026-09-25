@@ -3,21 +3,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  School as SchoolIcon,
-  ChevronDown,
   Bell,
   Settings,
-  User,
   LogOut,
   Sparkles,
-  Check,
   X,
-  GraduationCap,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
 import { School, AppNotification } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/client";
-import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
 interface GlobalControlsProps {
   contextMode?: "material" | "question";
@@ -34,7 +28,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
   // Active theme context mode ("material" = #51465B, "question" = #FFD36D)
   const [activeMode, setActiveMode] = useState<"material" | "question">("material");
 
-  // Floating controls expansion state: collapsed (circle only) vs expanded (pill wrapper)
+  // Floating controls expansion state: collapsed (circle only) vs expanded (beside buttons revealed)
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Dropdown states
@@ -92,11 +86,6 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSwitchToStudent = () => {
-    repository.setCurrentRole("STUDENT");
-    router.push("/student/dashboard");
-  };
-
   const handleLogout = async () => {
     try {
       const supabase = createClient();
@@ -126,82 +115,35 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     ? "hover:bg-black/10 active:bg-black/15 text-[#251E2B]"
     : "hover:bg-white/20 active:bg-white/30 text-white";
 
-  // Initials for avatar fallback
-  const userInitials =
-    currentUser?.full_name
-      ?.split(" ")
-      .slice(0, 2)
-      .map((w: string) => w[0])
-      .join("")
-      .toUpperCase() || "DG";
-
   return (
     <>
       <div
         ref={containerRef}
-        className="fixed top-4 right-4 sm:right-6 z-50 select-none flex items-center justify-end"
-        aria-label="Kontrol Utama Ruang Kerja"
+        className="fixed top-4 right-4 sm:right-6 z-50 select-none flex items-center gap-2 justify-end"
+        aria-label="Kontrol Utama Pengguna"
       >
-        {/* ====================================================================
-            1. COLLAPSED STATE: ONLY FLOATING CIRCULAR PROFILE AVATAR
-            Badge is placed outside overflow-hidden container so it is NEVER clipped.
-            ==================================================================== */}
-        {!isExpanded ? (
-          <div className="relative inline-flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setIsExpanded(true)}
-              className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border-2 border-white/90 shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 relative flex items-center justify-center cursor-pointer bg-gradient-to-tr from-[#3E3547] to-[#51465B] p-0"
-              title="Buka Menu Guru (Notifikasi & Pengaturan)"
-              aria-label="Buka Kontrol Profil dan Notifikasi"
-            >
-              <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                <img
-                  src="/images/dashboard/teacher-avatar.jpg"
-                  alt={currentUser?.full_name || "Profil Guru"}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-                <span className="text-white font-extrabold text-xs">
-                  {userInitials}
-                </span>
-              </div>
-            </button>
-
-            {/* Notification Badge on Profile Circle - OUTSIDE button & overflow-hidden (NEVER clipped) */}
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 z-30 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white shadow-md pointer-events-none animate-bounce">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </div>
-        ) : (
-          /* ====================================================================
-             2. EXPANDED STATE: EXPANDS TO THE LEFT INTO A ROUNDED-FULL PILL
-             Contains Notifikasi, Settings, and non-dropdown Profile Avatar.
-             ==================================================================== */
+        {/* Menu Notifikasi & Setting di sampingnya (muncul saat avatar diklik) */}
+        {isExpanded && (
           <div
-            className={`flex items-center gap-3 py-2 px-3 rounded-full ${pillWrapperClass} backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-right-4`}
+            className={`flex items-center gap-1.5 p-1 rounded-full ${pillWrapperClass} backdrop-blur-md shadow-xl transition-all duration-300 animate-in fade-in slide-in-from-right-3`}
           >
-            {/* 1. NOTIFIKASI BUTTON (Badge placed with ample space, NEVER clipped) */}
+            {/* 1. NOTIFIKASI BUTTON */}
             <div className="relative inline-flex items-center justify-center">
               <button
                 type="button"
-                onClick={() => {
-                  setIsNotifMenuOpen(!isNotifMenuOpen);
-                }}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${iconButtonHoverClass}`}
+                onClick={() => setIsNotifMenuOpen(!isNotifMenuOpen)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${iconButtonHoverClass} ${
+                  isNotifMenuOpen ? (isQuestion ? "bg-black/15" : "bg-white/25") : ""
+                }`}
                 title="Notifikasi"
                 aria-label="Buka Notifikasi"
               >
-                <Bell className="w-5 h-5 stroke-[2.2]" />
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </button>
 
-              {/* Notification Badge on Bell - NEVER clipped */}
+              {/* Badge Notifikasi pada Ikon Bell (unclipped) */}
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 z-30 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow-xs pointer-events-none">
+                <span className="absolute -top-1 -right-1 z-30 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow-xs pointer-events-none">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -248,51 +190,49 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 setIsSettingsModalOpen(true);
                 setIsNotifMenuOpen(false);
               }}
-              className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer ${iconButtonHoverClass}`}
-              title="Pengaturan Workspace"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${iconButtonHoverClass}`}
+              title="Pengaturan"
               aria-label="Buka Pengaturan"
             >
-              <Settings className="w-5 h-5 stroke-[2.2]" />
-            </button>
-
-            {/* 3. PROFILE DISPLAY (NO DROPDOWN AS REQUESTED) */}
-            <div
-              className={`w-11 h-11 rounded-full border-2 relative flex items-center justify-center select-none ${
-                isQuestion ? "border-[#251E2B]/50" : "border-white/80"
-              }`}
-              title={`Akun: ${currentUser?.full_name || "Ibu Guru"}`}
-            >
-              <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                <img
-                  src="/images/dashboard/teacher-avatar.jpg"
-                  alt={currentUser?.full_name || "Profil Guru"}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-                <span className="text-white font-extrabold text-xs">
-                  {userInitials}
-                </span>
-              </div>
-            </div>
-
-            {/* 4. CLOSE / COLLAPSE BUTTON */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsExpanded(false);
-                setIsNotifMenuOpen(false);
-              }}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                isQuestion ? "hover:bg-black/10 text-[#251E2B]/70" : "hover:bg-white/20 text-white/70"
-              }`}
-              title="Ciutkan Menu"
-            >
-              <X className="w-4 h-4 stroke-[2.5]" />
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
             </button>
           </div>
         )}
+
+        {/* LINGKARAN PROFIL UTAMA (HANYA GAMBAR PROFIL SAJA) */}
+        <div className="relative inline-flex items-center justify-center shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setIsExpanded(!isExpanded);
+              if (isExpanded) setIsNotifMenuOpen(false);
+            }}
+            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer p-0 bg-[#3E3547] ${
+              isExpanded
+                ? isQuestion
+                  ? "border-[#251E2B] ring-2 ring-[#251E2B]/40 scale-105"
+                  : "border-white ring-2 ring-[#FFD36D] scale-105"
+                : isQuestion
+                ? "border-[#251E2B]/40 hover:border-[#251E2B]"
+                : "border-white/90 hover:border-white"
+            }`}
+            title={isExpanded ? "Tutup menu samping" : "Klik untuk membuka notifikasi dan pengaturan"}
+            aria-label="Profil Pengguna"
+          >
+            <img
+              src="/images/dashboard/teacher-avatar.jpg"
+              alt="Foto Profil"
+              className="w-full h-full object-cover rounded-full pointer-events-none select-none block"
+            />
+          </button>
+
+          {/* Badge Notifikasi pada Profil saat menu samping belum dibuka (unclipped) */}
+          {!isExpanded && unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 z-30 min-w-5 h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white shadow-md pointer-events-none animate-bounce">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* SETTINGS MODAL */}
