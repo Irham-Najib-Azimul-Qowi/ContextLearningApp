@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, DoorOpen } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { PuzzleServiceCards } from "@/components/landing/puzzle-service-cards";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
@@ -60,11 +60,20 @@ export default function HomePage() {
           {/* TENGAH: Clean whitespace */}
           <div className="flex-1" />
 
-          {/* KANAN ATAS: Floating CTA Button ("Masuk" / "Dashboard") */}
-          <div className="flex items-center gap-3">
+          {/* KANAN ATAS: Room Code button + CTA Button ("Masuk" / "Dashboard") */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <Link
+              href="/room"
+              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full border border-[#51465B]/25 hover:border-[#51465B] bg-white/80 hover:bg-white text-[#51465B] text-xs font-bold transition-all shadow-2xs"
+              title="Akses materi atau soal dengan kode room"
+            >
+              <DoorOpen className="w-3.5 h-3.5 text-[#51465B]" />
+              <span>Masukkan Kode Room</span>
+            </Link>
+
             {isLoggedIn ? (
               <Link
-                href={dashboardHref}
+                href="/teacher/dashboard"
                 className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD36D]"
               >
                 <span>Dashboard</span>
@@ -75,7 +84,7 @@ export default function HomePage() {
                 href="/login"
                 className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD36D]"
               >
-                <span>Masuk</span>
+                <span>Masuk Pengajar</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#FFD36D] stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
               </Link>
             )}

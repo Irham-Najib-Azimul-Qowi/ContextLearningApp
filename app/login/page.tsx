@@ -157,10 +157,23 @@ function LoginForm() {
             </>
           )}
         </button>
+
+        {/* Notice for Students: No Login Required */}
+        <div className="pt-2 text-center">
+          <p className="text-[11px] text-gray-300">
+            Siswa tidak memerlukan akun.{" "}
+            <Link
+              href="/room"
+              className="text-[#FFD36D] font-bold hover:underline"
+            >
+              Masuk via Kode Room &rarr;
+            </Link>
+          </p>
+        </div>
       </div>
 
       {/* 4. BAWAHNYA: KEMBALI KE BERANDA */}
-      <div className="mt-8 pt-5 border-t border-white/15 w-full text-center">
+      <div className="mt-7 pt-5 border-t border-white/15 w-full text-center">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white transition-colors"

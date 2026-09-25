@@ -9,6 +9,7 @@ import {
   ExamAttempt,
   AppNotification,
   UserRole,
+  LearningRoom,
 } from "./types";
 
 // ==============================================================================
@@ -288,6 +289,46 @@ const SEED_NOTIFICATIONS: AppNotification[] = [
     read: false,
     link: "/student/examinations/exam-pnr-01/results",
     created_at: "2026-09-21T10:00:00Z",
+  },
+];
+
+const SEED_ROOMS: LearningRoom[] = [
+  {
+    id: "room-01",
+    code: "MTR-3502",
+    title: "Potensi Geografis & Komoditas Unggulan Ponorogo",
+    type: "material",
+    resource_id: "mat-pnr-01",
+    subject: "IPS",
+    grade: 5,
+    region_name: "Kabupaten Ponorogo",
+    teacher_id: "usr-teacher-01",
+    teacher_name: "Ibu Siti Aminah, S.Pd.",
+    access_count: 14,
+    created_at: "2026-09-20T08:00:00Z",
+    visitors: [
+      { name: "Budi Santoso", accessed_at: "2026-09-21T09:15:00Z", completed: true },
+      { name: "Anisa Rahma", accessed_at: "2026-09-21T10:30:00Z", completed: true },
+      { name: "Dimas Anggara", accessed_at: "2026-09-22T08:00:00Z", completed: true },
+    ],
+  },
+  {
+    id: "room-02",
+    code: "SOL-5021",
+    title: "Latihan Soal Matematika Pasar & Budaya Ponorogo",
+    type: "question",
+    resource_id: "q-pnr-01",
+    subject: "Matematika",
+    grade: 5,
+    region_name: "Kabupaten Ponorogo",
+    teacher_id: "usr-teacher-01",
+    teacher_name: "Ibu Siti Aminah, S.Pd.",
+    access_count: 19,
+    created_at: "2026-09-20T09:00:00Z",
+    visitors: [
+      { name: "Budi Santoso", accessed_at: "2026-09-21T09:20:00Z", score: 95, completed: true },
+      { name: "Citra Lestari", accessed_at: "2026-09-21T11:05:00Z", score: 90, completed: true },
+    ],
   },
 ];
 
@@ -732,6 +773,68 @@ class PahamiRepository {
       target.read = true;
       this.setItem<AppNotification[]>("notifications", notifs);
     }
+  }
+
+  // --- LEARNING ROOMS (URL / KODE AKSES SISWA TANPA LOGIN) ---
+  getRooms(teacherId?: string): LearningRoom[] {
+    const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+    if (teacherId) {
+      return rooms.filter((r) => r.teacher_id === teacherId);
+    }
+    return rooms;
+  }
+
+  getRoomByCode(code: string): LearningRoom | undefined {
+    const rooms = this.getRooms();
+    const cleanCode = code.trim().toUpperCase();
+    return rooms.find((r) => r.code.toUpperCase() === cleanCode);
+  }
+
+  createRoom(
+    data: Omit<LearningRoom, "id" | "created_at" | "access_count" | "visitors">
+  ): LearningRoom {
+    const rooms = this.getRooms();
+    const newRoom: LearningRoom = {
+      ...data,
+      id: `room-${Date.now()}`,
+      code: data.code.trim().toUpperCase(),
+      access_count: 0,
+      created_at: new Date().toISOString(),
+      visitors: [],
+    };
+    rooms.unshift(newRoom);
+    this.setItem<LearningRoom[]>("rooms", rooms);
+    return newRoom;
+  }
+
+  recordRoomVisit(code: string, visitorName: string, score?: number): boolean {
+    const rooms = this.getRooms();
+    const cleanCode = code.trim().toUpperCase();
+    const target = rooms.find((r) => r.code.toUpperCase() === cleanCode);
+    if (!target) return false;
+
+    target.access_count = (target.access_count || 0) + 1;
+    if (!target.visitors) target.visitors = [];
+
+    const existingVisitor = target.visitors.find(
+      (v) => v.name.toLowerCase() === visitorName.trim().toLowerCase()
+    );
+
+    if (existingVisitor) {
+      existingVisitor.accessed_at = new Date().toISOString();
+      if (score !== undefined) existingVisitor.score = score;
+      existingVisitor.completed = true;
+    } else {
+      target.visitors.push({
+        name: visitorName.trim(),
+        accessed_at: new Date().toISOString(),
+        score,
+        completed: true,
+      });
+    }
+
+    this.setItem<LearningRoom[]>("rooms", rooms);
+    return true;
   }
 }
 

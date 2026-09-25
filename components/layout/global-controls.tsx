@@ -351,20 +351,12 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
 
               {/* Account Quick Actions */}
               <div className="pt-3 border-t border-slate-100 space-y-2">
-                <label className="font-semibold text-slate-700 block text-xs">Aksi Akun Guru</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSwitchToStudent}
-                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer transition-colors"
-                  >
-                    <GraduationCap className="w-4 h-4 text-[#51465B]" />
-                    <span>Beralih ke Siswa</span>
-                  </button>
+                <label className="font-semibold text-slate-700 block text-xs">Aksi Akun</label>
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
                   >
                     <LogOut className="w-4 h-4 text-rose-500" />
                     <span>Keluar (Log out)</span>

@@ -173,10 +173,10 @@ export default function TeacherDashboardPage() {
           <div className="p-5 sm:p-7 rounded-[24px] sm:rounded-[32px] bg-[#F47D83] text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
             <div className="relative z-10 max-w-md space-y-2">
               <h2 className="text-xl sm:text-3xl font-black tracking-tight text-white">
-                Good Job, Bu Guru!
+                Selamat Datang, {teacherFirstName}!
               </h2>
               <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-normal">
-                Konteks {school?.region_name || "Kota Madiun"} aktif untuk 21 siswa. 150+ butir soal kontekstual dan modul ajar terverifikasi BPS siap digunakan hari ini!
+                Konteks {school?.region_name || "Kota Madiun"} aktif. 150+ butir soal kontekstual dan modul ajar terverifikasi BPS siap dibagikan ke siswa via Room & URL!
               </p>
             </div>
 
@@ -223,7 +223,7 @@ export default function TeacherDashboardPage() {
                 +1,2k
               </div>
               <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
-                Aktivitas Ujian
+                Aktivitas Room
               </div>
             </div>
           </div>

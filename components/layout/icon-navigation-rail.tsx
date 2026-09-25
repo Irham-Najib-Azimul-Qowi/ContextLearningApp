@@ -175,7 +175,7 @@ export function IconNavigationRail({
                   isQuestion ? "text-[#51465B]/80" : "text-white/60"
                 }`}
               >
-                Ruang Kerja Guru
+                Ruang Kerja Pengajar
               </span>
             </div>
 
