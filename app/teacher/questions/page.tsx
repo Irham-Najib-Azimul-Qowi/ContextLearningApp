@@ -93,6 +93,9 @@ export default function TeacherQuestionsPage() {
   const [generatedRoomCode, setGeneratedRoomCode] = useState("");
   const [roomCreatedSuccess, setRoomCreatedSuccess] = useState(false);
 
+  // Question Preview Modal State
+  const [selectedQuestionForPreview, setSelectedQuestionForPreview] = useState<Question | null>(null);
+
   const loadData = () => {
     const school = repository.getActiveSchool();
     const user = repository.getCurrentUser();
@@ -396,29 +399,29 @@ export default function TeacherQuestionsPage() {
             </p>
           </div>
 
-          {/* Search Bar & Instant Filter Langsung di Bawah Judul Daftar */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-3xl border border-[#E9E5E8] shadow-xs">
+          {/* Search Bar & Instant Filter: Dark Gradient Wrapper with High Visual Contrast */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-gradient-to-r from-[#3E3547] via-[#332A3B] to-[#251E2B] p-3.5 sm:p-4 rounded-[24px] sm:rounded-3xl border border-[#5A4F65] shadow-lg">
             {/* Search Bar */}
             <div className="relative flex-1 max-w-md w-full">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#FFD36D]" />
               <input
                 type="text"
                 placeholder="Cari butir soal, topik, atau kode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A]/60 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#251E2B]/80 border-2 border-white/20 text-xs font-semibold text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FFD36D] transition-colors"
               />
             </div>
 
-            {/* Instant Filter Pills (Langsung Aktif Tanpa Tombol Konfirmasi) */}
+            {/* Instant Filter Pills & Dropdown */}
             <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
               <button
                 type="button"
                 onClick={() => setFilterType("all")}
                 className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   filterType === "all"
-                    ? "bg-[#51465B] text-white shadow-xs"
-                    : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A]"
+                    ? "bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] font-black shadow-xs"
+                    : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
                 }`}
               >
                 Semua
@@ -428,8 +431,8 @@ export default function TeacherQuestionsPage() {
                 onClick={() => setFilterType("multiple_choice")}
                 className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   filterType === "multiple_choice"
-                    ? "bg-[#51465B] text-white shadow-xs"
-                    : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A]"
+                    ? "bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] font-black shadow-xs"
+                    : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
                 }`}
               >
                 Pilihan Ganda
@@ -439,8 +442,8 @@ export default function TeacherQuestionsPage() {
                 onClick={() => setFilterType("essay")}
                 className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   filterType === "essay"
-                    ? "bg-[#51465B] text-white shadow-xs"
-                    : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A]"
+                    ? "bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] font-black shadow-xs"
+                    : "bg-white/10 hover:bg-white/15 text-white border border-white/15"
                 }`}
               >
                 Esai
@@ -449,10 +452,10 @@ export default function TeacherQuestionsPage() {
               <select
                 value={filterSubject}
                 onChange={(e) => setFilterSubject(e.target.value)}
-                className="px-3.5 py-2 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#51465B] focus:outline-none cursor-pointer"
+                className="px-4 py-2 rounded-full bg-[#251E2B] border-2 border-white/20 text-xs font-bold text-[#FFD36D] focus:outline-none focus:border-[#FFD36D] cursor-pointer shadow-xs transition-colors"
               >
                 {SUBJECT_OPTIONS.map((subj) => (
-                  <option key={subj} value={subj}>
+                  <option key={subj} value={subj} className="bg-[#251E2B] text-white">
                     {subj}
                   </option>
                 ))}
@@ -461,7 +464,7 @@ export default function TeacherQuestionsPage() {
           </div>
 
           {/* ===================================================================
-              CARD HORIZONTAL DAFTAR SOAL DENGAN IKON & WARNA KHAS SOAL (#FFD36D)
+              DAFTAR SOAL: CARD BERWARNA SOLID, TANPA IKON & TANPA DESKRIPSI
               =================================================================== */}
           {filteredQuestions.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
@@ -484,87 +487,82 @@ export default function TeacherQuestionsPage() {
                 return (
                   <div
                     key={q.id}
-                    className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-r from-[#FFFDF5] to-white border-2 border-[#FFD36D] hover:border-[#D4AC0D] hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                    className="p-5 sm:p-6 rounded-[24px] sm:rounded-[28px] bg-[#854D0E] text-white border border-[#A16207]/40 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
                   >
-                    {/* Left: Characteristic Question Icon + Info */}
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 shadow-xs">
-                        {isEssay ? (
-                          <FileText className="w-6 h-6 stroke-[2.2]" />
-                        ) : (
-                          <Brain className="w-6 h-6 stroke-[2.2]" />
-                        )}
+                    {/* Left: Info Only (Ikon & Deskripsi Dihapus) */}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-3 py-1 rounded-full bg-white/15 text-[#FFD36D] font-black text-[10px] uppercase tracking-wider">
+                          {q.subject} &bull; Kelas {q.grade} SD
+                        </span>
+
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
+                          {isEssay ? "Soal Esai" : "Pilihan Ganda"}
+                        </span>
+
+                        {/* Kode Unik Soal with Copy Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(q.id)}
+                          className="py-1 px-3 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-mono font-bold text-gray-200 flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Klik untuk menyalin kode unik soal"
+                        >
+                          {copiedCode === q.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              <span className="text-emerald-300 font-sans">Tersalin</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-gray-300" />
+                              <span>{q.id}</span>
+                            </>
+                          )}
+                        </button>
                       </div>
 
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="px-3 py-1 rounded-full bg-[#51465B] text-white font-black text-[10px] uppercase tracking-wider">
-                            {q.subject} &bull; Kelas {q.grade} SD
-                          </span>
-
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            isEssay ? "bg-purple-100 text-purple-900" : "bg-amber-100 text-amber-900"
-                          }`}>
-                            {isEssay ? "Soal Esai" : "Pilihan Ganda"}
-                          </span>
-
-                          {/* Kode Unik Soal with Copy Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(q.id)}
-                            className="py-1 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-[10px] font-mono font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
-                            title="Klik untuk menyalin kode unik soal"
-                          >
-                            {copiedCode === q.id ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                <span className="text-emerald-700 font-sans">Tersalin</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3 text-slate-500" />
-                                <span>{q.id}</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-
-                        <h3 className="text-base sm:text-lg font-black text-[#23212A] tracking-tight group-hover:text-[#51465B] transition-colors">
-                          {q.topic}
-                        </h3>
-
-                        <p className="text-xs text-[#756F7A] line-clamp-2 leading-relaxed">
-                          {q.question_text}
-                        </p>
-                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
+                        {q.topic}
+                      </h3>
                     </div>
 
                     {/* Right: Actions Row */}
-                    <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                    <div className="flex items-center gap-2.5 self-end md:self-center shrink-0">
                       {activeRoom ? (
                         <Link
                           href={`/room/${activeRoom.code}`}
                           target="_blank"
-                          className="px-4 py-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors"
+                          className="px-3.5 py-2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition-colors"
                         >
-                          <DoorOpen className="w-3.5 h-3.5 text-emerald-600" />
+                          <DoorOpen className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Room: {activeRoom.code}</span>
                         </Link>
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleOpenPublishRoom(q)}
-                          className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                          className="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 transition-all cursor-pointer"
                         >
                           <DoorOpen className="w-3.5 h-3.5 text-[#FFD36D]" />
                           <span>Buka Room</span>
                         </button>
                       )}
 
+                      {/* Tombol Lihat Soal */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQuestionForPreview(q)}
+                        className="px-4 py-2 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                      >
+                        <Eye className="w-3.5 h-3.5 stroke-[2.2]" />
+                        <span>Lihat Soal</span>
+                      </button>
+
+                      {/* Tombol Sampah Merah */}
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(q.id)}
-                        className="p-2 rounded-full border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        className="p-2 sm:p-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer shadow-md active:scale-95 shrink-0"
                         title="Hapus Soal"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1119,6 +1117,125 @@ export default function TeacherQuestionsPage() {
             >
               Tutup
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          PREVIEW MODAL SOAL (OVERLAY LIHAT SOAL)
+          ===================================================================== */}
+      {selectedQuestionForPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[90vh] flex flex-col text-white">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-white/15">
+              <div className="space-y-1 pr-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-white/15 text-[#FFD36D] font-black text-[10px] uppercase tracking-wider">
+                    {selectedQuestionForPreview.subject} &bull; Kelas {selectedQuestionForPreview.grade} SD
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300 font-mono text-[10px] font-bold">
+                    {selectedQuestionForPreview.type === "essay" ? "Soal Esai" : "Pilihan Ganda"}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300 font-mono text-[10px] font-bold">
+                    {selectedQuestionForPreview.id}
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-2">
+                  {selectedQuestionForPreview.topic}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedQuestionForPreview(null)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="my-5 overflow-y-auto pr-2 space-y-4 max-h-[50vh]">
+              {/* Question Text */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#251E2B]/80 border border-white/10 text-gray-200 text-sm leading-relaxed font-semibold">
+                {selectedQuestionForPreview.question_text}
+              </div>
+
+              {/* Options if Multiple Choice */}
+              {selectedQuestionForPreview.type === "multiple_choice" && selectedQuestionForPreview.options && (
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-gray-400">Pilihan Jawaban:</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedQuestionForPreview.options.map((opt, idx) => {
+                      const optLabel = opt.key || String.fromCharCode(65 + idx);
+                      const optText = opt.text || "";
+                      const isCorrect =
+                        selectedQuestionForPreview.correct_answer === optLabel ||
+                        selectedQuestionForPreview.correct_answer === optText;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+                            isCorrect
+                              ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-200 font-bold"
+                              : "bg-white/5 border-white/10 text-gray-300"
+                          }`}
+                        >
+                          <span>
+                            <strong className="mr-1.5 text-white">{optLabel}.</strong> {optText}
+                          </span>
+                          {isCorrect && (
+                            <span className="text-[10px] bg-emerald-500 text-[#251E2B] font-black px-2 py-0.5 rounded-full">
+                              Kunci
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Explanation */}
+              {selectedQuestionForPreview.explanation && (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-300 space-y-1">
+                  <span className="font-bold text-[#FFD36D] block">Penjelasan / Pembahasan:</span>
+                  <p className="leading-relaxed">{selectedQuestionForPreview.explanation}</p>
+                </div>
+              )}
+
+              {/* Rubric if Essay */}
+              {selectedQuestionForPreview.type === "essay" && selectedQuestionForPreview.rubric && (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-300 space-y-1">
+                  <span className="font-bold text-[#FFD36D] block">Rubrik Penilaian:</span>
+                  <p className="leading-relaxed">{selectedQuestionForPreview.rubric}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-white/15 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const targetQ = selectedQuestionForPreview;
+                  setSelectedQuestionForPreview(null);
+                  handleOpenPublishRoom(targetQ);
+                }}
+                className="py-2.5 px-5 rounded-2xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all cursor-pointer border border-white/20 flex items-center gap-1.5"
+              >
+                <DoorOpen className="w-3.5 h-3.5 text-[#FFD36D]" />
+                <span>Buka Room Siswa</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedQuestionForPreview(null)}
+                className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs font-black shadow-md transition-all cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
