@@ -14,7 +14,6 @@ export default function RoomAccessPortalPage() {
   const [studentName, setStudentName] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [matchedRoomTitle, setMatchedRoomTitle] = useState("");
 
   // Step 1: Validate Room Code
   const handleValidateCode = (e: React.FormEvent) => {
@@ -37,7 +36,6 @@ export default function RoomAccessPortalPage() {
     }
 
     setIsLoading(false);
-    setMatchedRoomTitle(room.title);
     setStep(2);
   };
 
@@ -151,11 +149,6 @@ export default function RoomAccessPortalPage() {
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 Masukkan Nama
               </h1>
-              {matchedRoomTitle && (
-                <p className="text-xs text-[#FFD36D] mt-1.5 font-semibold truncate max-w-xs mx-auto">
-                  {matchedRoomTitle}
-                </p>
-              )}
             </div>
 
             {/* Error Message */}
@@ -183,7 +176,7 @@ export default function RoomAccessPortalPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -208,16 +201,28 @@ export default function RoomAccessPortalPage() {
           </div>
         )}
 
-        {/* Back link at bottom */}
-        <div className="mt-7 pt-5 border-t border-white/15 w-full text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+        {/* Back link at bottom: Visible in Step 1, preserved as invisible spacer in Step 2 */}
+        {step === 1 ? (
+          <div className="mt-7 pt-5 border-t border-white/15 w-full text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Kembali ke Beranda</span>
+            </Link>
+          </div>
+        ) : (
+          <div
+            className="mt-7 pt-5 border-t border-transparent w-full text-center invisible pointer-events-none select-none"
+            aria-hidden="true"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Beranda</span>
-          </Link>
-        </div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Kembali ke Beranda</span>
+            </span>
+          </div>
+        )}
       </div>
     </main>
   );
