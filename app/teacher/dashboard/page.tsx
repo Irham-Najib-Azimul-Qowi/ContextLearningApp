@@ -65,10 +65,10 @@ export default function TeacherDashboardPage() {
             {/* Ambient Glow */}
             <div className="absolute -top-14 -right-14 w-40 h-40 rounded-full bg-white/40 blur-2xl pointer-events-none" />
 
-            {/* Bagian Atas: Ikon Besar + Judul & CTA */}
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:-rotate-1 transition-transform duration-300 shrink-0">
-                <FileQuestion className="w-8 h-8 sm:w-10 sm:h-10 text-[#FFD36D] stroke-[2.4]" />
+            {/* Bagian Atas: Ikon Besar + Judul, CTA & Deskripsi */}
+            <div className="flex items-start gap-4 sm:gap-5">
+              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:-rotate-1 transition-transform duration-300 shrink-0 mt-0.5">
+                <FileQuestion className="w-7 h-7 sm:w-9 sm:h-9 text-[#FFD36D] stroke-[2.4]" />
               </div>
               <div className="min-w-0">
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#23212A] tracking-tight">
@@ -77,6 +77,9 @@ export default function TeacherDashboardPage() {
                 <div className="text-sm sm:text-base lg:text-lg font-black text-[#51465B] mt-0.5">
                   Bikin Soal Lebih Nyata
                 </div>
+                <p className="text-xs sm:text-sm text-[#23212A]/85 font-medium leading-relaxed mt-1 line-clamp-2">
+                  Rancang dan kelola butir soal asesmen kontekstual berbasis data BPS dan kearifan lokal sekitar murid.
+                </p>
               </div>
             </div>
 
@@ -107,10 +110,10 @@ export default function TeacherDashboardPage() {
             {/* Ambient Glow */}
             <div className="absolute -top-14 -left-14 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
 
-            {/* Bagian Atas: Ikon Besar + Judul & CTA */}
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:rotate-1 transition-transform duration-300 shrink-0">
-                <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-[#51465B] stroke-[2.4]" />
+            {/* Bagian Atas: Ikon Besar + Judul, CTA & Deskripsi */}
+            <div className="flex items-start gap-4 sm:gap-5">
+              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:rotate-1 transition-transform duration-300 shrink-0 mt-0.5">
+                <BookOpen className="w-7 h-7 sm:w-9 sm:h-9 text-[#51465B] stroke-[2.4]" />
               </div>
               <div className="min-w-0">
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
@@ -119,6 +122,9 @@ export default function TeacherDashboardPage() {
                 <div className="text-sm sm:text-base lg:text-lg font-black text-[#FFD36D] mt-0.5">
                   Kemas Materi Lebih Dekat
                 </div>
+                <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed mt-1 line-clamp-2">
+                  Susun modul ajar tematik Kurikulum Merdeka yang relevan dan siap dibagikan ke ruang belajar siswa.
+                </p>
               </div>
             </div>
 
