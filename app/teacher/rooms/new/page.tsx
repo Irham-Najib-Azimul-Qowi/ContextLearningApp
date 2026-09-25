@@ -168,7 +168,7 @@ export default function CreateRoomPage() {
                 </div>
                 <div>
                   <div className="font-black text-xs">
-                    Materi Saja
+                    Materi
                   </div>
                   <div className={`text-[10px] ${roomType === "material" ? "text-[#251E2B]/80 font-semibold" : "text-gray-300"}`}>
                     Baca bahan ajar
@@ -197,7 +197,7 @@ export default function CreateRoomPage() {
                 </div>
                 <div>
                   <div className="font-black text-xs">
-                    Soal Saja
+                    Soal
                   </div>
                   <div className={`text-[10px] ${roomType === "question" ? "text-[#251E2B]/80 font-semibold" : "text-gray-300"}`}>
                     Latihan soal

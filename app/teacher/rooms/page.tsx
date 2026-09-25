@@ -137,7 +137,7 @@ export default function TeacherRoomsPage() {
                   : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A] hover:bg-slate-100"
               }`}
             >
-              Materi Saja
+              Materi
             </button>
             <button
               type="button"
@@ -148,7 +148,7 @@ export default function TeacherRoomsPage() {
                   : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A] hover:bg-slate-100"
               }`}
             >
-              Soal Saja
+              Soal
             </button>
             <button
               type="button"
@@ -228,7 +228,7 @@ export default function TeacherRoomsPage() {
                         </div>
 
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs ${badgeColorClass}`}>
-                          <span>{isBoth ? "Materi & Soal" : isMaterial ? "Materi Saja" : "Soal Saja"}</span>
+                          <span>{isBoth ? "Materi & Soal" : isMaterial ? "Materi" : "Soal"}</span>
                         </span>
                       </div>
 
