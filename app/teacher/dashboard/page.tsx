@@ -3,543 +3,481 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Sparkles,
-  BookOpen,
   Brain,
-  ClipboardCheck,
-  Bell,
+  BookOpen,
+  Sparkles,
+  Plus,
   ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  ShoppingBag,
-  FileText,
-  MapPin,
-  CheckCircle2,
-  Printer,
-  Glasses,
-  Lock,
   Copy,
   Check,
-  Eye,
+  DoorOpen,
+  Users,
+  ClipboardCheck,
+  Printer,
+  Camera,
+  MapPin,
+  ExternalLink,
+  ChevronRight,
+  FileCheck,
+  GraduationCap,
   Layers,
+  Settings,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
-import { School, UserProfile, ClassRoom, Question, LearningMaterial, Exam, ExamAttempt } from "@/lib/db/types";
+import {
+  School,
+  UserProfile,
+  ClassRoom,
+  Question,
+  LearningMaterial,
+  Exam,
+  LearningRoom,
+} from "@/lib/db/types";
 
 export default function TeacherDashboardPage() {
   const [school, setSchool] = useState<School | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
-
-  // Preview tab state: "question" (Quentext) or "material" (Mattext)
-  const [activePreviewTab, setActivePreviewTab] = useState<"question" | "material">("material");
-  const [selectedSampleIndex, setSelectedSampleIndex] = useState(0);
-  const [copiedNotice, setCopiedNotice] = useState(false);
+  const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [rooms, setRooms] = useState<LearningRoom[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     const activeSchool = repository.getActiveSchool();
+    const currentUser = repository.getCurrentUser();
+
     setSchool(activeSchool);
-    setUser(repository.getCurrentUser());
+    setUser(currentUser);
     setQuestions(repository.getQuestions({ schoolId: activeSchool.id }));
     setMaterials(repository.getMaterials(activeSchool.id));
-    setActivePreviewTab(repository.getLastContextMode());
+    setClasses(repository.getClasses(activeSchool.id));
+    setExams(repository.getExams(activeSchool.id));
+    setRooms(repository.getRooms(currentUser?.id));
   }, []);
 
-  const todayFormatted = new Intl.DateTimeFormat("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date());
-
-  const teacherFirstName = user?.full_name?.split(" ")[0]?.replace(",", "") || "Guru";
-
-  // Samples of Quentext (Soal)
-  const SAMPLE_QUESTIONS = [
-    {
-      title: "Matematika Pasar Besar Madiun",
-      subject: "Matematika Fase C • Kelas 5 SD",
-      region: "Kota Madiun (Pasar Besar)",
-      prompt:
-        "Di Pasar Besar Kota Madiun, Bu Lastri membeli 3 kantong brem seharga Rp15.000 per kantong dan 2 kotak madumongso seharga Rp22.500 per kotak. Bu Lastri membayar dengan selembar uang Rp100.000. Berapakah uang kembalian yang diterima Bu Lastri?",
-      options: [
-        { label: "A", text: "Rp10.000", isCorrect: true },
-        { label: "B", text: "Rp15.000", isCorrect: false },
-        { label: "C", text: "Rp20.000", isCorrect: false },
-        { label: "D", text: "Rp25.000", isCorrect: false },
-      ],
-      explanation:
-        "Total belanja = (3 × Rp15.000) + (2 × Rp22.500) = Rp45.000 + Rp45.000 = Rp90.000. Kembalian = Rp100.000 - Rp90.000 = Rp10.000.",
-      bpsSource: "Data Komoditas UMKM Pangan Olahan BPS Kota Madiun 2026",
-    },
-    {
-      title: "Logistik Kereta Api Madiun",
-      subject: "Matematika Fase C • Kelas 5 SD",
-      region: "Kota Madiun (PT INKA)",
-      prompt:
-        "Rangkaian kereta logistik INKA membawa 6 gerbong peti kemas. Setiap gerbong terisi penuh beras lokal seberat 18,5 ton. Jika 2 gerbong diturunkan di stasiun tujuan pertama, berapa sisa ton beras yang masih diangkut kereta tersebut?",
-      options: [
-        { label: "A", text: "74,0 ton", isCorrect: true },
-        { label: "B", text: "72,5 ton", isCorrect: false },
-        { label: "C", text: "55,5 ton", isCorrect: false },
-        { label: "D", text: "92,5 ton", isCorrect: false },
-      ],
-      explanation:
-        "Sisa gerbong = 6 - 2 = 4 gerbong. Total sisa muatan = 4 × 18,5 ton = 74,0 ton beras.",
-      bpsSource: "Data Distribusi Pangan & Angkutan Rel Dinas Perhubungan Madiun",
-    },
-  ];
-
-  // Samples of Mattext (Materi)
-  const SAMPLE_MATERIALS = [
-    {
-      title: "Penerapan Operasi Hitung Campuran dalam Perdagangan Tradisional Madiun",
-      subject: "Modul Ajar Matematika & IPAS • Kelas 5 SD",
-      region: "Kota Madiun",
-      objective:
-        "Peserta didik dapat menganalisis dan menyelesaikan masalah numerasi kontekstual yang terjadi dalam kegiatan jual-beli produk kuliner khas lokal.",
-      narrative:
-        "Pasar Besar Kota Madiun menjadi pusat perdagangan legendaris komoditas khas seperti brem, sambal pecel, dan madumongso. Melalui modul ajar ini, siswa diajak mengeksplorasi kalkulasi harga satuan, diskon pedagang pasar, dan estimasi keuntungan UMKM secara nyata.",
-      steps: [
-        "Identifikasi daftar harga bahan baku kedelai dan gula tebu lokal.",
-        "Simulasi transaksi jual beli dengan operasi hitung campuran (kali, bagi, tambah, kurang).",
-        "Refleksi nilai kearifan lokal gotong royong para pedagang pasar.",
-      ],
-      curriculum: "Kurikulum Merdeka - Capaian Pembelajaran Fase C",
-    },
-    {
-      title: "Pemanfaatan Energi dan Transportasi Kereta Api Lokal Madiun",
-      subject: "Modul Ajar IPAS & Sains • Kelas 5 SD",
-      region: "Kota Madiun (PT INKA)",
-      objective:
-        "Memahami prinsip perubahan energi listrik dan gerak pada armada transportasi kereta rel listrik buatan pabrik dalam negeri.",
-      narrative:
-        "PT Industri Kereta Api (INKA) di Kota Madiun merupakan kebanggaan bangsa dalam teknologi transportasi. Modul ini menghubungkan konsep perpindahan energi sains kelas 5 dengan teknologi riil yang ada di lingkungan anak-anak Madiun.",
-      steps: [
-        "Pengamatan visual komponen lokomotif dan gerbong penumpang.",
-        "Analisis efisiensi bahan bakar kereta dibandingkan truk angkutan barang.",
-        "Eksperimen mini gaya gesek roda baja di atas rel.",
-      ],
-      curriculum: "Kurikulum Merdeka - Capaian Pembelajaran Fase C",
-    },
-  ];
-
-  const currentQuestion = SAMPLE_QUESTIONS[selectedSampleIndex % SAMPLE_QUESTIONS.length];
-  const currentMaterial = SAMPLE_MATERIALS[selectedSampleIndex % SAMPLE_MATERIALS.length];
-
-  const handleCopy = (text: string) => {
+  const handleCopyCode = (code: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      setCopiedNotice(true);
-      setTimeout(() => setCopiedNotice(false), 2000);
+      navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
     }
   };
 
+  const totalStudents = classes.reduce(
+    (sum, c) => sum + (c.student_count || 0),
+    0
+  );
+
   return (
     <TeacherWorkspaceShell activeGroupId="dashboard">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
+      <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-10">
         {/* ====================================================================
-            CENTER MAIN COLUMN (7 COLS ON DESKTOP)
+            1. HEADER: SAMBUTAN SELAMAT DATANG NAMA USER (DI SAMPING KIRI)
+            Teks tanggal dan semester telah dihapus sesuai instruksi
             ==================================================================== */}
-        <div className="xl:col-span-7 space-y-6">
-          {/* 1. Header Greeting with Notification Bell */}
-          <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#23212A] tracking-tight">
+              Selamat Datang, {user?.full_name || "Guru"}!
+            </h1>
+          </div>
+        </div>
+
+        {/* ====================================================================
+            2. DUA CARD KANAN KIRI BERBENTUK AGAK PERSEGI PANJANG
+            Sebelah Kiri: Soal | Sebelah Kanan: Materi
+            ==================================================================== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          {/* Card Kiri: Soal */}
+          <div className="rounded-[24px] sm:rounded-[28px] bg-white border border-[#E9E5E8] p-5 sm:p-6 lg:p-7 shadow-xs hover:shadow-md hover:border-[#FFD36D] transition-all flex flex-col justify-between min-h-[180px] relative overflow-hidden group">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
-                Welcome back, {teacherFirstName}!
-              </h1>
-              <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-0.5">
-                {todayFormatted} &bull; Semester Ganjil TA 2026/2027
-              </p>
-            </div>
-
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                type="button"
-                className="w-10 h-10 rounded-2xl bg-white border border-[#E9E5E8] flex items-center justify-center text-[#51465B] shadow-2xs hover:bg-[#FAF7F3] transition-colors cursor-pointer"
-                title="Pemberitahuan"
-                aria-label="Pemberitahuan"
-              >
-                <Bell className="w-5 h-5 text-[#51465B]" />
-              </button>
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#F47D83] ring-2 ring-white" />
-            </div>
-          </div>
-
-          {/* 2. Coral Salmon Banner: "Good Job!" with 3D Miniature Education Cart */}
-          <div className="p-5 sm:p-7 rounded-[24px] sm:rounded-[32px] bg-[#F47D83] text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
-            <div className="relative z-10 max-w-md space-y-2">
-              <h2 className="text-xl sm:text-3xl font-black tracking-tight text-white">
-                Selamat Datang, {teacherFirstName}!
-              </h2>
-              <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-normal">
-                Konteks {school?.region_name || "Kota Madiun"} aktif. 150+ butir soal kontekstual dan modul ajar terverifikasi BPS siap dibagikan ke siswa via Room & URL!
-              </p>
-            </div>
-
-            {/* 3D Education Cart Graphic */}
-            <div className="relative z-10 shrink-0 self-center sm:self-auto">
-              <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shadow-xl border-2 border-white/30 transform hover:scale-105 transition-transform bg-[#F47D83]">
-                <img
-                  src="/images/dashboard/education-cart.jpg"
-                  alt="Education Cart"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
-            {/* Ambient Background Glow */}
-            <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-white/15 blur-2xl pointer-events-none" />
-          </div>
-
-          {/* 3. Three Metric Cards Row (+8,5k Favorite, +5,2k Add to bag, +1,2k Orders) */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            {/* Metric 1 */}
-            <div className="p-3 sm:p-5 rounded-[18px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow min-w-0">
-              <div className="text-lg sm:text-3xl font-black text-[#23212A] tracking-tight truncate w-full">
-                +8,5k
-              </div>
-              <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
-                Bank Soal
-              </div>
-            </div>
-
-            {/* Metric 2 */}
-            <div className="p-3 sm:p-5 rounded-[18px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow min-w-0">
-              <div className="text-lg sm:text-3xl font-black text-[#23212A] tracking-tight truncate w-full">
-                +5,2k
-              </div>
-              <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
-                Modul Ajar
-              </div>
-            </div>
-
-            {/* Metric 3 */}
-            <div className="p-3 sm:p-5 rounded-[18px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow min-w-0">
-              <div className="text-lg sm:text-3xl font-black text-[#23212A] tracking-tight truncate w-full">
-                +1,2k
-              </div>
-              <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
-                Aktivitas Room
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Bottom Showcase Section: "Recent Sold" equivalent */}
-          <div className="space-y-3">
-            <h3 className="text-base sm:text-lg font-black text-[#23212A] tracking-tight">
-              Aktivitas Terakhir
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-stretch">
-              {/* Left Showcase Card: Editorial Bag with Photo */}
-              <div className="sm:col-span-7 rounded-[24px] sm:rounded-[28px] bg-[#FAF7F3] border border-[#E9E5E8] p-4 flex flex-col justify-between hover:shadow-md transition-all group overflow-hidden">
-                <div className="w-full h-36 sm:h-44 rounded-2xl overflow-hidden bg-white border border-[#E9E5E8] mb-3 relative">
-                  <img
-                    src="/images/dashboard/editorial-bag.jpg"
-                    alt="Editorial Bag"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold">
-                    Konteks Lokal
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FFD36D] flex items-center justify-center text-[#51465B] shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <Brain className="w-6 h-6 stroke-[2.2]" />
                   </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs sm:text-sm font-black text-[#23212A] group-hover:text-[#51465B] transition-colors">
-                    Kerajinan Lokal & Pasar Tradisional
-                  </h4>
-                  <p className="text-[11px] font-semibold text-[#756F7A] mt-0.5">
-                    15 Butir Soal Terverifikasi &bull; Fase C SD
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Tiles & Dresses Pill Card */}
-              <div className="sm:col-span-5 flex flex-col justify-between gap-3.5">
-                {/* Two Dark Mauve #51465B Icon Action Tiles (Quentext & Mattext) */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Quentext Tile */}
-                  <Link
-                    href="/teacher/questions/new"
-                    className="p-4 rounded-2xl sm:rounded-3xl bg-[#FAF7F3] border border-[#E9E5E8] flex flex-col items-center justify-center gap-2 hover:bg-[#51465B] text-[#23212A] hover:text-white transition-all group cursor-pointer text-center"
-                    title="Buat Soal Quentext Baru"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-[#51465B] group-hover:bg-[#FFD36D] text-white group-hover:text-[#51465B] flex items-center justify-center shadow-xs transition-colors">
-                      <Brain className="w-6 h-6 stroke-[2.2]" />
-                    </div>
-                    <span className="text-[11px] font-bold">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#756F7A] block">
                       Quentext
                     </span>
-                  </Link>
+                    <h2 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight group-hover:text-[#51465B] transition-colors">
+                      Soal
+                    </h2>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] font-extrabold text-xs shrink-0">
+                  {questions.length} Butir Soal
+                </span>
+              </div>
 
-                  {/* Mattext Tile */}
-                  <Link
-                    href="/teacher/materials/new"
-                    className="p-4 rounded-2xl sm:rounded-3xl bg-[#FAF7F3] border border-[#E9E5E8] flex flex-col items-center justify-center gap-2 hover:bg-[#51465B] text-[#23212A] hover:text-white transition-all group cursor-pointer text-center"
-                    title="Buat Materi Mattext Baru"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-[#51465B] group-hover:bg-[#FFD36D] text-white group-hover:text-[#51465B] flex items-center justify-center shadow-xs transition-colors">
-                      <BookOpen className="w-6 h-6 stroke-[2.2]" />
-                    </div>
-                    <span className="text-[11px] font-bold">
+              <p className="text-xs sm:text-sm text-[#756F7A] font-medium leading-relaxed">
+                Bank butir asesmen dan latihan soal kontekstual berbasis data BPS serta realitas lingkungan peserta didik.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-4 border-t border-[#E9E5E8]/60 mt-4">
+              <Link
+                href="/teacher/questions"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+              >
+                <span>Buka Bank Soal</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href="/teacher/questions/generator"
+                className="py-2.5 px-3.5 rounded-xl bg-[#FAF7F3] hover:bg-[#FFD36D]/30 border border-[#E9E5E8] text-[#23212A] font-bold text-xs flex items-center gap-1.5 transition-colors"
+                title="Buat Soal Baru dengan Generator AI"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#51465B]" />
+                <span>Generator AI</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Card Kanan: Materi */}
+          <div className="rounded-[24px] sm:rounded-[28px] bg-white border border-[#E9E5E8] p-5 sm:p-6 lg:p-7 shadow-xs hover:shadow-md hover:border-[#51465B]/40 transition-all flex flex-col justify-between min-h-[180px] relative overflow-hidden group">
+            <div>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-[#51465B] flex items-center justify-center text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <BookOpen className="w-6 h-6 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#756F7A] block">
                       Mattext
                     </span>
-                  </Link>
-                </div>
-
-                {/* Coral Salmon Modul Tematik Pill Card */}
-                <div className="p-4 rounded-2xl sm:rounded-3xl bg-[#E8B2B7] text-[#23212A] flex items-center justify-between shadow-2xs">
-                  <div>
-                    <div className="text-xs sm:text-sm font-black text-[#23212A]">
-                      Modul Tematik SD
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] font-semibold text-[#51465B]">
-                      25 Modul Terbit &bull; Terverifikasi BPS
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-xl bg-white/40 flex items-center justify-center text-[#51465B]">
-                    <Sparkles className="w-4 h-4" />
+                    <h2 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight group-hover:text-[#51465B] transition-colors">
+                      Materi
+                    </h2>
                   </div>
                 </div>
+                <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] font-extrabold text-xs shrink-0">
+                  {materials.length} Modul Ajar
+                </span>
               </div>
+
+              <p className="text-xs sm:text-sm text-[#756F7A] font-medium leading-relaxed">
+                Modul ajar tematik Kurikulum Merdeka yang siap diajarkan serta dibagikan langsung ke siswa via Ruang Belajar.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-4 border-t border-[#E9E5E8]/60 mt-4">
+              <Link
+                href="/teacher/materials"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+              >
+                <span>Buka Modul Ajar</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href="/teacher/materials/new"
+                className="py-2.5 px-3.5 rounded-xl bg-[#FAF7F3] hover:bg-[#E8B2B7]/40 border border-[#E9E5E8] text-[#23212A] font-bold text-xs flex items-center gap-1.5 transition-colors"
+                title="Buat Modul Ajar Baru"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#51465B]" />
+                <span>Tambah Baru</span>
+              </Link>
             </div>
           </div>
         </div>
 
         {/* ====================================================================
-            RIGHT PREVIEW HUB PANEL (5 COLS ON DESKTOP - WARM YELLOW #FFD36D)
-            Menampilkan Preview Hasil Materi atau Soal
+            3. KONTEN LANJUTAN: RINGKASAN AKTIVITAS & METRIK KELAS
+            Rapi, sesuai tema, tanpa preview soal/materi
             ==================================================================== */}
-        <div className="xl:col-span-5 rounded-[28px] sm:rounded-[36px] bg-[#FFD36D] p-5 sm:p-6 text-[#23212A] shadow-md space-y-4 border border-[#ECC159]">
-          {/* 1. Header & Segmented Tabs */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Metric 1: Rombel & Siswa */}
+          <Link
+            href="/teacher/classes"
+            className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#E9E5E8] hover:border-[#51465B]/30 hover:shadow-xs transition-all group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-[#756F7A]">Kelas & Siswa</span>
+              <div className="w-8 h-8 rounded-xl bg-[#FAF7F3] group-hover:bg-[#51465B]/10 flex items-center justify-center text-[#51465B] transition-colors">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              {classes.length} <span className="text-xs font-semibold text-[#756F7A]">Kelas</span>
+            </div>
+            <div className="text-[11px] text-[#756F7A] font-medium mt-1 truncate">
+              {totalStudents} siswa terdaftar
+            </div>
+          </Link>
+
+          {/* Metric 2: Ruang Belajar (Room) */}
+          <Link
+            href="/teacher/rooms"
+            className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#E9E5E8] hover:border-[#51465B]/30 hover:shadow-xs transition-all group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-[#756F7A]">Ruang Belajar</span>
+              <div className="w-8 h-8 rounded-xl bg-[#FAF7F3] group-hover:bg-[#51465B]/10 flex items-center justify-center text-[#51465B] transition-colors">
+                <DoorOpen className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              {rooms.length} <span className="text-xs font-semibold text-[#756F7A]">Room</span>
+            </div>
+            <div className="text-[11px] text-[#756F7A] font-medium mt-1 truncate">
+              Akses cepat tanpa login
+            </div>
+          </Link>
+
+          {/* Metric 3: Ujian & Evaluasi */}
+          <Link
+            href="/teacher/examinations"
+            className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#E9E5E8] hover:border-[#51465B]/30 hover:shadow-xs transition-all group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-[#756F7A]">Paket Asesmen</span>
+              <div className="w-8 h-8 rounded-xl bg-[#FAF7F3] group-hover:bg-[#51465B]/10 flex items-center justify-center text-[#51465B] transition-colors">
+                <ClipboardCheck className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              {exams.length} <span className="text-xs font-semibold text-[#756F7A]">Ujian</span>
+            </div>
+            <div className="text-[11px] text-[#756F7A] font-medium mt-1 truncate">
+              Penilaian & evaluasi hasil
+            </div>
+          </Link>
+
+          {/* Metric 4: Konteks BPS Daerah */}
+          <Link
+            href="/teacher/settings"
+            className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#E9E5E8] hover:border-[#51465B]/30 hover:shadow-xs transition-all group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-[#756F7A]">Konteks Daerah</span>
+              <div className="w-8 h-8 rounded-xl bg-[#FAF7F3] group-hover:bg-[#51465B]/10 flex items-center justify-center text-[#51465B] transition-colors">
+                <MapPin className="w-4 h-4 text-[#F47D83]" />
+              </div>
+            </div>
+            <div className="text-base sm:text-lg font-black text-[#23212A] tracking-tight truncate">
+              {school?.region_name || "Kota Madiun"}
+            </div>
+            <div className="text-[11px] text-emerald-700 font-semibold mt-1 truncate flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Data BPS Terhubung
+            </div>
+          </Link>
+        </div>
+
+        {/* ====================================================================
+            4. DUA KOLOM SECTION BAWAH:
+            Kiri: Ruang Belajar Siswa Terkini (Daftar Akses, Kode & Pengunjung)
+            Kanan: Alat Cepat Pengajar & Panduan Pembelajaran Kontekstual
+            (TIDAK ADA PREVIEW DOKUMEN / KONTEN SOAL / MATERI DI SINI)
+            ==================================================================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Kolom Kiri: Ruang Belajar Siswa Aktif (7 Cols) */}
+          <div className="lg:col-span-7 rounded-[26px] sm:rounded-[30px] bg-white border border-[#E9E5E8] p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E9E5E8]/80 pb-4">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] block">
-                  AI Contextual Generator
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  Preview Hasil
-                </h2>
+                <h3 className="text-base sm:text-lg font-black text-[#23212A] tracking-tight">
+                  Ruang Belajar Siswa Aktif
+                </h3>
+                <p className="text-xs text-[#756F7A] font-medium mt-0.5">
+                  Bagikan tautan atau kode room berikut untuk akses instan murid
+                </p>
               </div>
 
-              {/* Sample Switcher */}
-              <button
-                type="button"
-                onClick={() => setSelectedSampleIndex((prev) => prev + 1)}
-                className="px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white text-[11px] font-bold text-[#51465B] transition-colors cursor-pointer"
-                title="Ganti Contoh Preview"
+              <Link
+                href="/teacher/rooms"
+                className="px-3 py-1.5 rounded-xl bg-[#FAF7F3] hover:bg-[#51465B] text-[#51465B] hover:text-white font-bold text-xs transition-colors shrink-0 flex items-center gap-1"
               >
-                Ganti Contoh &rarr;
-              </button>
+                <span>Kelola Room</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            {/* Segmented Buttons: Soal vs Materi */}
-            <div className="grid grid-cols-2 p-1 rounded-2xl bg-black/10 backdrop-blur-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setActivePreviewTab("question");
-                  repository.setLastContextMode("question");
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  activePreviewTab === "question"
-                    ? "bg-white text-[#23212A] shadow-sm"
-                    : "text-[#51465B] hover:text-[#23212A]"
-                }`}
-              >
-                <Brain className="w-3.5 h-3.5 text-[#51465B]" />
-                <span>Preview Soal</span>
-              </button>
+            {/* List Ruang Belajar (Kode, Subjek, Akses) */}
+            <div className="space-y-3">
+              {rooms.length === 0 ? (
+                <div className="py-8 text-center text-xs text-[#756F7A] font-medium">
+                  Belum ada ruang belajar aktif. Buat ruang belajar untuk membagikan materi atau latihan ke siswa.
+                </div>
+              ) : (
+                rooms.slice(0, 4).map((room) => (
+                  <div
+                    key={room.id}
+                    className="p-3.5 sm:p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#51465B]/30 transition-colors"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                            room.type === "question"
+                              ? "bg-[#FFD36D]/40 text-[#51465B]"
+                              : "bg-[#51465B] text-white"
+                          }`}
+                        >
+                          {room.type === "question" ? "Latihan Soal" : "Modul Ajar"}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#756F7A]">
+                          {room.subject} • Kelas {room.grade} SD
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold text-[#23212A] truncate">
+                        {room.title}
+                      </h4>
+                    </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setActivePreviewTab("material");
-                  repository.setLastContextMode("material");
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  activePreviewTab === "material"
-                    ? "bg-white text-[#23212A] shadow-sm"
-                    : "text-[#51465B] hover:text-[#23212A]"
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-[#51465B]" />
-                <span>Preview Materi</span>
-              </button>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(room.code)}
+                        className="py-1.5 px-3 rounded-xl bg-white border border-[#E9E5E8] hover:bg-[#FAF7F3] text-xs font-mono font-bold text-[#51465B] flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        title="Klik untuk menyalin kode room"
+                      >
+                        {copiedCode === room.code ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-700 font-sans text-[11px]">Tersalin</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-[#756F7A]" />
+                            <span>{room.code}</span>
+                          </>
+                        )}
+                      </button>
+
+                      <Link
+                        href={`/room/${room.code}`}
+                        target="_blank"
+                        className="p-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-[#51465B] text-[#51465B] hover:text-white transition-colors cursor-pointer"
+                        title="Buka Ruang Belajar di tab baru"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          {/* 2. LIVE PREVIEW CARD */}
-          {activePreviewTab === "question" ? (
-            /* PREVIEW SOAL (QUENTEXT) */
-            <div className="bg-white rounded-[24px] sm:rounded-[28px] p-5 shadow-sm border border-[#51465B]/15 space-y-3.5 text-xs leading-relaxed">
-              {/* Badges */}
-              <div className="flex items-center justify-between flex-wrap gap-1.5 pb-2.5 border-b border-slate-100">
-                <span className="px-2.5 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] font-extrabold text-[11px]">
-                  {currentQuestion.subject}
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span>Valid BPS</span>
-                </span>
-              </div>
-
-              {/* Local Context Tag */}
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#51465B]">
-                <MapPin className="w-3.5 h-3.5 text-[#F47D83]" />
-                <span>Konteks: {currentQuestion.region}</span>
-              </div>
-
-              {/* Question Text */}
-              <p className="font-semibold text-slate-900 text-xs sm:text-[13px] leading-relaxed">
-                {currentQuestion.prompt}
-              </p>
-
-              {/* Multiple Choice Options */}
-              <div className="space-y-1.5 pt-1">
-                {currentQuestion.options.map((opt) => (
-                  <div
-                    key={opt.label}
-                    className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-medium transition-all ${
-                      opt.isCorrect
-                        ? "bg-emerald-50/80 border-emerald-300 text-emerald-950 font-bold"
-                        : "bg-[#FAF7F3] border-slate-200 text-slate-800"
-                    }`}
-                  >
-                    <span>
-                      <strong className="mr-1.5">{opt.label}.</strong> {opt.text}
-                    </span>
-                    {opt.isCorrect && (
-                      <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md">
-                        Kunci Jawaban
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Explanation Box */}
-              <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-[11px] text-amber-950 space-y-1">
-                <span className="font-bold block">Pembahasan Guru:</span>
-                <p className="text-slate-700 leading-relaxed">
-                  {currentQuestion.explanation}
-                </p>
-                <span className="text-[10px] text-slate-500 block pt-1 border-t border-amber-200/50">
-                  Sumber Faktual: {currentQuestion.bpsSource}
-                </span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCopy(currentQuestion.prompt)}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  {copiedNotice ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Tersalin!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-[#FFD36D]" />
-                      <span>Salin Soal</span>
-                    </>
-                  )}
-                </button>
-
-                <Link
-                  href="/teacher/questions/generator"
-                  className="py-2.5 px-3 rounded-xl bg-[#FAF7F3] hover:bg-slate-100 border border-slate-200 text-[#51465B] font-bold text-[11px] transition-colors"
-                >
-                  Generator AI
-                </Link>
-              </div>
-            </div>
-          ) : (
-            /* PREVIEW MATERI (MATTEXT) */
-            <div className="bg-white rounded-[24px] sm:rounded-[28px] p-5 shadow-sm border border-[#51465B]/15 space-y-3.5 text-xs leading-relaxed">
-              {/* Badges */}
-              <div className="flex items-center justify-between flex-wrap gap-1.5 pb-2.5 border-b border-slate-100">
-                <span className="px-2.5 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] font-extrabold text-[11px]">
-                  {currentMaterial.subject}
-                </span>
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-indigo-600" />
-                  <span>Fase C SD</span>
-                </span>
-              </div>
-
-              {/* Title & Region */}
+          {/* Kolom Kanan: Akses Pintas Alat Pengajar & Info Konteks (5 Cols) */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Box Alat Pengajar Cepat */}
+            <div className="rounded-[26px] sm:rounded-[30px] bg-white border border-[#E9E5E8] p-5 sm:p-6 shadow-xs space-y-3.5">
               <div>
-                <h4 className="font-black text-slate-900 text-xs sm:text-[13px] leading-snug">
-                  {currentMaterial.title}
-                </h4>
-                <div className="flex items-center gap-1 text-[11px] font-bold text-[#51465B] mt-1">
-                  <MapPin className="w-3.5 h-3.5 text-[#F47D83]" />
-                  <span>Fokus Wilayah: {currentMaterial.region}</span>
-                </div>
-              </div>
-
-              {/* Learning Objective */}
-              <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-[11px] text-blue-950">
-                <strong className="block text-blue-900 mb-0.5">Tujuan Pembelajaran:</strong>
-                <p className="text-slate-700">{currentMaterial.objective}</p>
-              </div>
-
-              {/* Narrative Summary */}
-              <div className="space-y-1">
-                <strong className="text-slate-800 text-[11px]">Narasi Konteks Lokal:</strong>
-                <p className="text-slate-600 text-[11px] leading-relaxed">
-                  {currentMaterial.narrative}
+                <h3 className="text-base sm:text-lg font-black text-[#23212A] tracking-tight">
+                  Alat Kerja Pengajar
+                </h3>
+                <p className="text-xs text-[#756F7A] font-medium mt-0.5">
+                  Akses instan ke fasilitas otomasi dan kurasi bahan ajar
                 </p>
               </div>
 
-              {/* Step Highlights */}
-              <div className="space-y-1.5 pt-1">
-                <strong className="text-slate-800 text-[11px]">Langkah Aktivitas Belajar:</strong>
-                <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-700">
-                  {currentMaterial.steps.map((st, i) => (
-                    <li key={i}>{st}</li>
-                  ))}
-                </ol>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCopy(`${currentMaterial.title}\n\n${currentMaterial.narrative}`)}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  {copiedNotice ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Tersalin!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-[#FFD36D]" />
-                      <span>Salin Modul</span>
-                    </>
-                  )}
-                </button>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
+                {/* Tool 1: Review Essay AI */}
                 <Link
-                  href="/teacher/materials/new"
-                  className="py-2.5 px-3 rounded-xl bg-[#FAF7F3] hover:bg-slate-100 border border-slate-200 text-[#51465B] font-bold text-[11px] transition-colors"
+                  href="/teacher/examinations/review-essay"
+                  className="p-3 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:border-[#51465B]/30 hover:bg-white flex items-center justify-between transition-all group"
                 >
-                  Editor Modul
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#23212A] group-hover:text-[#51465B] transition-colors truncate">
+                        Koreksi Essay AI
+                      </div>
+                      <div className="text-[11px] text-[#756F7A] truncate">
+                        Asistensi penilaian jawaban uraian
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#756F7A] group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </Link>
+
+                {/* Tool 2: Scan OCR */}
+                <Link
+                  href="/teacher/questions/scan"
+                  className="p-3 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:border-[#51465B]/30 hover:bg-white flex items-center justify-between transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#23212A] group-hover:text-[#51465B] transition-colors truncate">
+                        Pindai Dokumen Soal
+                      </div>
+                      <div className="text-[11px] text-[#756F7A] truncate">
+                        Digitalisasi naskah kertas ke bank soal
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#756F7A] group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </Link>
+
+                {/* Tool 3: Format Cetak */}
+                <Link
+                  href="/teacher/print"
+                  className="p-3 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:border-[#51465B]/30 hover:bg-white flex items-center justify-between transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                      <Printer className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#23212A] group-hover:text-[#51465B] transition-colors truncate">
+                        Cetak Modul & Naskah
+                      </div>
+                      <div className="text-[11px] text-[#756F7A] truncate">
+                        Format siap print & lembar jawaban
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#756F7A] group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </Link>
+
+                {/* Tool 4: Manajemen Rombel */}
+                <Link
+                  href="/teacher/classes"
+                  className="p-3 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] hover:border-[#51465B]/30 hover:bg-white flex items-center justify-between transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#23212A] group-hover:text-[#51465B] transition-colors truncate">
+                        Manajemen Kelas
+                      </div>
+                      <div className="text-[11px] text-[#756F7A] truncate">
+                        Kode undangan & daftar murid aktif
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#756F7A] group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </Link>
               </div>
             </div>
-          )}
+
+            {/* Banner Informasi Pembelajaran Kontekstual */}
+            <div className="p-4 sm:p-5 rounded-[24px] bg-[#51465B] text-white shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#FFD36D]">
+                  Prinsip Kurikulum Merdeka
+                </span>
+                <MapPin className="w-4 h-4 text-[#F47D83]" />
+              </div>
+              <h4 className="text-xs sm:text-sm font-bold text-white">
+                Fokus Wilayah: {school?.region_name || "Kota Madiun"}
+              </h4>
+              <p className="text-[11px] text-white/80 leading-relaxed font-normal">
+                Materi dan butir soal dirancang mengaitkan konsep pembelajaran dengan komoditas lokal, budaya, dan data statistik riil di daerah siswa.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </TeacherWorkspaceShell>
