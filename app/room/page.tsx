@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { DoorOpen, ArrowRight, ArrowLeft, User, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
 
@@ -70,200 +70,155 @@ export default function RoomAccessPortalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F3] text-[#23212A] flex flex-col justify-between selection:bg-[#FFD36D] selection:text-[#51465B] relative overflow-hidden font-sans">
-      {/* Decorative Pastel Blobs */}
-      <div className="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#51465B]/10 blur-3xl pointer-events-none" />
-      <div className="fixed -bottom-40 -right-40 w-96 h-96 rounded-full bg-[#FFD36D]/20 blur-3xl pointer-events-none" />
+    <main className="min-h-screen bg-[#FAF7F3] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
+      {/* Subtle atmospheric ambient glow */}
+      <div className="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#3E3547]/15 blur-3xl pointer-events-none" />
+      <div className="fixed top-1/2 -right-40 w-80 h-80 rounded-full bg-[#FFD36D]/15 blur-3xl pointer-events-none" />
+      <div className="fixed -bottom-40 left-1/3 w-96 h-96 rounded-full bg-[#3E3547]/10 blur-3xl pointer-events-none" />
 
-      {/* Top Floating Header */}
-      <header className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-6 pb-4 flex items-center justify-between z-20">
-        <PahamiPuzzleLogo size="md" />
+      {/* Floating Card */}
+      <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-8 sm:p-10 relative overflow-hidden flex flex-col items-center text-center text-white z-10 transition-all">
+        
+        {/* Logo on Top */}
+        <div className="transform hover:scale-105 transition-transform duration-200 pt-1">
+          <PahamiPuzzleLogo size="md" theme="dark" />
+        </div>
 
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#51465B]/20 bg-white/80 hover:bg-white text-[#51465B] text-xs font-extrabold transition-all shadow-2xs hover:shadow-xs"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Kembali ke Beranda</span>
-        </Link>
-      </header>
+        {/* Progress Dots Indicator */}
+        <div className="flex items-center justify-center gap-2 mt-5">
+          <div
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              step === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/50"
+            }`}
+          />
+          <div
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              step === 2 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"
+            }`}
+          />
+        </div>
 
-      {/* Main Center: Exact Dark Claymorphic Card from Login Style */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 z-10">
-        <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-8 sm:p-10 relative overflow-hidden flex flex-col items-center text-center text-white z-10 transition-all">
-          
-          {/* Logo on Top */}
-          <div className="transform hover:scale-105 transition-transform duration-200 pt-1">
-            <PahamiPuzzleLogo size="md" theme="dark" />
-          </div>
+        {/* STEP 1: MASUKKAN KODE ROOM */}
+        {step === 1 ? (
+          <div className="w-full space-y-6 animate-in fade-in zoom-in-95 duration-200 mt-5">
+            {/* Heading */}
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Masukkan Kode Room
+              </h1>
+            </div>
 
-          {/* STEP 1: MASUKKAN KODE ROOM */}
-          {step === 1 ? (
-            <div className="w-full space-y-6 animate-in fade-in zoom-in-95 duration-200 mt-6">
-              {/* Heading */}
-              <div>
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Akses Room Pembelajaran
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed max-w-sm mx-auto">
-                  Masukkan kode room yang diberikan oleh pengajarmu untuk mulai belajar tanpa perlu login.
-                </p>
+            {/* Error Message */}
+            {errorMsg && (
+              <div className="w-full p-3.5 rounded-2xl bg-rose-950/70 border border-rose-700/60 text-rose-200 text-xs flex items-start gap-2.5 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="leading-relaxed">{errorMsg}</div>
+              </div>
+            )}
+
+            {/* Form Input Kode */}
+            <form onSubmit={handleValidateCode} className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="MTR-3502"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value.toUpperCase());
+                    setErrorMsg("");
+                  }}
+                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-base font-mono font-black uppercase tracking-widest text-center text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
+                />
               </div>
 
-              {/* Error Message */}
-              {errorMsg && (
-                <div className="w-full p-3.5 rounded-2xl bg-rose-950/70 border border-rose-700/60 text-rose-200 text-xs flex items-start gap-2.5 text-left">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-                  <div className="leading-relaxed">{errorMsg}</div>
-                </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <span>{isLoading ? "Memeriksa..." : "Lanjut"}</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* STEP 2: MASUKKAN NAMA SISWA */
+          <div className="w-full space-y-6 animate-in fade-in zoom-in-95 duration-200 mt-5">
+            {/* Heading */}
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Masukkan Nama
+              </h1>
+              {matchedRoomTitle && (
+                <p className="text-xs text-[#FFD36D] mt-1.5 font-semibold truncate max-w-xs mx-auto">
+                  {matchedRoomTitle}
+                </p>
               )}
+            </div>
 
-              {/* Form Input Kode */}
-              <form onSubmit={handleValidateCode} className="space-y-4">
-                <div className="text-left">
-                  <label className="text-xs font-bold text-gray-300 block mb-1.5 text-center">
-                    Kode Akses Room
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      autoFocus
-                      placeholder="CONTOH: MTR-3502"
-                      value={code}
-                      onChange={(e) => {
-                        setCode(e.target.value.toUpperCase());
-                        setErrorMsg("");
-                      }}
-                      className="w-full px-5 py-4 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder:text-gray-400 text-base font-mono font-black uppercase tracking-widest text-center focus:outline-none focus:border-[#FFD36D] focus:bg-white/15 transition-all"
-                    />
-                  </div>
-                </div>
+            {/* Error Message */}
+            {errorMsg && (
+              <div className="w-full p-3.5 rounded-2xl bg-rose-950/70 border border-rose-700/60 text-rose-200 text-xs flex items-start gap-2.5 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="leading-relaxed">{errorMsg}</div>
+              </div>
+            )}
+
+            {/* Form Input Nama */}
+            <form onSubmit={handleEnterRoom} className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Budi Pratama"
+                  value={studentName}
+                  onChange={(e) => {
+                    setStudentName(e.target.value);
+                    setErrorMsg("");
+                  }}
+                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-sm sm:text-base font-bold text-center text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1);
+                    setErrorMsg("");
+                  }}
+                  className="w-1/2 py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali</span>
+                </button>
 
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="w-full py-4 px-5 rounded-full bg-[#FFD36D] hover:bg-[#F5C75A] text-[#251E2B] font-black text-sm sm:text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-1/2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{isLoading ? "Memeriksa Room..." : "Lanjutkan"}</span>
-                  <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  <span>Lanjut</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 </button>
-              </form>
-
-              {/* Quick Demo Hints */}
-              <div className="pt-4 border-t border-white/15 text-center space-y-2">
-                <span className="text-[11px] font-bold text-gray-400 block">
-                  Coba kode room contoh:
-                </span>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCode("MTR-3502");
-                      setErrorMsg("");
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-[#FFD36D] text-xs font-mono font-bold transition-all cursor-pointer"
-                  >
-                    MTR-3502 (Materi)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCode("SOL-5021");
-                      setErrorMsg("");
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-[#FFD36D] text-xs font-mono font-bold transition-all cursor-pointer"
-                  >
-                    SOL-5021 (Soal)
-                  </button>
-                </div>
               </div>
-            </div>
-          ) : (
-            /* STEP 2: MASUKKAN NAMA SISWA */
-            <div className="w-full space-y-6 animate-in fade-in zoom-in-95 duration-200 mt-6">
-              {/* Heading */}
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-2">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Room Ditemukan: {code}</span>
-                </div>
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Masukkan Namamu
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed max-w-sm mx-auto">
-                  {matchedRoomTitle ? `"${matchedRoomTitle}"` : "Kamu siap belajar di room ini!"}
-                </p>
-              </div>
-
-              {/* Error Message */}
-              {errorMsg && (
-                <div className="w-full p-3.5 rounded-2xl bg-rose-950/70 border border-rose-700/60 text-rose-200 text-xs flex items-start gap-2.5 text-left">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-                  <div className="leading-relaxed">{errorMsg}</div>
-                </div>
-              )}
-
-              {/* Form Input Nama */}
-              <form onSubmit={handleEnterRoom} className="space-y-4">
-                <div className="text-left">
-                  <label className="text-xs font-bold text-gray-300 block mb-1.5 text-center">
-                    Nama Lengkap Siswa
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    placeholder="Contoh: Budi Pratama"
-                    value={studentName}
-                    onChange={(e) => {
-                      setStudentName(e.target.value);
-                      setErrorMsg("");
-                    }}
-                    className="w-full px-5 py-4 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder:text-gray-400 text-sm sm:text-base font-bold text-center focus:outline-none focus:border-[#FFD36D] focus:bg-white/15 transition-all"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep(1);
-                      setErrorMsg("");
-                    }}
-                    className="w-1/3 py-4 px-4 rounded-full border border-white/25 hover:bg-white/10 text-gray-300 font-bold text-xs sm:text-sm transition-all cursor-pointer"
-                  >
-                    Ganti Kode
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="w-2/3 py-4 px-5 rounded-full bg-[#FFD36D] hover:bg-[#F5C75A] text-[#251E2B] font-black text-sm sm:text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Masuk ke Room</span>
-                    <ArrowRight className="w-4 h-4 stroke-[3]" />
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Back link at bottom */}
-          <div className="mt-8 pt-5 border-t border-white/15 w-full text-center">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-            >
-              <span>Belajar lebih dekat bersama Depaskan</span>
-            </Link>
+            </form>
           </div>
-        </div>
-      </main>
+        )}
 
-      {/* Footer */}
-      <footer className="text-center py-4 text-xs text-[#756F7A] z-10">
-        Depaskan &bull; Platform Pembelajaran Kontekstual Berbasis Kearifan Lokal
-      </footer>
-    </div>
+        {/* Back link at bottom */}
+        <div className="mt-7 pt-5 border-t border-white/15 w-full text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Kembali ke Beranda</span>
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }
