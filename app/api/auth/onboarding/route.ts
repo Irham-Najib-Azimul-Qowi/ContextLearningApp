@@ -34,17 +34,64 @@ export async function POST(request: Request) {
 
     if (role === "TEACHER") {
       const isIndividual = usageMode === "individual";
-
       const assignedSchoolId = schoolId || (isIndividual ? "school-individual" : "sch-ponorogo-01");
 
-      // If Supabase is connected, write to user_profiles table
+      // If Supabase is connected, write to auth metadata and user_profiles table
       if (supabase && supabaseUser) {
+        // 1. Persist directly to Supabase Auth metadata for seamless cross-session login
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              onboarding_completed: true,
+              role: "TEACHER",
+              full_name: fullName.trim(),
+              school_name: schoolName || (isIndividual ? "Workspace Mandiri" : "Sekolah Dasar"),
+              usage_mode: usageMode,
+              region_id: regionId || "35.77",
+              region_name: regionName || "Kota Madiun",
+              school_id: assignedSchoolId,
+            },
+          });
+        } catch (authErr) {
+          console.warn("Supabase auth updateUser metadata warning:", authErr);
+        }
+
+        // 2. Safely resolve school_id to avoid PostgreSQL foreign key violations
+        let validSchoolId: string | null = null;
+        if (assignedSchoolId) {
+          const { data: schoolRow } = await supabase
+            .from("schools")
+            .select("id")
+            .eq("id", assignedSchoolId)
+            .maybeSingle();
+
+          if (schoolRow) {
+            validSchoolId = schoolRow.id;
+          } else {
+            // Attempt to insert the school record into schools table
+            const { error: schoolInsertErr } = await supabase.from("schools").insert({
+              id: assignedSchoolId,
+              name: schoolName || (isIndividual ? `Workspace Mandiri (${fullName.trim()})` : "Sekolah Dasar"),
+              slug: (schoolName || assignedSchoolId).toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString(36),
+              region_id: regionId || "35.77",
+              region_name: regionName || "Kota Madiun",
+              address: `${regionName || "Kota Madiun"}`,
+            });
+            if (!schoolInsertErr) {
+              validSchoolId = assignedSchoolId;
+            } else {
+              // If school insertion fails (RLS or constraint), fallback to null so user_profiles upsert never fails
+              validSchoolId = null;
+            }
+          }
+        }
+
         const { error: dbError } = await supabase.from("user_profiles").upsert({
           id: userId,
           email,
           full_name: fullName.trim(),
           role: "TEACHER",
-          school_id: assignedSchoolId,
+          school_id: validSchoolId,
           is_verified: true,
           updated_at: new Date().toISOString(),
         });
@@ -118,6 +165,20 @@ export async function POST(request: Request) {
 
       // Save student profile
       if (supabase && supabaseUser) {
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              onboarding_completed: true,
+              role: "STUDENT",
+              full_name: fullName.trim(),
+              class_code: classCode.trim().toUpperCase(),
+              school_id: matchedSchoolId,
+            },
+          });
+        } catch (authErr) {
+          console.warn("Supabase auth updateUser metadata warning:", authErr);
+        }
+
         await supabase.from("user_profiles").upsert({
           id: userId,
           email,

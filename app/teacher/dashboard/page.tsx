@@ -42,6 +42,9 @@ export default function TeacherDashboardPage() {
         supabase.auth.getUser().then(({ data: { user: authUser } }) => {
           if (authUser) {
             const meta = authUser.user_metadata || {};
+            if (typeof window !== "undefined") {
+              localStorage.setItem("pahami_v2_onboarding_completed", "true");
+            }
             const googleName =
               meta.full_name ||
               meta.name ||
@@ -52,6 +55,10 @@ export default function TeacherDashboardPage() {
                 full_name: googleName.trim(),
                 email: authUser.email || currentUser.email,
                 avatar_url: meta.avatar_url || meta.picture || currentUser.avatar_url,
+                schoolName: meta.school_name,
+                usageMode: meta.usage_mode,
+                regionId: meta.region_id,
+                regionName: meta.region_name,
               });
               setUser(updated);
             }

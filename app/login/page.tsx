@@ -43,14 +43,35 @@ function LoginForm() {
         }
 
         const supabase = createClient();
-        const { data } = await supabase.auth.getSession();
-        if (data?.session?.user) {
-          if (intent === "material") {
-            router.replace("/teacher/materials/new");
-          } else if (intent === "question") {
-            router.replace("/teacher/questions/new");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const user = session.user;
+          const meta = user.user_metadata || {};
+
+          // Check if user has already registered / completed onboarding
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("id, role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const isTeacher = profile?.role === "TEACHER" || meta.role === "TEACHER";
+          const isStudent = profile?.role === "STUDENT" || meta.role === "STUDENT";
+
+          if (profile || meta.onboarding_completed || isTeacher || isStudent) {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("pahami_v2_onboarding_completed", "true");
+            }
+            if (intent === "material") {
+              router.replace("/teacher/materials/new");
+            } else if (intent === "question") {
+              router.replace("/teacher/questions/new");
+            } else {
+              router.replace(isStudent ? "/student/dashboard" : "/teacher/dashboard");
+            }
           } else {
-            router.replace("/teacher/dashboard");
+            // Authenticated without completed profile -> go to onboarding
+            router.replace("/auth/onboarding");
           }
         }
       } catch {
@@ -75,7 +96,7 @@ function LoginForm() {
           redirectTo: redirectUrl,
           queryParams: {
             access_type: "offline",
-            prompt: "consent",
+            prompt: "select_account",
           },
         },
       });
@@ -157,19 +178,6 @@ function LoginForm() {
             </>
           )}
         </button>
-
-        {/* Notice for Students: No Login Required */}
-        <div className="pt-2 text-center">
-          <p className="text-[11px] text-gray-300">
-            Siswa tidak memerlukan akun.{" "}
-            <Link
-              href="/room"
-              className="text-[#FFD36D] font-bold hover:underline"
-            >
-              Masuk via Kode Room &rarr;
-            </Link>
-          </p>
-        </div>
       </div>
 
       {/* 4. BAWAHNYA: KEMBALI KE BERANDA */}

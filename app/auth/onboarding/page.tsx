@@ -75,13 +75,37 @@ export default function OnboardingPage() {
       setUserIntent(intent);
     }
 
-    // Auto-fill user name from Google account if logged in
-    const fetchGoogleUserName = async () => {
+    // Auto-check if user already completed onboarding, or prefill user name from Google account
+    const checkUserStatus = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const meta = user.user_metadata || {};
+          // If user already completed onboarding, redirect immediately to dashboard
+          if (meta.onboarding_completed || meta.role) {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("pahami_v2_onboarding_completed", "true");
+            }
+            router.replace(meta.role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard");
+            return;
+          }
+
+          // Check user_profiles table as well
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("id, role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profile) {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("pahami_v2_onboarding_completed", "true");
+            }
+            router.replace(profile.role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard");
+            return;
+          }
+
           const googleName =
             meta.full_name ||
             meta.name ||
@@ -96,7 +120,7 @@ export default function OnboardingPage() {
       }
     };
 
-    fetchGoogleUserName();
+    checkUserStatus();
   }, [router]);
 
   // Filter regions by selected province
