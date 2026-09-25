@@ -371,9 +371,8 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                  Pengaturan Profil & Workspace
+                  Pengaturan
                 </h3>
-                <p className="text-xs text-slate-500">Sesuaikan identitas, sekolah, dan wilayah pengajaran</p>
               </div>
 
               <button
@@ -441,7 +440,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 {/* Input Nama User */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    nama
+                    Nama
                   </label>
                   <input
                     type="text"
@@ -456,7 +455,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 {/* Input Email (Readonly) */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    email
+                    Email
                   </label>
                   <input
                     type="email"
@@ -467,16 +466,16 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 </div>
 
                 {/* ===========================================================
-                    TOMBOL LOGOUT (BULAT DENGAN WARNA SESUAI DESAIN SISTEM)
+                    TOMBOL LOGOUT (MERAH SESUAI PERMINTAAN USER)
                     =========================================================== */}
                 <div className="pt-1">
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-full border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-colors cursor-pointer shadow-md active:scale-98"
                   >
-                    <LogOut className="w-4 h-4 text-rose-600" />
-                    <span>keluar akun</span>
+                    <LogOut className="w-4 h-4 text-white" />
+                    <span>Keluar Akun</span>
                   </button>
                 </div>
               </div>

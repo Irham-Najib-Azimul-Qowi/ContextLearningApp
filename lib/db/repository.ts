@@ -294,8 +294,8 @@ const SEED_NOTIFICATIONS: AppNotification[] = [
 
 const SEED_ROOMS: LearningRoom[] = [
   {
-    id: "room-01",
-    code: "MTR-3502",
+    id: "room01",
+    code: "mtr3502",
     title: "Potensi Geografis & Komoditas Unggulan Ponorogo",
     type: "material",
     resource_id: "mat-pnr-01",
@@ -313,8 +313,8 @@ const SEED_ROOMS: LearningRoom[] = [
     ],
   },
   {
-    id: "room-02",
-    code: "SOL-5021",
+    id: "room02",
+    code: "sol5021",
     title: "Latihan Soal Matematika Pasar & Budaya Ponorogo",
     type: "question",
     resource_id: "q-pnr-01",
@@ -939,18 +939,19 @@ class PahamiRepository {
 
   getRoomByCode(code: string): LearningRoom | undefined {
     const rooms = this.getRooms();
-    const cleanCode = code.trim().toUpperCase();
-    return rooms.find((r) => r.code.toUpperCase() === cleanCode);
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    return rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanCode);
   }
 
   createRoom(
     data: Omit<LearningRoom, "id" | "created_at" | "access_count" | "visitors">
   ): LearningRoom {
     const rooms = this.getRooms();
+    const cleanCode = data.code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
     const newRoom: LearningRoom = {
       ...data,
-      id: `room-${Date.now()}`,
-      code: data.code.trim().toUpperCase(),
+      id: `room${Date.now()}`,
+      code: cleanCode,
       access_count: 0,
       created_at: new Date().toISOString(),
       visitors: [],
@@ -962,8 +963,8 @@ class PahamiRepository {
 
   recordRoomVisit(code: string, visitorName: string, score?: number): boolean {
     const rooms = this.getRooms();
-    const cleanCode = code.trim().toUpperCase();
-    const target = rooms.find((r) => r.code.toUpperCase() === cleanCode);
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const target = rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanCode);
     if (!target) return false;
 
     target.access_count = (target.access_count || 0) + 1;

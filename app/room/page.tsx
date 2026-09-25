@@ -20,7 +20,7 @@ export default function RoomAccessPortalPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    const cleanCode = code.trim().toUpperCase();
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
     if (!cleanCode) {
       setErrorMsg("Mohon masukkan kode room.");
       return;
@@ -50,7 +50,7 @@ export default function RoomAccessPortalPage() {
       return;
     }
 
-    const cleanCode = code.trim().toUpperCase();
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 
     // Save name locally for session
     try {
@@ -121,13 +121,13 @@ export default function RoomAccessPortalPage() {
                   type="text"
                   required
                   autoFocus
-                  placeholder="MTR-3502"
+                  placeholder="mtr3502"
                   value={code}
                   onChange={(e) => {
-                    setCode(e.target.value.toUpperCase());
+                    setCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""));
                     setErrorMsg("");
                   }}
-                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-base font-mono font-black uppercase tracking-widest text-center text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
+                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-base font-mono font-black lowercase tracking-widest text-center text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD36D]/20 transition-all shadow-inner"
                 />
               </div>
 

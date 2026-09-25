@@ -27,7 +27,7 @@ import { LearningRoom, LearningMaterial, Question } from "@/lib/db/types";
 export default function RoomViewerPage() {
   const params = useParams();
   const router = useRouter();
-  const roomCode = typeof params.code === "string" ? params.code.toUpperCase() : "";
+  const roomCode = typeof params.code === "string" ? params.code.toLowerCase().replace(/[^a-z0-9]/g, "") : "";
 
   const [room, setRoom] = useState<LearningRoom | null>(null);
   const [material, setMaterial] = useState<LearningMaterial | null>(null);

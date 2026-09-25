@@ -246,7 +246,7 @@ export default function TeacherQuestionsPage() {
 
   const handleOpenPublishRoom = (q: Question) => {
     setQuestionToPublish(q);
-    const randomCode = `SOL-${Math.floor(1000 + Math.random() * 9000)}`;
+    const randomCode = `sol${Math.floor(1000 + Math.random() * 9000)}`;
     setGeneratedRoomCode(randomCode);
     setRoomCreatedSuccess(false);
     setIsRoomModalOpen(true);
@@ -310,55 +310,55 @@ export default function TeacherQuestionsPage() {
             =================================================================== */}
         <div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-            {/* Opsi 1: Ketik Manual - Lavender / Purple */}
+            {/* Opsi 1: Ketik Manual - Deep Mauve */}
             <button
               type="button"
               onClick={() => handleOpenWizard("manual")}
-              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#F5F0FA] to-[#ECE3F5] border-2 border-[#51465B]/25 hover:border-[#51465B] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
+              className="p-5 sm:p-6 rounded-[28px] bg-[#51465B] hover:bg-[#43394C] border-2 border-[#51465B] shadow-md hover:shadow-xl transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#51465B] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
                 <PenTool className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <span className="text-sm sm:text-base font-black text-[#51465B] tracking-tight">
+              <span className="text-sm sm:text-base font-black text-white tracking-tight">
                 Ketik Manual
               </span>
             </button>
 
-            {/* Opsi 2: Motret Langsung - Sky / Blue */}
+            {/* Opsi 2: Motret Langsung - Rich Ocean Blue */}
             <button
               type="button"
               onClick={() => handleOpenWizard("camera")}
-              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#EBF5FB] to-[#D6EAF8] border-2 border-[#2980B9]/30 hover:border-[#2980B9] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
+              className="p-5 sm:p-6 rounded-[28px] bg-[#2471A3] hover:bg-[#1F618D] border-2 border-[#2471A3] shadow-md hover:shadow-xl transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#2980B9] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
                 <Camera className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <span className="text-sm sm:text-base font-black text-[#1F618D] tracking-tight">
+              <span className="text-sm sm:text-base font-black text-white tracking-tight">
                 Motret Langsung
               </span>
             </button>
 
-            {/* Opsi 3: Upload PDF - Coral / Orange */}
+            {/* Opsi 3: Upload PDF - Warm Terracotta */}
             <button
               type="button"
               onClick={() => handleOpenWizard("pdf")}
-              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#FEF5E7] to-[#FDEBD0] border-2 border-[#D35400]/30 hover:border-[#D35400] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
+              className="p-5 sm:p-6 rounded-[28px] bg-[#D35400] hover:bg-[#BA4A00] border-2 border-[#D35400] shadow-md hover:shadow-xl transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#D35400] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
                 <Upload className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <span className="text-sm sm:text-base font-black text-[#A04000] tracking-tight">
+              <span className="text-sm sm:text-base font-black text-white tracking-tight">
                 Upload PDF
               </span>
             </button>
 
-            {/* Opsi 4: Generate AI - Gold / Amber */}
+            {/* Opsi 4: Generate AI - Warm Vibrant Gold */}
             <button
               type="button"
               onClick={() => handleOpenWizard("ai")}
-              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#FFFBF0] to-[#FFF3CD] border-2 border-[#FFD36D] hover:border-[#B7950B] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
+              className="p-5 sm:p-6 rounded-[28px] bg-[#FFD36D] hover:bg-[#F5C75A] border-2 border-[#51465B] shadow-md hover:shadow-xl transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-[#251E2B] text-[#FFD36D] flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
                 <Sparkles className="w-7 h-7 stroke-[2.2]" />
               </div>
               <span className="text-sm sm:text-base font-black text-[#251E2B] tracking-tight">
@@ -366,17 +366,17 @@ export default function TeacherQuestionsPage() {
               </span>
             </button>
 
-            {/* Opsi 5: Tambah Soal dari Materi - Mint / Emerald */}
+            {/* Opsi 5: Tambah Soal dari Materi - Forest Emerald */}
             <button
               type="button"
               onClick={() => setIsFromMaterialOverlayOpen(true)}
-              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#EAFAF1] to-[#D5F5E3] border-2 border-[#27AE60]/30 hover:border-[#27AE60] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95 col-span-2 md:col-span-1"
+              className="p-5 sm:p-6 rounded-[28px] bg-[#1E8449] hover:bg-[#196F3D] border-2 border-[#1E8449] shadow-md hover:shadow-xl transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95 col-span-2 md:col-span-1"
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#27AE60] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
                 <Link2 className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <span className="text-sm sm:text-base font-black text-[#196F3D] tracking-tight">
-                Tambah Soal dari Materi
+              <span className="text-sm sm:text-base font-black text-white tracking-tight">
+                Tambah dari Materi
               </span>
             </button>
           </div>
@@ -579,24 +579,23 @@ export default function TeacherQuestionsPage() {
       </div>
 
       {/* =====================================================================
-          OVERLAY KHUSUS: TAMBAH SOAL DARI MATERI YANG TELAH DIBUAT
-          Menampilkan form masukkan kode ATAU langsung milih dari daftar materi!
+          OVERLAY KHUSUS: TAMBAH SOAL DARI MATERI
           ===================================================================== */}
       {isFromMaterialOverlayOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 relative my-auto max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-xl bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[90vh] flex flex-col text-white">
             {/* Header Overlay */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-4 border-b border-white/15">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#27AE60] text-white flex items-center justify-center shadow-xs">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 text-[#FFD36D] flex items-center justify-center shadow-xs">
                   <Link2 className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-[#23212A]">
+                  <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
                     Tambah Soal dari Materi
                   </h3>
-                  <p className="text-xs text-[#756F7A]">
-                    Masukkan kode materi atau pilih langsung dari daftar materi di bawah
+                  <p className="text-xs text-gray-300">
+                    Pilih materi yang tersedia untuk diubah menjadi butir soal
                   </p>
                 </div>
               </div>
@@ -604,7 +603,7 @@ export default function TeacherQuestionsPage() {
               <button
                 type="button"
                 onClick={() => setIsFromMaterialOverlayOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -618,42 +617,42 @@ export default function TeacherQuestionsPage() {
                   placeholder="Ketik kode materi (contoh: mat-xxxx)..."
                   value={inputMaterialCode}
                   onChange={(e) => setInputMaterialCode(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-full border border-slate-200 bg-[#FAF7F3] text-xs font-semibold text-[#23212A] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#27AE60]/20"
+                  className="flex-1 px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 text-xs sm:text-sm font-bold text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FFD36D]"
                 />
                 <button
                   type="submit"
                   disabled={!inputMaterialCode.trim()}
-                  className="px-5 py-2.5 rounded-full bg-[#27AE60] hover:bg-[#219653] text-white font-bold text-xs shadow-xs disabled:opacity-40 cursor-pointer"
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] font-extrabold text-xs shadow-md disabled:opacity-40 cursor-pointer"
                 >
-                  Pilih Kode
+                  Pilih
                 </button>
               </form>
 
               {/* Divider ATAU */}
               <div className="flex items-center gap-3 py-1">
-                <div className="h-px bg-slate-200 flex-1" />
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Atau Langsung Pilih Materi
+                <div className="h-px bg-white/15 flex-1" />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Atau Pilih Materi di Bawah
                 </span>
-                <div className="h-px bg-slate-200 flex-1" />
+                <div className="h-px bg-white/15 flex-1" />
               </div>
 
               {/* Search Inside Overlay */}
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Cari materi dari daftar..."
                   value={materialFilterSearch}
                   onChange={(e) => setMaterialFilterSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-full border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-2xl border-2 border-white/15 bg-[#251E2B]/60 text-xs font-medium text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FFD36D]"
                 />
               </div>
 
               {/* Daftar Materi yang Muncul di Overlay */}
-              <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1 divide-y divide-slate-100">
+              <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
                 {filteredMaterialsForOverlay.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-slate-500">
+                  <div className="py-8 text-center text-xs text-gray-400">
                     Tidak ada materi yang sesuai.
                   </div>
                 ) : (
@@ -661,27 +660,27 @@ export default function TeacherQuestionsPage() {
                     <div
                       key={mat.id}
                       onClick={() => handleSelectMaterialFromOverlay(mat)}
-                      className="p-3.5 rounded-2xl border border-slate-200 hover:border-[#27AE60] bg-white hover:bg-[#EAFAF1]/30 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                      className="p-3.5 rounded-2xl border border-white/15 hover:border-[#FFD36D] bg-[#251E2B]/80 hover:bg-[#251E2B] transition-all cursor-pointer flex items-center justify-between gap-3 group"
                     >
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          <span className="font-mono text-[10px] font-bold text-gray-400 bg-white/10 px-2 py-0.5 rounded-md">
                             {mat.id}
                           </span>
-                          <span className="text-[10px] font-bold text-[#51465B]">
+                          <span className="text-[10px] font-bold text-[#FFD36D]">
                             {mat.subject} &bull; Kelas {mat.grade} SD
                           </span>
                         </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#23212A] group-hover:text-[#196F3D] truncate">
+                        <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#FFD36D] truncate">
                           {mat.title}
                         </h4>
                       </div>
 
                       <button
                         type="button"
-                        className="px-3.5 py-1.5 rounded-full bg-[#27AE60] text-white text-xs font-bold opacity-90 group-hover:opacity-100 shrink-0"
+                        className="px-3.5 py-1.5 rounded-xl bg-white/10 group-hover:bg-[#FFD36D] text-white group-hover:text-[#251E2B] text-xs font-bold transition-all shrink-0 cursor-pointer"
                       >
-                        Pilih Materi
+                        Pilih
                       </button>
                     </div>
                   ))
@@ -690,11 +689,11 @@ export default function TeacherQuestionsPage() {
             </div>
 
             {/* Footer Overlay */}
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-white/15 flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsFromMaterialOverlayOpen(false)}
-                className="px-5 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="py-2 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold border border-white/20 cursor-pointer"
               >
                 Batal
               </button>
@@ -708,21 +707,21 @@ export default function TeacherQuestionsPage() {
           STEP 2: INPUT SOAL -> STEP 3: AI UBAH KONTEKS & REVIEW EDITABLE -> STEP 4)
           ===================================================================== */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 relative my-auto max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-xl bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[90vh] overflow-y-auto text-white">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-4 border-b border-white/15">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] bg-[#51465B]/10 px-2.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#FFD36D] bg-white/10 px-2.5 py-0.5 rounded-full">
                   Langkah {wizardStep} dari 3
                 </span>
-                <h3 className="text-lg font-black text-[#23212A] mt-1">
+                <h3 className="text-lg sm:text-xl font-black text-white mt-1.5 tracking-tight">
                   {wizardStep === 1
-                    ? "Form Identitas & Bentuk Soal"
+                    ? "Identitas & Bentuk Soal"
                     : wizardStep === 2
                     ? "Input Naskah Soal"
                     : wizardStep === 3
-                    ? "Review & Tinjau Hasil Konteks AI"
+                    ? "Review Hasil Konteks AI"
                     : "Butir Soal Berhasil Dibuat!"}
                 </h3>
               </div>
@@ -730,17 +729,17 @@ export default function TeacherQuestionsPage() {
               <button
                 type="button"
                 onClick={() => setIsWizardOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* STEP 1: IDENTITAS (JUDUL/TOPIK, MAPEL, JENJANG, BENTUK SOAL) */}
+            {/* STEP 1: IDENTITAS */}
             {wizardStep === 1 && (
               <form onSubmit={handleNextToContent} className="space-y-4 pt-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-gray-200 mb-1.5">
                     Judul / Topik Soal
                   </label>
                   <input
@@ -749,19 +748,19 @@ export default function TeacherQuestionsPage() {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Contoh: Perhitungan Belanja di Pasar Tradisional"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                    <label className="block text-xs font-bold text-gray-200 mb-1.5">
                       Mata Pelajaran
                     </label>
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#23212A]"
+                      className="w-full px-3.5 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       <option value="Matematika">Matematika</option>
                       <option value="IPAS (Ilmu Pengetahuan Alam & Sosial)">IPAS</option>
@@ -772,27 +771,27 @@ export default function TeacherQuestionsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      Jenjang / Tingkat Kelas
+                    <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                      Jenjang Kelas
                     </label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#23212A]"
+                      className="w-full px-3.5 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       {[1, 2, 3, 4, 5, 6].map((g) => (
                         <option key={g} value={g}>
-                          Kelas {g} Sekolah Dasar (SD)
+                          Kelas {g} SD
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Pilihan Bentuk Soal: Pilihan Ganda atau Esai */}
+                {/* Pilih Bentuk Soal: Pilihan Ganda / Esai */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Bentuk Soal
+                  <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                    Tipe Soal
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -800,8 +799,8 @@ export default function TeacherQuestionsPage() {
                       onClick={() => setQuestionType("multiple_choice")}
                       className={`py-3 px-4 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
                         questionType === "multiple_choice"
-                          ? "border-[#51465B] bg-[#51465B] text-white shadow-xs"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          ? "border-[#FFD36D] bg-[#FFD36D] text-[#251E2B] shadow-xs"
+                          : "border-white/20 bg-white/10 text-white hover:bg-white/15"
                       }`}
                     >
                       <Brain className="w-4 h-4" />
@@ -813,8 +812,8 @@ export default function TeacherQuestionsPage() {
                       onClick={() => setQuestionType("essay")}
                       className={`py-3 px-4 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
                         questionType === "essay"
-                          ? "border-[#51465B] bg-[#51465B] text-white shadow-xs"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          ? "border-[#FFD36D] bg-[#FFD36D] text-[#251E2B] shadow-xs"
+                          : "border-white/20 bg-white/10 text-white hover:bg-white/15"
                       }`}
                     >
                       <FileText className="w-4 h-4" />
@@ -823,45 +822,45 @@ export default function TeacherQuestionsPage() {
                   </div>
                 </div>
 
-                <div className="pt-4 flex justify-end">
+                <div className="pt-3 flex justify-end">
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+                    className="py-3 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-98"
                   >
                     <span>Lanjut ke Input Naskah</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>
               </form>
             )}
 
-            {/* STEP 2: INPUT NASKAH SOAL + TOMBOL AI PROSES */}
+            {/* STEP 2: INPUT NASKAH */}
             {wizardStep === 2 && (
               <div className="space-y-4 pt-4">
                 {(selectedMethod === "manual" || selectedMethod === "from_material") && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      Tulis Naskah Soal Asli / Konsep:
+                    <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                      Tulis Naskah Soal / Konsep:
                     </label>
                     <textarea
                       rows={5}
                       required
                       value={manualQuestionDraft}
                       onChange={(e) => setManualQuestionDraft(e.target.value)}
-                      placeholder="Tulis naskah soal standar yang ingin dikontekstualisasikan oleh sistem AI..."
-                      className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs leading-relaxed text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                      placeholder="Tulis naskah soal standar yang ingin dikontekstualisasikan..."
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] focus:bg-[#1E1724] text-xs sm:text-sm text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed"
                     />
                   </div>
                 )}
 
                 {selectedMethod === "camera" && (
-                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2">
-                    <Camera className="w-8 h-8 text-[#2980B9] mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">Foto lembar naskah soal fisik via kamera</p>
+                  <div className="p-6 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-3 bg-[#251E2B]/50">
+                    <Camera className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                    <p className="text-xs font-bold text-gray-200">Foto lembar naskah soal fisik</p>
                     <button
                       type="button"
                       onClick={() => setCapturedPhotoName("foto_lembar_soal.jpg")}
-                      className="px-4 py-2 rounded-full bg-[#2980B9] text-white text-xs font-bold"
+                      className="px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
                     >
                       {capturedPhotoName ? "Foto Terpindai: foto_lembar_soal.jpg" : "Ambil Foto Sekarang"}
                     </button>
@@ -869,13 +868,13 @@ export default function TeacherQuestionsPage() {
                 )}
 
                 {selectedMethod === "pdf" && (
-                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2">
-                    <Upload className="w-8 h-8 text-[#D35400] mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">Unggah naskah soal berformat PDF</p>
+                  <div className="p-6 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-3 bg-[#251E2B]/50">
+                    <Upload className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                    <p className="text-xs font-bold text-gray-200">Unggah naskah soal berformat PDF</p>
                     <button
                       type="button"
                       onClick={() => setUploadedFileName("naskah_soal_ujian.pdf")}
-                      className="px-4 py-2 rounded-full bg-[#D35400] text-white text-xs font-bold"
+                      className="px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
                     >
                       {uploadedFileName ? "Berkas Terunggah: naskah_soal_ujian.pdf" : "Pilih Berkas PDF"}
                     </button>
@@ -883,19 +882,19 @@ export default function TeacherQuestionsPage() {
                 )}
 
                 {selectedMethod === "ai" && (
-                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-                    <span className="font-bold block">Integrasi Data Kontekstual {region}:</span>
-                    <p>
-                      Sistem AI akan otomatis merumuskan butir asesmen {questionType === "multiple_choice" ? "pilihan ganda" : "esai"} dengan mengaitkan data lingkungan nyata daerah {region}.
+                  <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs text-gray-200 space-y-1">
+                    <span className="font-bold text-[#FFD36D] block">Konteks Wilayah: {region}</span>
+                    <p className="text-gray-300">
+                      Sistem AI akan otomatis merumuskan butir asesmen {questionType === "multiple_choice" ? "pilihan ganda" : "esai"} dengan kearifan lokal daerah {region}.
                     </p>
                   </div>
                 )}
 
-                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+                <div className="pt-3 flex items-center justify-between border-t border-white/15">
                   <button
                     type="button"
                     onClick={() => setWizardStep(1)}
-                    className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                    className="py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
                     Kembali
                   </button>
@@ -904,95 +903,95 @@ export default function TeacherQuestionsPage() {
                     type="button"
                     disabled={isAiGenerating}
                     onClick={handleTriggerAiContextTransformation}
-                    className="px-6 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="py-3 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-[#FFD36D]" />
-                    <span>{isAiGenerating ? "AI Sedang Menyesuaikan Konteks..." : "Sesuaikan Konteks dengan AI"}</span>
+                    <Sparkles className="w-4 h-4" />
+                    <span>{isAiGenerating ? "Memproses..." : "Sesuaikan dengan AI"}</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: REVIEW & TINJAU (DAPAT DIEDIT SEBELUM SIMPAN) */}
+            {/* STEP 3: REVIEW */}
             {wizardStep === 3 && (
               <div className="space-y-4 pt-4">
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Konteks soal disesuaikan oleh sistem AI! Anda dapat meninjau dan mengedit sebelum disimpan:</span>
+                <div className="p-3 rounded-2xl bg-emerald-950/70 border border-emerald-700/60 text-emerald-200 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Konteks soal berhasil disesuaikan! Periksa draf di bawah sebelum disimpan:</span>
                 </div>
 
                 {/* Question Prompt */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Teks Pertanyaan Kontekstual (Dapat Diedit)
+                  <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                    Teks Pertanyaan Kontekstual
                   </label>
                   <textarea
                     rows={4}
                     value={previewPrompt}
                     onChange={(e) => setPreviewPrompt(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs leading-relaxed text-[#23212A] focus:outline-none"
+                    className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs text-white focus:outline-none leading-relaxed"
                   />
                 </div>
 
                 {/* Multiple Choice Options or Essay Rubric */}
                 {questionType === "multiple_choice" ? (
                   <div className="space-y-2.5">
-                    <label className="block text-xs font-bold text-slate-800">
-                      Opsi Jawaban & Kunci Jawaban:
+                    <label className="block text-xs font-bold text-gray-200">
+                      Opsi Jawaban & Kunci:
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           A
                         </span>
                         <input
                           type="text"
                           value={previewOptionA}
                           onChange={(e) => setPreviewOptionA(e.target.value)}
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs"
+                          className="flex-1 px-3 py-2 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           B
                         </span>
                         <input
                           type="text"
                           value={previewOptionB}
                           onChange={(e) => setPreviewOptionB(e.target.value)}
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs"
+                          className="flex-1 px-3 py-2 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           C
                         </span>
                         <input
                           type="text"
                           value={previewOptionC}
                           onChange={(e) => setPreviewOptionC(e.target.value)}
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs"
+                          className="flex-1 px-3 py-2 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           D
                         </span>
                         <input
                           type="text"
                           value={previewOptionD}
                           onChange={(e) => setPreviewOptionD(e.target.value)}
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs"
+                          className="flex-1 px-3 py-2 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
                         />
                       </div>
                     </div>
 
-                    <div className="pt-1 flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-700">Kunci Jawaban Benar:</span>
+                    <div className="pt-2 flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-200">Kunci Benar:</span>
                       <select
                         value={previewCorrect}
                         onChange={(e) => setPreviewCorrect(e.target.value)}
-                        className="px-3 py-1 rounded-lg border border-slate-200 text-xs font-bold text-[#51465B]"
+                        className="px-3 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-xs font-black text-[#FFD36D] focus:outline-none"
                       >
                         <option value="A">A</option>
                         <option value="B">B</option>
@@ -1003,36 +1002,36 @@ export default function TeacherQuestionsPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      Rubrik Pedoman Penilaian Esai (Dapat Diedit)
+                    <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                      Rubrik Pedoman Penilaian
                     </label>
                     <textarea
                       rows={3}
                       value={previewRubric}
                       onChange={(e) => setPreviewRubric(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-slate-200 text-xs leading-relaxed text-[#23212A]"
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 text-xs text-white focus:outline-none leading-relaxed"
                     />
                   </div>
                 )}
 
                 {/* Explanation */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-gray-200 mb-1.5">
                     Pembahasan Soal
                   </label>
                   <textarea
                     rows={2}
                     value={previewExplanation}
                     onChange={(e) => setPreviewExplanation(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-200 text-xs leading-relaxed text-[#23212A]"
+                    className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 text-xs text-white focus:outline-none leading-relaxed"
                   />
                 </div>
 
-                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+                <div className="pt-3 flex items-center justify-between border-t border-white/15">
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
-                    className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600"
+                    className="py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
                     Ubah Draf
                   </button>
@@ -1040,9 +1039,9 @@ export default function TeacherQuestionsPage() {
                   <button
                     type="button"
                     onClick={handleFinalSave}
-                    className="px-6 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-md"
+                    className="py-3 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
                   >
-                    Simpan ke Bank Soal
+                    Simpan Soal
                   </button>
                 </div>
               </div>
@@ -1051,20 +1050,20 @@ export default function TeacherQuestionsPage() {
             {/* STEP 4: SUKSES */}
             {wizardStep === 4 && (
               <div className="text-center py-6 space-y-4">
-                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-                  <CheckCircle2 className="w-7 h-7" />
+                <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h4 className="text-lg font-black text-[#23212A]">
+                <h4 className="text-lg sm:text-xl font-black text-white">
                   Butir Soal Berhasil Disimpan!
                 </h4>
-                <p className="text-xs text-[#756F7A] max-w-sm mx-auto">
-                  Butir asesmen telah tersimpan di katalog bank soal dan siap dibagikan ke siswa via Room Akses.
+                <p className="text-xs text-gray-300 max-w-sm mx-auto">
+                  Butir soal telah tersimpan di katalog dan siap dibagikan melalui room akses.
                 </p>
                 <div className="pt-2">
                   <button
                     type="button"
                     onClick={() => setIsWizardOpen(false)}
-                    className="px-6 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold"
+                    className="py-3 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs sm:text-sm font-extrabold shadow-md cursor-pointer"
                   >
                     Selesai & Tutup
                   </button>
@@ -1077,37 +1076,37 @@ export default function TeacherQuestionsPage() {
 
       {/* Publish Room Modal */}
       {isRoomModalOpen && questionToPublish && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-sm w-full p-6 text-center space-y-4 animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-full bg-[#51465B] text-white flex items-center justify-center mx-auto shadow-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 text-center space-y-4 animate-in fade-in zoom-in-95 text-white">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 text-[#FFD36D] flex items-center justify-center mx-auto shadow-sm">
               <DoorOpen className="w-6 h-6 stroke-[2.2]" />
             </div>
 
             <div>
-              <h3 className="text-base font-black text-[#23212A]">
-                Buka Room untuk Soal Ini
+              <h3 className="text-base sm:text-lg font-black text-white">
+                Buka Room Soal
               </h3>
-              <p className="text-xs text-[#756F7A] mt-1">
-                Siswa dapat langsung mengerjakan latihan tanpa akun dengan kode berikut:
+              <p className="text-xs text-gray-300 mt-1">
+                Siswa dapat langsung berlatih tanpa akun dengan kode:
               </p>
             </div>
 
-            <div className="p-3 bg-[#FAF7F3] border border-[#E9E5E8] rounded-2xl">
-              <span className="font-mono text-xl font-black tracking-widest text-[#23212A]">
+            <div className="p-3 bg-[#251E2B]/80 border-2 border-white/20 rounded-2xl">
+              <span className="font-mono text-xl font-black tracking-widest text-[#FFD36D] lowercase">
                 {generatedRoomCode}
               </span>
             </div>
 
             {roomCreatedSuccess ? (
-              <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-                <Check className="w-4 h-4" />
+              <div className="p-3 bg-emerald-950/70 border border-emerald-700/60 text-emerald-200 text-xs font-bold rounded-2xl flex items-center justify-center gap-1.5">
+                <Check className="w-4 h-4 text-emerald-400" />
                 <span>Room berhasil diaktifkan!</span>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={handleCreateRoomForQuestion}
-                className="w-full py-3 rounded-full bg-[#51465B] text-white font-bold text-xs shadow-md"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
               >
                 Aktifkan Room Sekarang
               </button>
@@ -1116,7 +1115,7 @@ export default function TeacherQuestionsPage() {
             <button
               type="button"
               onClick={() => setIsRoomModalOpen(false)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800"
+              className="text-xs font-bold text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               Tutup
             </button>

@@ -33,11 +33,11 @@ export default function CreateRoomPage() {
   const [grade, setGrade] = useState<number>(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generate random 6-character room code
+  // Generate random 6-character room code without hyphen in lowercase
   const generateRandomCode = (type: "material" | "question" | "both") => {
-    const prefix = type === "material" ? "MTR" : type === "question" ? "SOL" : "ROM";
+    const prefix = type === "material" ? "mtr" : type === "question" ? "sol" : "rom";
     const num = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}-${num}`;
+    return `${prefix}${num}`;
   };
 
   useEffect(() => {
@@ -74,13 +74,13 @@ export default function CreateRoomPage() {
       setGrade(materials[0].grade || 5);
     } else if (newType === "question" && questions.length > 0) {
       setSelectedResourceId(questions[0].id);
-      setCustomTitle(`Latihan Soal: ${questions[0].topic || "Kontekstual"}`);
+      setCustomTitle(`Latihan: ${questions[0].topic || "Kontekstual"}`);
       setSubject(questions[0].subject || "Matematika");
       setGrade(questions[0].grade || 5);
     } else if (newType === "both") {
       if (materials.length > 0) {
         setSelectedResourceId(materials[0].id);
-        setCustomTitle(`Paket Terpadu: ${materials[0].title}`);
+        setCustomTitle(`Paket: ${materials[0].title}`);
         setSubject(materials[0].subject || "Matematika");
         setGrade(materials[0].grade || 5);
       }
@@ -95,8 +95,9 @@ export default function CreateRoomPage() {
     if (!roomCode || !customTitle || isSubmitting) return;
 
     setIsSubmitting(true);
+    const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
     const newRoom = repository.createRoom({
-      code: roomCode.trim().toUpperCase(),
+      code: cleanCode,
       title: customTitle.trim(),
       type: roomType,
       resource_id: selectedResourceId,
@@ -115,7 +116,7 @@ export default function CreateRoomPage() {
 
   return (
     <TeacherWorkspaceShell activeGroupId="rooms">
-      <div className="max-w-3xl mx-auto space-y-6 pb-12">
+      <div className="max-w-3xl mx-auto space-y-6 pb-12 font-sans">
         {/* Back navigation */}
         <Link
           href="/teacher/rooms"
@@ -131,19 +132,19 @@ export default function CreateRoomPage() {
             Buat Ruang Belajar (Room) Baru
           </h1>
           <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-1">
-            Publikasikan materi ajar, paket soal latihan, atau keduanya bersamaan agar dapat diakses murid tanpa login.
+            Publikasikan materi ajar atau paket soal latihan agar dapat diakses murid tanpa login.
           </p>
         </div>
 
-        {/* Form Card */}
+        {/* Form Card: Sleek Login & Room Entry Inspired Aesthetic */}
         <form
           onSubmit={handleSubmit}
-          className="p-6 sm:p-8 rounded-[28px] sm:rounded-[36px] bg-white border border-[#E9E5E8] shadow-xs space-y-6"
+          className="p-6 sm:p-8 rounded-[32px] sm:rounded-[36px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] border border-[#5A4F65] shadow-2xl text-white space-y-6"
         >
           {/* Step 1: Select Type */}
           <div>
-            <label className="text-xs font-black text-[#23212A] uppercase tracking-wider block mb-3">
-              1. Tipe Konten yang Ingin Dipublikasikan
+            <label className="text-xs font-bold text-gray-200 block mb-3">
+              Tipe Konten
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Materi */}
@@ -152,25 +153,25 @@ export default function CreateRoomPage() {
                 onClick={() => handleTypeChange("material")}
                 className={`p-4 rounded-2xl border-2 flex items-center gap-3 transition-all cursor-pointer text-left ${
                   roomType === "material"
-                    ? "border-[#51465B] bg-[#51465B]/5 shadow-xs"
-                    : "border-[#E9E5E8] hover:border-slate-300"
+                    ? "border-[#FFD36D] bg-[#FFD36D] text-[#251E2B] shadow-md"
+                    : "border-white/20 bg-white/10 text-white hover:bg-white/15"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     roomType === "material"
-                      ? "bg-[#51465B] text-white"
-                      : "bg-slate-100 text-slate-600"
+                      ? "bg-[#251E2B] text-[#FFD36D]"
+                      : "bg-white/10 text-white"
                   }`}
                 >
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-black text-xs text-[#23212A]">
+                  <div className="font-black text-xs">
                     Materi Saja
                   </div>
-                  <div className="text-[10px] text-[#756F7A]">
-                    Siswa membaca bahan ajar
+                  <div className={`text-[10px] ${roomType === "material" ? "text-[#251E2B]/80 font-semibold" : "text-gray-300"}`}>
+                    Baca bahan ajar
                   </div>
                 </div>
               </button>
@@ -181,25 +182,25 @@ export default function CreateRoomPage() {
                 onClick={() => handleTypeChange("question")}
                 className={`p-4 rounded-2xl border-2 flex items-center gap-3 transition-all cursor-pointer text-left ${
                   roomType === "question"
-                    ? "border-[#51465B] bg-[#51465B]/5 shadow-xs"
-                    : "border-[#E9E5E8] hover:border-slate-300"
+                    ? "border-[#FFD36D] bg-[#FFD36D] text-[#251E2B] shadow-md"
+                    : "border-white/20 bg-white/10 text-white hover:bg-white/15"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     roomType === "question"
-                      ? "bg-[#FFD36D] text-[#23212A]"
-                      : "bg-slate-100 text-slate-600"
+                      ? "bg-[#251E2B] text-[#FFD36D]"
+                      : "bg-white/10 text-white"
                   }`}
                 >
                   <Brain className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-black text-xs text-[#23212A]">
+                  <div className="font-black text-xs">
                     Soal Saja
                   </div>
-                  <div className="text-[10px] text-[#756F7A]">
-                    Siswa menjawab latihan
+                  <div className={`text-[10px] ${roomType === "question" ? "text-[#251E2B]/80 font-semibold" : "text-gray-300"}`}>
+                    Latihan soal
                   </div>
                 </div>
               </button>
@@ -210,25 +211,25 @@ export default function CreateRoomPage() {
                 onClick={() => handleTypeChange("both")}
                 className={`p-4 rounded-2xl border-2 flex items-center gap-3 transition-all cursor-pointer text-left ${
                   roomType === "both"
-                    ? "border-[#51465B] bg-[#51465B]/5 shadow-xs"
-                    : "border-[#E9E5E8] hover:border-slate-300"
+                    ? "border-[#FFD36D] bg-[#FFD36D] text-[#251E2B] shadow-md"
+                    : "border-white/20 bg-white/10 text-white hover:bg-white/15"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     roomType === "both"
-                      ? "bg-[#51465B] text-[#FFD36D]"
-                      : "bg-slate-100 text-slate-600"
+                      ? "bg-[#251E2B] text-[#FFD36D]"
+                      : "bg-white/10 text-white"
                   }`}
                 >
                   <Layers className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-black text-xs text-[#23212A]">
-                    Keduanya Bareng
+                  <div className="font-black text-xs">
+                    Materi & Soal
                   </div>
-                  <div className="text-[10px] text-[#756F7A]">
-                    Materi + Soal Latihan
+                  <div className={`text-[10px] ${roomType === "both" ? "text-[#251E2B]/80 font-semibold" : "text-gray-300"}`}>
+                    Paket terpadu
                   </div>
                 </div>
               </button>
@@ -238,7 +239,7 @@ export default function CreateRoomPage() {
           {/* Step 2: Content Selection */}
           {(roomType === "material" || roomType === "both") && (
             <div>
-              <label className="text-xs font-black text-[#23212A] uppercase tracking-wider block mb-2">
+              <label className="text-xs font-bold text-gray-200 block mb-2">
                 Pilih Modul Materi
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -248,22 +249,22 @@ export default function CreateRoomPage() {
                     onClick={() => {
                       setSelectedResourceId(mat.id);
                       if (roomType === "material") setCustomTitle(mat.title);
-                      else setCustomTitle(`Paket Terpadu: ${mat.title}`);
+                      else setCustomTitle(`Paket: ${mat.title}`);
                     }}
-                    className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                    className={`p-3 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
                       selectedResourceId === mat.id
-                        ? "border-[#51465B] bg-[#51465B]/5 font-bold"
-                        : "border-[#E9E5E8] hover:bg-slate-50"
+                        ? "border-[#FFD36D] bg-[#251E2B] text-white font-bold"
+                        : "border-white/15 bg-[#251E2B]/60 hover:bg-[#251E2B] text-gray-300"
                     }`}
                   >
                     <div>
-                      <div className="text-[#23212A]">{mat.title}</div>
-                      <div className="text-[10px] text-[#756F7A] mt-0.5">
+                      <div className="text-white">{mat.title}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">
                         Kelas {mat.grade} &bull; {mat.subject} &bull; {mat.id}
                       </div>
                     </div>
                     {selectedResourceId === mat.id && (
-                      <Check className="w-4 h-4 text-[#51465B] shrink-0" />
+                      <Check className="w-4 h-4 text-[#FFD36D] shrink-0" />
                     )}
                   </div>
                 ))}
@@ -273,7 +274,7 @@ export default function CreateRoomPage() {
 
           {(roomType === "question" || roomType === "both") && (
             <div>
-              <label className="text-xs font-black text-[#23212A] uppercase tracking-wider block mb-2">
+              <label className="text-xs font-bold text-gray-200 block mb-2">
                 Pilih Butir Soal Latihan
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -294,20 +295,20 @@ export default function CreateRoomPage() {
                           setSecondaryResourceId(q.id);
                         }
                       }}
-                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                      className={`p-3 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
                         isSelected
-                          ? "border-[#51465B] bg-[#51465B]/5 font-bold"
-                          : "border-[#E9E5E8] hover:bg-slate-50"
+                          ? "border-[#FFD36D] bg-[#251E2B] text-white font-bold"
+                          : "border-white/15 bg-[#251E2B]/60 hover:bg-[#251E2B] text-gray-300"
                       }`}
                     >
                       <div className="pr-2">
-                        <div className="text-[#23212A] line-clamp-1">{q.question_text}</div>
-                        <div className="text-[10px] text-[#756F7A] mt-0.5">
+                        <div className="text-white line-clamp-1">{q.question_text}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">
                           Topik: {q.topic} &bull; Kunci: {q.correct_answer}
                         </div>
                       </div>
                       {isSelected && (
-                        <Check className="w-4 h-4 text-[#51465B] shrink-0" />
+                        <Check className="w-4 h-4 text-[#FFD36D] shrink-0" />
                       )}
                     </div>
                   );
@@ -319,25 +320,25 @@ export default function CreateRoomPage() {
           {/* Step 3: Title & Code */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
-              <label className="block text-xs font-bold text-[#23212A] mb-1.5">
-                Judul Tampilan Room Siswa
+              <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                Judul Room Siswa
               </label>
               <input
                 type="text"
                 required
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-bold text-[#23212A]"
+                className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white focus:outline-none transition-all shadow-inner"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#23212A] mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-bold text-gray-200 mb-1.5 flex items-center justify-between">
                 <span>Kode Akses Siswa</span>
                 <button
                   type="button"
                   onClick={() => setRoomCode(generateRandomCode(roomType))}
-                  className="text-[11px] text-[#51465B] font-bold flex items-center gap-1 cursor-pointer hover:underline"
+                  className="text-[11px] text-[#FFD36D] font-bold flex items-center gap-1 cursor-pointer hover:underline"
                 >
                   <Shuffle className="w-3 h-3" />
                   <span>Acak Kode</span>
@@ -347,26 +348,26 @@ export default function CreateRoomPage() {
                 type="text"
                 required
                 value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] font-mono font-bold text-xs text-[#51465B]"
+                onChange={(e) => setRoomCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] font-mono lowercase tracking-widest text-xs sm:text-sm font-black text-[#FFD36D] focus:outline-none transition-all shadow-inner"
               />
             </div>
           </div>
 
           {/* Submit */}
-          <div className="pt-4 border-t border-[#E9E5E8] flex justify-end gap-3">
+          <div className="pt-4 border-t border-white/15 flex justify-end gap-3">
             <Link
               href="/teacher/rooms"
-              className="py-3 px-5 rounded-2xl border border-[#E9E5E8] hover:bg-[#FAF7F3] text-xs font-bold text-[#756F7A]"
+              className="py-3.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm border border-white/20 transition-all cursor-pointer"
             >
               Batal
             </Link>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="py-3 px-7 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+              className="py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-98 cursor-pointer flex items-center gap-2"
             >
-              <DoorOpen className="w-4 h-4 text-[#FFD36D]" />
+              <DoorOpen className="w-4 h-4 stroke-[2.2]" />
               <span>{isSubmitting ? "Menerbitkan Room..." : "Terbitkan Room Belajar"}</span>
             </button>
           </div>

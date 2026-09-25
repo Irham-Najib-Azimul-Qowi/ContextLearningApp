@@ -82,6 +82,9 @@ export default function TeacherDashboardPage() {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#23212A] tracking-tight">
               Selamat Datang, {user?.full_name || "Guru"}!
             </h1>
+            <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-1">
+              Kelola bahan ajar, asesmen tematik, dan ruang belajar kontekstual berbasis kearifan lokal.
+            </p>
           </div>
         </div>
 
