@@ -35,6 +35,14 @@ export function TeacherWorkspaceShell({
   };
 
   const [contextMode, setContextMode] = useState<"material" | "question">(getInitialMode());
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+
+  // Default to collapsed rail on mobile devices so screen is not squished
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsCollapsed(true);
+    }
+  }, []);
 
   useEffect(() => {
     // If route specifies feature, set and persist it
@@ -66,14 +74,19 @@ export function TeacherWorkspaceShell({
       className={`h-screen max-h-screen w-full ${shellBg} flex flex-row relative overflow-hidden text-[#23212A] antialiased transition-colors duration-300`}
     >
       {/* 1. Left Vertical Navigation Sidebar (Desktop fixed screen height, fits without page scroll) */}
-      <IconNavigationRail activeGroupId={activeGroupId} contextMode={contextMode} />
+      <IconNavigationRail
+        activeGroupId={activeGroupId}
+        contextMode={contextMode}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
+      />
 
       {/* 2. Floating Top-Right Controls (Collapsible Profile Circle -> Feature Themed Pill) */}
       <GlobalControls contextMode={contextMode} />
 
       {/* 3. Main Content Section (Layered Stacking Card with rounded corners revealing theme background) */}
       <div className={`flex-1 flex flex-col min-w-0 ${shellBg} h-screen max-h-screen overflow-hidden transition-colors duration-300`}>
-        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[32px] sm:rounded-tl-[42px] rounded-bl-[32px] sm:rounded-bl-[42px] shadow-2xl p-5 sm:p-7 lg:p-9 h-screen max-h-screen overflow-y-auto">
+        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[24px] sm:rounded-tl-[42px] rounded-bl-[24px] sm:rounded-bl-[42px] shadow-2xl p-4 sm:p-7 lg:p-9 h-screen max-h-screen overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>

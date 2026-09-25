@@ -152,3 +152,27 @@ export interface AppNotification {
   link?: string;
   created_at: string;
 }
+
+export interface RoomVisitor {
+  name: string;
+  accessed_at: string;
+  score?: number;
+  completed?: boolean;
+}
+
+export interface LearningRoom {
+  id: string;
+  code: string; // e.g. "MTR-3502" or "SOL-5A"
+  title: string;
+  type: "material" | "question";
+  resource_id: string; // ID of LearningMaterial or Question
+  subject: string;
+  grade: number;
+  region_name: string;
+  teacher_id: string;
+  teacher_name: string;
+  access_count: number;
+  created_at: string;
+  visitors?: RoomVisitor[];
+}
+

@@ -2,10 +2,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Brain,
-  ClipboardCheck,
-  Users,
-  Settings,
-  Package,
+  DoorOpen,
   LucideIcon,
 } from "lucide-react";
 
@@ -28,14 +25,35 @@ export interface NavGroup {
 export const TEACHER_NAV_GROUPS: NavGroup[] = [
   {
     id: "dashboard",
-    label: "Dashboard",
+    label: "Dasbor",
     icon: LayoutDashboard,
     href: "/teacher/dashboard",
     hasSubmenu: false,
   },
   {
+    id: "materials",
+    label: "Materi",
+    icon: BookOpen,
+    href: "/teacher/materials",
+    hasSubmenu: true,
+    subitems: [
+      {
+        id: "materials-all",
+        label: "Semua Modul Materi",
+        href: "/teacher/materials",
+        description: "Modul ajar kurikulum terkontekstualisasi",
+      },
+      {
+        id: "materials-new",
+        label: "Buat Materi Baru",
+        href: "/teacher/materials/new",
+        description: "Susun modul ajar berbasis konteks lokal",
+      },
+    ],
+  },
+  {
     id: "questions",
-    label: "Soal (Quentext)",
+    label: "Soal",
     icon: Brain,
     href: "/teacher/questions",
     hasSubmenu: true,
@@ -73,73 +91,25 @@ export const TEACHER_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: "materials",
-    label: "Materi (Mattext)",
-    icon: BookOpen,
-    href: "/teacher/materials",
+    id: "rooms",
+    label: "Room",
+    icon: DoorOpen,
+    href: "/teacher/rooms",
     hasSubmenu: true,
     subitems: [
       {
-        id: "materials-all",
-        label: "Semua Modul Materi",
-        href: "/teacher/materials",
-        description: "Modul ajar kurikulum terkontekstualisasi",
+        id: "rooms-all",
+        label: "Daftar Room Akses",
+        href: "/teacher/rooms",
+        description: "Kelola link URL & kode akses materi/soal",
       },
       {
-        id: "materials-new",
-        label: "Buat Materi Baru",
-        href: "/teacher/materials/new",
-        description: "Susun modul ajar berbasis konteks lokal",
+        id: "rooms-new",
+        label: "Buat Room Baru",
+        href: "/teacher/rooms/new",
+        description: "Terbitkan kode akses baru untuk siswa",
       },
     ],
-  },
-  {
-    id: "classes",
-    label: "Daftar Siswa",
-    icon: Users,
-    href: "/teacher/classes",
-    hasSubmenu: true,
-    subitems: [
-      {
-        id: "classes-all",
-        label: "Daftar Kelas",
-        href: "/teacher/classes",
-        description: "Kelola kelas dan kode gabung siswa",
-      },
-      {
-        id: "classes-exams",
-        label: "Ujian Kelas",
-        href: "/teacher/examinations",
-        description: "Jadwal dan sesi ujian kelas",
-      },
-    ],
-  },
-  {
-    id: "evaluation",
-    label: "Evaluasi & Hasil",
-    icon: ClipboardCheck,
-    href: "/teacher/examinations",
-    hasSubmenu: true,
-    subitems: [
-      {
-        id: "eval-exams",
-        label: "Daftar Ujian",
-        href: "/teacher/examinations",
-        description: "Ruang ujian aktif dan terjadwal",
-      },
-      {
-        id: "eval-essay",
-        label: "Pemeriksaan Jawaban",
-        href: "/teacher/examinations/review-essay",
-        description: "Penilaian esai dengan bantuan AI",
-      },
-    ],
-  },
-  {
-    id: "settings",
-    label: "Pengaturan",
-    icon: Settings,
-    href: "/teacher/settings",
-    hasSubmenu: false,
   },
 ];
+

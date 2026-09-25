@@ -170,9 +170,9 @@ export default function TeacherDashboardPage() {
           </div>
 
           {/* 2. Coral Salmon Banner: "Good Job!" with 3D Miniature Education Cart */}
-          <div className="p-6 sm:p-7 rounded-[28px] sm:rounded-[32px] bg-[#F47D83] text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="p-5 sm:p-7 rounded-[24px] sm:rounded-[32px] bg-[#F47D83] text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
             <div className="relative z-10 max-w-md space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              <h2 className="text-xl sm:text-3xl font-black tracking-tight text-white">
                 Good Job, Bu Guru!
               </h2>
               <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-normal">
@@ -181,8 +181,8 @@ export default function TeacherDashboardPage() {
             </div>
 
             {/* 3D Education Cart Graphic */}
-            <div className="relative z-10 shrink-0">
-              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shadow-xl border-2 border-white/30 transform hover:scale-105 transition-transform bg-[#F47D83]">
+            <div className="relative z-10 shrink-0 self-center sm:self-auto">
+              <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shadow-xl border-2 border-white/30 transform hover:scale-105 transition-transform bg-[#F47D83]">
                 <img
                   src="/images/dashboard/education-cart.jpg"
                   alt="Education Cart"
@@ -196,33 +196,33 @@ export default function TeacherDashboardPage() {
           </div>
 
           {/* 3. Three Metric Cards Row (+8,5k Favorite, +5,2k Add to bag, +1,2k Orders) */}
-          <div className="grid grid-cols-3 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             {/* Metric 1 */}
-            <div className="p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow">
-              <div className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
+            <div className="p-3 sm:p-5 rounded-[18px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow min-w-0">
+              <div className="text-lg sm:text-3xl font-black text-[#23212A] tracking-tight truncate w-full">
                 +8,5k
               </div>
-              <div className="text-[11px] sm:text-xs font-semibold text-[#756F7A] mt-1">
+              <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
                 Bank Soal
               </div>
             </div>
 
             {/* Metric 2 */}
-            <div className="p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow">
-              <div className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
+            <div className="p-3 sm:p-5 rounded-[18px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow min-w-0">
+              <div className="text-lg sm:text-3xl font-black text-[#23212A] tracking-tight truncate w-full">
                 +5,2k
               </div>
-              <div className="text-[11px] sm:text-xs font-semibold text-[#756F7A] mt-1">
+              <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
                 Modul Ajar
               </div>
             </div>
 
             {/* Metric 3 */}
-            <div className="p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow">
-              <div className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
+            <div className="p-3 sm:p-5 rounded-[18px] sm:rounded-[28px] bg-white border border-[#E9E5E8] shadow-2xs text-center flex flex-col justify-center items-center hover:shadow-xs transition-shadow min-w-0">
+              <div className="text-lg sm:text-3xl font-black text-[#23212A] tracking-tight truncate w-full">
                 +1,2k
               </div>
-              <div className="text-[11px] sm:text-xs font-semibold text-[#756F7A] mt-1">
+              <div className="text-[10px] sm:text-xs font-semibold text-[#756F7A] mt-0.5 sm:mt-1 truncate w-full">
                 Aktivitas Ujian
               </div>
             </div>

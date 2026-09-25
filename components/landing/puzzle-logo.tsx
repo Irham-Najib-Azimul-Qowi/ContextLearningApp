@@ -9,6 +9,8 @@ interface PahamiPuzzleLogoProps {
   className?: string;
   theme?: "light" | "dark";
   href?: string;
+  onClick?: (e: React.MouseEvent) => void;
+  asButton?: boolean;
 }
 
 /**
@@ -22,6 +24,8 @@ export function PahamiPuzzleLogo({
   className = "",
   theme = "light",
   href = "/",
+  onClick,
+  asButton = false,
 }: PahamiPuzzleLogoProps) {
   // Dimensions scale
   const sizeMap = {
@@ -58,12 +62,8 @@ export function PahamiPuzzleLogo({
     Z
   `.replace(/\s+/g, " ").trim();
 
-  return (
-    <Link
-      href={href}
-      className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
-      aria-label="Beranda Depaskan"
-    >
+  const logoInner = (
+    <>
       {/* Puzzle D SVG Icon (Acts as the capital letter 'D') */}
       <div
         className="relative shrink-0 select-none group-hover:-translate-y-0.5 transition-transform duration-200 flex items-center justify-center"
@@ -119,6 +119,29 @@ export function PahamiPuzzleLogo({
           epaskan
         </span>
       )}
+    </>
+  );
+
+  if (asButton || onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 cursor-pointer ${className}`}
+        aria-label="Logo Depaskan"
+      >
+        {logoInner}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
+      aria-label="Beranda Depaskan"
+    >
+      {logoInner}
     </Link>
   );
 }

@@ -39,7 +39,6 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
 
   // Dropdown states
   const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Settings form states
@@ -86,7 +85,6 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsNotifMenuOpen(false);
-        setIsProfileMenuOpen(false);
         setIsExpanded(false);
       }
     }
@@ -141,68 +139,72 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     <>
       <div
         ref={containerRef}
-        className="fixed top-4 right-6 z-50 select-none flex items-center justify-end"
+        className="fixed top-4 right-4 sm:right-6 z-50 select-none flex items-center justify-end"
         aria-label="Kontrol Utama Ruang Kerja"
       >
         {/* ====================================================================
             1. COLLAPSED STATE: ONLY FLOATING CIRCULAR PROFILE AVATAR
-            If there are unread notifications, badge indicator is displayed on it.
+            Badge is placed outside overflow-hidden container so it is NEVER clipped.
             ==================================================================== */}
         {!isExpanded ? (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(true)}
-            className="w-13 h-13 rounded-full overflow-hidden border-2 border-white/90 shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 relative flex items-center justify-center cursor-pointer bg-gradient-to-tr from-[#3E3547] to-[#51465B]"
-            title="Buka Menu Guru (Profil, Pengaturan, Notifikasi)"
-            aria-label="Buka Kontrol Profil dan Notifikasi"
-          >
-            <img
-              src="/images/dashboard/teacher-avatar.jpg"
-              alt={currentUser?.full_name || "Profil Guru"}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = "none";
-              }}
-            />
-            <span className="text-white font-extrabold text-xs">
-              {userInitials}
-            </span>
+          <div className="relative inline-flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setIsExpanded(true)}
+              className="w-12 h-12 sm:w-13 sm:h-13 rounded-full border-2 border-white/90 shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 relative flex items-center justify-center cursor-pointer bg-gradient-to-tr from-[#3E3547] to-[#51465B] p-0"
+              title="Buka Menu Guru (Notifikasi & Pengaturan)"
+              aria-label="Buka Kontrol Profil dan Notifikasi"
+            >
+              <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                <img
+                  src="/images/dashboard/teacher-avatar.jpg"
+                  alt={currentUser?.full_name || "Profil Guru"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+                <span className="text-white font-extrabold text-xs">
+                  {userInitials}
+                </span>
+              </div>
+            </button>
 
-            {/* Notification Badge on Profile Circle when Collapsed */}
+            {/* Notification Badge on Profile Circle - OUTSIDE button & overflow-hidden (NEVER clipped) */}
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white shadow-md animate-bounce">
+              <span className="absolute -top-1 -right-1 z-30 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white shadow-md pointer-events-none animate-bounce">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
-          </button>
+          </div>
         ) : (
           /* ====================================================================
              2. EXPANDED STATE: EXPANDS TO THE LEFT INTO A ROUNDED-FULL PILL
-             Wrapped in the theme color of the active feature (#FFD36D or #51465B).
-             Contains larger Notifikasi, Settings, and Profile with Logout.
+             Contains Notifikasi, Settings, and non-dropdown Profile Avatar.
              ==================================================================== */
           <div
             className={`flex items-center gap-3 py-2 px-3 rounded-full ${pillWrapperClass} backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-right-4`}
           >
-            {/* 1. NOTIFIKASI BUTTON (LEBIH BESAR) */}
-            <div className="relative">
+            {/* 1. NOTIFIKASI BUTTON (Badge placed with ample space, NEVER clipped) */}
+            <div className="relative inline-flex items-center justify-center">
               <button
                 type="button"
                 onClick={() => {
                   setIsNotifMenuOpen(!isNotifMenuOpen);
-                  setIsProfileMenuOpen(false);
                 }}
                 className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${iconButtonHoverClass}`}
                 title="Notifikasi"
                 aria-label="Buka Notifikasi"
               >
                 <Bell className="w-5 h-5 stroke-[2.2]" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow-xs">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
               </button>
+
+              {/* Notification Badge on Bell - NEVER clipped */}
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 z-30 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow-xs pointer-events-none">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
 
               {/* Notifications Dropdown Panel */}
               {isNotifMenuOpen && (
@@ -239,13 +241,12 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
               )}
             </div>
 
-            {/* 2. SETTINGS BUTTON (LEBIH BESAR) */}
+            {/* 2. SETTINGS BUTTON */}
             <button
               type="button"
               onClick={() => {
                 setIsSettingsModalOpen(true);
                 setIsNotifMenuOpen(false);
-                setIsProfileMenuOpen(false);
               }}
               className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer ${iconButtonHoverClass}`}
               title="Pengaturan Workspace"
@@ -254,20 +255,14 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
               <Settings className="w-5 h-5 stroke-[2.2]" />
             </button>
 
-            {/* 3. PROFILE BUTTON (LEBIH BESAR + DROPDOWN DENGAN LOGOUT) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsProfileMenuOpen(!isProfileMenuOpen);
-                  setIsNotifMenuOpen(false);
-                }}
-                className={`w-11 h-11 rounded-full overflow-hidden border-2 transition-all cursor-pointer relative flex items-center justify-center ${
-                  isQuestion ? "border-[#251E2B]/50 hover:scale-105" : "border-white/80 hover:scale-105"
-                }`}
-                title="Menu Akun Guru"
-                aria-label="Menu Akun Guru"
-              >
+            {/* 3. PROFILE DISPLAY (NO DROPDOWN AS REQUESTED) */}
+            <div
+              className={`w-11 h-11 rounded-full border-2 relative flex items-center justify-center select-none ${
+                isQuestion ? "border-[#251E2B]/50" : "border-white/80"
+              }`}
+              title={`Akun: ${currentUser?.full_name || "Ibu Guru"}`}
+            >
+              <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                 <img
                   src="/images/dashboard/teacher-avatar.jpg"
                   alt={currentUser?.full_name || "Profil Guru"}
@@ -279,42 +274,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 <span className="text-white font-extrabold text-xs">
                   {userInitials}
                 </span>
-              </button>
-
-              {/* Profile & Logout Dropdown */}
-              {isProfileMenuOpen && (
-                <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2.5 z-50 text-left text-slate-800">
-                  <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
-                    <div className="font-extrabold text-xs text-slate-900 truncate">
-                      {currentUser?.full_name || "Ibu Siti Aminah, S.Pd."}
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
-                      {activeSchool?.name || "SD Negeri 1 Ponorogo"}
-                    </div>
-                    <span className="inline-block mt-1.5 text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200/60">
-                      Wilayah: {activeSchool?.region_name || "Kota Madiun"}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleSwitchToStudent}
-                    className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs text-slate-700 hover:bg-slate-100 transition-colors text-left font-medium cursor-pointer"
-                  >
-                    <GraduationCap className="w-4 h-4 text-[#51465B]" />
-                    <span>Beralih ke Tampilan Siswa</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs text-rose-600 hover:bg-rose-50 transition-colors text-left font-semibold cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4 text-rose-500" />
-                    <span>Keluar (Log out)</span>
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* 4. CLOSE / COLLAPSE BUTTON */}
@@ -323,7 +283,6 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
               onClick={() => {
                 setIsExpanded(false);
                 setIsNotifMenuOpen(false);
-                setIsProfileMenuOpen(false);
               }}
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 isQuestion ? "hover:bg-black/10 text-[#251E2B]/70" : "hover:bg-white/20 text-white/70"
@@ -388,6 +347,29 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-[11px] leading-relaxed">
                 Seluruh data kontekstual materi dan soal yang dibuat akan mengacu pada basis data terverifikasi untuk wilayah sekolah aktif di Karesidenan Madiun.
+              </div>
+
+              {/* Account Quick Actions */}
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <label className="font-semibold text-slate-700 block text-xs">Aksi Akun Guru</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSwitchToStudent}
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer transition-colors"
+                  >
+                    <GraduationCap className="w-4 h-4 text-[#51465B]" />
+                    <span>Beralih ke Siswa</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>Keluar (Log out)</span>
+                  </button>
+                </div>
               </div>
 
               {savedMessage && (
