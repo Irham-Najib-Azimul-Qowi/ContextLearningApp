@@ -6,12 +6,35 @@ import {
   Bell,
   Settings,
   LogOut,
-  Sparkles,
   X,
+  Compass,
+  MapPin,
+  Camera,
+  Check,
+  User,
+  Building2,
+  CheckCircle2,
 } from "lucide-react";
 import { repository } from "@/lib/db/repository";
-import { School, AppNotification } from "@/lib/db/types";
+import { School, AppNotification, UserProfile } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/client";
+
+const SUPPORTED_REGIONS = [
+  { code: "35.77", name: "Kota Madiun", province: "Jawa Timur", centerCoords: [-7.6298, 111.5239] },
+  { code: "35.19", name: "Kabupaten Madiun", province: "Jawa Timur", centerCoords: [-7.5583, 111.6577] },
+  { code: "35.21", name: "Kabupaten Ngawi", province: "Jawa Timur", centerCoords: [-7.4039, 111.4452] },
+  { code: "35.20", name: "Kabupaten Magetan", province: "Jawa Timur", centerCoords: [-7.6528, 111.3283] },
+  { code: "35.02", name: "Kabupaten Ponorogo", province: "Jawa Timur", centerCoords: [-7.8692, 111.4622] },
+  { code: "35.01", name: "Kabupaten Pacitan", province: "Jawa Timur", centerCoords: [-8.2044, 111.0924] },
+  { code: "33.74", name: "Kota Semarang", province: "Jawa Tengah", centerCoords: [-6.9667, 110.4167] },
+];
+
+const AVATAR_OPTIONS = [
+  "/images/dashboard/teacher-avatar.jpg",
+  "https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+];
 
 interface GlobalControlsProps {
   contextMode?: "material" | "question";
@@ -19,62 +42,91 @@ interface GlobalControlsProps {
 
 export function GlobalControls({ contextMode: propContextMode }: GlobalControlsProps) {
   const router = useRouter();
-  const [schools, setSchools] = useState<School[]>([]);
   const [activeSchool, setActiveSchool] = useState<School | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  // Active theme context mode ("material" = #51465B, "question" = #FFD36D)
+  // Theme mode ("material" = #51465B, "question" = #FFD36D)
   const [activeMode, setActiveMode] = useState<"material" | "question">("material");
-
-  // Floating controls expansion state: collapsed (circle only) vs expanded (beside buttons revealed)
   const [isExpanded, setIsExpanded] = useState(false);
-
-  // Dropdown states
   const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Settings form states
-  const [savedMessage, setSavedMessage] = useState("");
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formAvatar, setFormAvatar] = useState("");
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [usageMode, setUsageMode] = useState<"school" | "individual">("school");
+  const [formSchoolName, setFormSchoolName] = useState("");
+  const [formProvince, setFormProvince] = useState<string>("Jawa Timur");
+  const [formRegionId, setFormRegionId] = useState<string>("35.77");
+  const [formDistrict, setFormDistrict] = useState<string>("");
+  const [isLocating, setIsLocating] = useState(false);
+  const [gpsNotice, setGpsNotice] = useState<string | null>(null);
+  const [savedSuccess, setSavedSuccess] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const allSchools = repository.getSchools();
-    setSchools(allSchools);
+  const loadUserData = () => {
     const active = repository.getActiveSchool();
     setActiveSchool(active);
 
     const user = repository.getCurrentUser();
     setCurrentUser(user);
 
+    setFormName(user.full_name || "");
+    setFormEmail(user.email || "");
+    setFormAvatar(user.avatar_url || "/images/dashboard/teacher-avatar.jpg");
+
+    // Check stored profile for school details
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("pahami_v2_teacher_profile");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.schoolName) setFormSchoolName(parsed.schoolName);
+          else setFormSchoolName(active.name);
+          if (parsed.usageMode) setUsageMode(parsed.usageMode);
+          if (parsed.regionId) setFormRegionId(parsed.regionId);
+          if (parsed.province) setFormProvince(parsed.province);
+        } else {
+          setFormSchoolName(active.name);
+          setFormRegionId(active.region_id);
+        }
+      } catch {
+        setFormSchoolName(active.name);
+      }
+    }
+
     const notifs = repository.getNotifications(user.id);
     setNotifications(notifs);
     setUnreadCount(notifs.filter((n) => !n.read).length);
+  };
+
+  useEffect(() => {
+    loadUserData();
 
     // Initial context mode
     const initialMode = propContextMode || repository.getLastContextMode();
     setActiveMode(initialMode);
 
-    // Listen for context mode updates from preview tabs or route changes
     const handleContextChange = (e: any) => {
-      if (e.detail) {
-        setActiveMode(e.detail);
-      }
+      if (e.detail) setActiveMode(e.detail);
     };
+    const handleProfileChange = () => {
+      loadUserData();
+    };
+
     window.addEventListener("contextModeChange", handleContextChange);
-    return () => window.removeEventListener("contextModeChange", handleContextChange);
+    window.addEventListener("userProfileChange", handleProfileChange);
+    return () => {
+      window.removeEventListener("contextModeChange", handleContextChange);
+      window.removeEventListener("userProfileChange", handleProfileChange);
+    };
   }, [propContextMode]);
 
-  // Keep in sync if prop changes
-  useEffect(() => {
-    if (propContextMode) {
-      setActiveMode(propContextMode);
-    }
-  }, [propContextMode]);
-
-  // Close dropdowns and collapse on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -93,6 +145,9 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     } catch (e) {
       console.warn("Sign out exception:", e);
     }
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("pahami_v2_onboarding_completed");
+    }
     router.push("/login");
   };
 
@@ -104,9 +159,72 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
-  const isQuestion = activeMode === "question";
+  // GPS Geolocation Detection
+  const handleDetectGps = () => {
+    if (!navigator.geolocation) {
+      setGpsNotice("Peramban Anda tidak mendukung sensor GPS Geolocation.");
+      return;
+    }
 
-  // Pill wrapper styles based on active feature
+    setIsLocating(true);
+    setGpsNotice(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let closest = SUPPORTED_REGIONS[0];
+        let minDistance = Number.MAX_VALUE;
+
+        SUPPORTED_REGIONS.forEach((r) => {
+          const dLat = latitude - r.centerCoords[0];
+          const dLon = longitude - r.centerCoords[1];
+          const dist = Math.sqrt(dLat * dLat + dLon * dLon);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closest = r;
+          }
+        });
+
+        setFormProvince(closest.province);
+        setFormRegionId(closest.code);
+        setIsLocating(false);
+        setGpsNotice(`Lokasi terdeteksi via GPS: ${closest.name} (${closest.province}).`);
+      },
+      () => {
+        setIsLocating(false);
+        setGpsNotice("Izin lokasi GPS tidak diberikan. Anda dapat memilih wilayah manual di bawah.");
+      },
+      { timeout: 8000 }
+    );
+  };
+
+  const handleSaveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) return;
+
+    const matchedRegion = SUPPORTED_REGIONS.find((r) => r.code === formRegionId);
+    const regionName = matchedRegion ? matchedRegion.name : "Kota Madiun";
+    const cleanSchoolName = usageMode === "school" ? formSchoolName.trim() : `Workspace Mandiri (${formName.trim()})`;
+
+    // Update profile & active school via repository
+    repository.updateUserProfile({
+      full_name: formName.trim(),
+      avatar_url: formAvatar,
+      schoolName: cleanSchoolName,
+      usageMode,
+      regionId: formRegionId,
+      regionName,
+      province: formProvince,
+    });
+
+    setSavedSuccess(true);
+    setTimeout(() => {
+      setSavedSuccess(false);
+      setIsSettingsModalOpen(false);
+    }, 1200);
+  };
+
+  const isQuestion = activeMode === "question";
   const pillWrapperClass = isQuestion
     ? "bg-[#FFD36D] text-[#251E2B] border-2 border-[#ECC159] shadow-2xl"
     : "bg-[#51465B] text-white border-2 border-[#6A5D75] shadow-2xl";
@@ -114,6 +232,8 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
   const iconButtonHoverClass = isQuestion
     ? "hover:bg-black/10 active:bg-black/15 text-[#251E2B]"
     : "hover:bg-white/20 active:bg-white/30 text-white";
+
+  const availableRegions = SUPPORTED_REGIONS.filter((r) => r.province === formProvince);
 
   return (
     <>
@@ -141,7 +261,6 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 <Bell className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </button>
 
-              {/* Badge Notifikasi pada Ikon Bell (unclipped) */}
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 z-30 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white shadow-xs pointer-events-none">
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -187,6 +306,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
             <button
               type="button"
               onClick={() => {
+                loadUserData();
                 setIsSettingsModalOpen(true);
                 setIsNotifMenuOpen(false);
               }}
@@ -199,7 +319,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
           </div>
         )}
 
-        {/* LINGKARAN PROFIL UTAMA (HANYA GAMBAR PROFIL SAJA) */}
+        {/* LINGKARAN PROFIL UTAMA (GAMBAR PROFIL AKTIF) */}
         <div className="relative inline-flex items-center justify-center shrink-0">
           <button
             type="button"
@@ -220,13 +340,12 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
             aria-label="Profil Pengguna"
           >
             <img
-              src="/images/dashboard/teacher-avatar.jpg"
+              src={currentUser?.avatar_url || "/images/dashboard/teacher-avatar.jpg"}
               alt="Foto Profil"
               className="w-full h-full object-cover rounded-full pointer-events-none select-none block"
             />
           </button>
 
-          {/* Badge Notifikasi pada Profil saat menu samping belum dibuka (unclipped) */}
           {!isExpanded && unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 z-30 min-w-5 h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white shadow-md pointer-events-none animate-bounce">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -235,99 +354,284 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
         </div>
       </div>
 
-      {/* SETTINGS MODAL */}
+      {/* =====================================================================
+          OVERLAY SCREEN SETTINGS (SESUAI PERMINTAAN USER & UI/UX RULES)
+          - Atur Nama User
+          - Atur Gambar Profil
+          - Tombol Logout di bawah nama user
+          - Atur Nama Sekolah (jika mode sekolah)
+          - Atur Lokasi (Input manual / Sync GPS Device)
+          - HAPUS Model AI aktif, data kontekstual, konfigurasi konteks
+          - Tombol Batal & Simpan Perubahan yang jelas
+          ===================================================================== */}
       {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 relative animate-in fade-in zoom-in-95">
-            <button
-              type="button"
-              onClick={() => setIsSettingsModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-lg flex items-center justify-center"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <Settings className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Pengaturan Workspace Guru</h3>
-                <p className="text-xs text-slate-500">Konfigurasi konteks lokal dan integrasi AI</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Sekolah Aktif</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={activeSchool?.name || ""}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Wilayah Kontekstualisasi</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={`${activeSchool?.region_name} (ID: ${activeSchool?.region_id})`}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Model AI Aktif</label>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
-                  <span>Google Gemini 2.5 Flash (Contextual Engine V2)</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-slate-200 shadow-2xl max-w-lg w-full p-6 sm:p-7 relative animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-xs">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                    Pengaturan Profil & Workspace
+                  </h3>
+                  <p className="text-xs text-slate-500">Sesuaikan identitas, sekolah, dan wilayah pengajaran</p>
                 </div>
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-[11px] leading-relaxed">
-                Seluruh data kontekstual materi dan soal yang dibuat akan mengacu pada basis data terverifikasi untuk wilayah sekolah aktif di Karesidenan Madiun.
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+                title="Tutup Pengaturan"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              {/* Account Quick Actions */}
-              <div className="pt-3 border-t border-slate-100 space-y-2">
-                <label className="font-semibold text-slate-700 block text-xs">Aksi Akun</label>
-                <div className="flex gap-2">
+            <form onSubmit={handleSaveSettings} className="space-y-5 pt-4">
+              {/* =============================================================
+                  1. SEKSI PROFIL USER & GAMBAR PROFIL
+                  ============================================================= */}
+              <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] space-y-3.5">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
+                  Identitas Pengguna
+                </span>
+
+                {/* Avatar Row */}
+                <div className="flex items-center gap-3.5">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-[#51465B] shadow-xs shrink-0 bg-slate-100">
+                    <img
+                      src={formAvatar || "/images/dashboard/teacher-avatar.jpg"}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                      className="py-1.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-[#51465B] text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-[#51465B]" />
+                      <span>{showAvatarPicker ? "Tutup Pilihan Foto" : "Ganti Gambar Profil"}</span>
+                    </button>
+                    <p className="text-[11px] text-slate-500">Pilih salah satu avatar yang tersedia</p>
+                  </div>
+                </div>
+
+                {/* Avatar Picker Presets */}
+                {showAvatarPicker && (
+                  <div className="pt-2 pb-1 border-t border-slate-200/60 flex items-center gap-3 flex-wrap">
+                    {AVATAR_OPTIONS.map((url, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setFormAvatar(url);
+                          setShowAvatarPicker(false);
+                        }}
+                        className={`w-11 h-11 rounded-full overflow-hidden border-2 cursor-pointer transition-all ${
+                          formAvatar === url ? "border-[#51465B] ring-2 ring-[#FFD36D]" : "border-slate-300 hover:scale-105"
+                        }`}
+                      >
+                        <img src={url} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Input Nama User */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    Nama Lengkap & Gelar
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="Contoh: Ibu Siti Aminah, S.Pd."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                  />
+                </div>
+
+                {/* Input Email (Readonly) */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                    Alamat Email (Google)
+                  </label>
+                  <input
+                    type="email"
+                    disabled
+                    value={formEmail || "guru@depaskan.id"}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500 cursor-not-allowed"
+                  />
+                </div>
+
+                {/* ===========================================================
+                    TOMBOL LOGOUT (TEPAT DI BAWAH NAMA USER SESUAI PERMINTAAN)
+                    =========================================================== */}
+                <div className="pt-1">
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-rose-200 bg-rose-50/80 text-rose-700 hover:bg-rose-100 hover:border-rose-300 font-bold text-xs transition-colors cursor-pointer shadow-2xs"
                   >
-                    <LogOut className="w-4 h-4 text-rose-500" />
-                    <span>Keluar (Log out)</span>
+                    <LogOut className="w-4 h-4 text-rose-600" />
+                    <span>Keluar Akun (Logout)</span>
                   </button>
                 </div>
               </div>
 
-              {savedMessage && (
-                <div className="text-xs text-emerald-600 font-semibold">{savedMessage}</div>
+              {/* =============================================================
+                  2. SEKSI SEKOLAH & PENGGUNAAN
+                  ============================================================= */}
+              <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] space-y-3">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
+                  Jenis Penggunaan
+                </span>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUsageMode("school")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      usageMode === "school"
+                        ? "bg-[#51465B] text-white shadow-xs"
+                        : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Sekolah (SD)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUsageMode("individual")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      usageMode === "individual"
+                        ? "bg-[#51465B] text-white shadow-xs"
+                        : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>Mandiri / Privat</span>
+                  </button>
+                </div>
+
+                {usageMode === "school" && (
+                  <div className="pt-1">
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Nama Sekolah
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formSchoolName}
+                      onChange={(e) => setFormSchoolName(e.target.value)}
+                      placeholder="Contoh: SD Negeri 1 Madiun"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* =============================================================
+                  3. SEKSI LOKASI & SINKRONISASI GPS DEVICE
+                  ============================================================= */}
+              <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
+                    Wilayah Konteks Pembelajaran
+                  </span>
+                  <MapPin className="w-4 h-4 text-[#F47D83]" />
+                </div>
+
+                {/* Tombol Sync GPS Device */}
+                <button
+                  type="button"
+                  onClick={handleDetectGps}
+                  disabled={isLocating}
+                  className="w-full py-2.5 px-3.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <Compass className={`w-4 h-4 text-indigo-600 ${isLocating ? "animate-spin" : ""}`} />
+                  <span>{isLocating ? "Mendeteksi Koordinat GPS..." : "Sinkronkan dengan Lokasi GPS Perangkat"}</span>
+                </button>
+
+                {gpsNotice && (
+                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] font-medium leading-relaxed">
+                    {gpsNotice}
+                  </div>
+                )}
+
+                {/* Input Manual Lokasi */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Provinsi
+                    </label>
+                    <select
+                      value={formProvince}
+                      onChange={(e) => {
+                        const newProv = e.target.value as "Jawa Timur" | "Jawa Tengah";
+                        setFormProvince(newProv);
+                        const firstReg = SUPPORTED_REGIONS.find((r) => r.province === newProv);
+                        if (firstReg) setFormRegionId(firstReg.code);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
+                    >
+                      <option value="Jawa Timur">Jawa Timur</option>
+                      <option value="Jawa Tengah">Jawa Tengah</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Kabupaten / Kota
+                    </label>
+                    <select
+                      value={formRegionId}
+                      onChange={(e) => setFormRegionId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
+                    >
+                      {availableRegions.map((reg) => (
+                        <option key={reg.code} value={reg.code}>
+                          {reg.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {savedSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Pengaturan profil dan lokasi berhasil disimpan!</span>
+                </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              {/* =============================================================
+                  TOMBOL AKSI SESUAI KAIDAH UI/UX (BATAL VS SIMPAN)
+                  ============================================================= */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsSettingsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold"
+                  className="py-2.5 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                 >
-                  Tutup
+                  Batal
                 </button>
                 <button
-                  type="button"
-                  onClick={() => {
-                    setSavedMessage("Pengaturan berhasil disimpan.");
-                    setTimeout(() => setSavedMessage(""), 3000);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 shadow-xs"
+                  type="submit"
+                  className="py-2.5 px-6 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   Simpan Perubahan
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

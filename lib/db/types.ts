@@ -162,10 +162,11 @@ export interface RoomVisitor {
 
 export interface LearningRoom {
   id: string;
-  code: string; // e.g. "MTR-3502" or "SOL-5A"
+  code: string; // e.g. "MTR-3502" or "SOL-5A" or "ROM-5A"
   title: string;
-  type: "material" | "question";
+  type: "material" | "question" | "both";
   resource_id: string; // ID of LearningMaterial or Question
+  secondary_resource_id?: string; // Optional ID for paired material or question
   subject: string;
   grade: number;
   region_name: string;

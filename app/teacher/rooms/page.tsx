@@ -25,7 +25,7 @@ export default function TeacherRoomsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<"all" | "material" | "question">("all");
+  const [filterType, setFilterType] = useState<"all" | "material" | "question" | "both">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<LearningRoom | null>(null);
 
@@ -152,6 +152,17 @@ export default function TeacherRoomsPage() {
             >
               Latihan Soal
             </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("both")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                filterType === "both"
+                  ? "bg-white text-[#23212A] shadow-xs"
+                  : "text-[#756F7A] hover:text-[#23212A]"
+              }`}
+            >
+              Materi & Soal
+            </button>
           </div>
 
           {/* Search Box */}
@@ -171,6 +182,7 @@ export default function TeacherRoomsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {filteredRooms.map((room) => {
             const isMaterial = room.type === "material";
+            const isBoth = room.type === "both";
             const visitorCount = room.visitors?.length || room.access_count || 0;
 
             return (
@@ -183,17 +195,21 @@ export default function TeacherRoomsPage() {
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        isMaterial
+                        isBoth
+                          ? "bg-emerald-50 text-emerald-800"
+                          : isMaterial
                           ? "bg-indigo-50 text-indigo-700"
                           : "bg-amber-100 text-amber-900"
                       }`}
                     >
-                      {isMaterial ? (
+                      {isBoth ? (
+                        <Sparkles className="w-3 h-3 text-emerald-600" />
+                      ) : isMaterial ? (
                         <BookOpen className="w-3 h-3" />
                       ) : (
                         <Brain className="w-3 h-3" />
                       )}
-                      <span>{isMaterial ? "Modul Materi" : "Paket Soal"}</span>
+                      <span>{isBoth ? "Materi + Soal" : isMaterial ? "Modul Materi" : "Paket Soal"}</span>
                     </span>
 
                     <span className="text-[11px] font-bold text-[#756F7A] bg-[#FAF7F3] px-2 py-0.5 rounded-lg border border-[#E9E5E8]">

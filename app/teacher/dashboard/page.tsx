@@ -34,6 +34,41 @@ export default function TeacherDashboardPage() {
     setQuestions(repository.getQuestions({ schoolId: activeSchool.id }));
     setMaterials(repository.getMaterials(activeSchool.id));
     setRooms(repository.getRooms(currentUser?.id));
+
+    // Sinkronisasi otomatis dari sesi Google Supabase jika nama belum terisi
+    import("@/lib/supabase/client").then(({ createClient }) => {
+      try {
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            const meta = authUser.user_metadata || {};
+            const googleName =
+              meta.full_name ||
+              meta.name ||
+              meta.display_name ||
+              (authUser.email ? authUser.email.split("@")[0] : null);
+            if (googleName && (!currentUser.full_name || currentUser.full_name.includes("Siti Aminah"))) {
+              const updated = repository.updateUserProfile({
+                full_name: googleName.trim(),
+                email: authUser.email || currentUser.email,
+                avatar_url: meta.avatar_url || meta.picture || currentUser.avatar_url,
+              });
+              setUser(updated);
+            }
+          }
+        });
+      } catch {
+        // Fallback
+      }
+    });
+
+    const handleProfileChange = (e: any) => {
+      if (e.detail) {
+        setUser(e.detail);
+      }
+    };
+    window.addEventListener("userProfileChange", handleProfileChange);
+    return () => window.removeEventListener("userProfileChange", handleProfileChange);
   }, []);
 
   return (

@@ -74,9 +74,17 @@ export default function RoomViewerPage() {
       const allMats = repository.getMaterials();
       const mat = allMats.find((m) => m.id === foundRoom.resource_id) || allMats[0];
       setMaterial(mat);
-    } else {
+    } else if (foundRoom.type === "question") {
       const allQs = repository.getQuestions();
       const q = allQs.find((item) => item.id === foundRoom.resource_id) || allQs[0];
+      setQuestion(q);
+    } else if (foundRoom.type === "both") {
+      const allMats = repository.getMaterials();
+      const mat = allMats.find((m) => m.id === foundRoom.resource_id) || allMats[0];
+      setMaterial(mat);
+
+      const allQs = repository.getQuestions();
+      const q = allQs.find((item) => item.id === foundRoom.secondary_resource_id) || allQs[0];
       setQuestion(q);
     }
   }, [roomCode]);
@@ -151,7 +159,9 @@ export default function RoomViewerPage() {
     );
   }
 
-  const isMaterial = room?.type === "material";
+  const isMaterial = room?.type === "material" || room?.type === "both";
+  const isQuestion = room?.type === "question" || room?.type === "both";
+  const isBoth = room?.type === "both";
 
   return (
     <div className="min-h-screen bg-[#FAF7F3] text-[#23212A] flex flex-col justify-between selection:bg-[#FFD36D] selection:text-[#51465B] relative font-sans">
@@ -202,7 +212,7 @@ export default function RoomViewerPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
         {/* ================================================================== */}
         {/* 1. KONTEN TIPE MATERI                                             */}
         {/* ================================================================== */}
@@ -213,7 +223,7 @@ export default function RoomViewerPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-wider">
                   <BookOpen className="w-3.5 h-3.5" />
-                  <span>Modul Ajar Kontekstual</span>
+                  <span>{isBoth ? "Materi & Latihan Terpadu" : "Modul Ajar Kontekstual"}</span>
                 </span>
 
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
@@ -270,7 +280,7 @@ export default function RoomViewerPage() {
                     className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                    <span>Saya Sudah Selesai Membaca</span>
+                    <span>{isBoth ? "Tandai Selesai Membaca & Lanjut Latihan" : "Saya Sudah Selesai Membaca"}</span>
                   </button>
                 )}
 
@@ -288,34 +298,45 @@ export default function RoomViewerPage() {
         {/* ================================================================== */}
         {/* 2. KONTEN TIPE SOAL                                                */}
         {/* ================================================================== */}
-        {!isMaterial && question && (
+        {isQuestion && question && (
           <div className="space-y-6">
-            {/* Header Card */}
-            <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-8 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider">
-                  <Brain className="w-3.5 h-3.5" />
-                  <span>Latihan Soal Kontekstual</span>
-                </span>
-
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
-                  <MapPin className="w-3.5 h-3.5 text-[#51465B]" />
-                  <span>{room.region_name}</span>
-                </span>
-
-                <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
-                  Kelas {room.grade} SD &bull; {room.subject}
-                </span>
+            {isBoth ? (
+              <div className="flex items-center gap-3 pt-4">
+                <div className="h-px bg-[#E9E5E8] flex-1" />
+                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#FFD36D]/30 border border-[#FFD36D] text-xs font-black text-[#51465B]">
+                  <Brain className="w-4 h-4 text-[#51465B]" />
+                  <span>Uji Pemahaman Materi di Atas</span>
+                </div>
+                <div className="h-px bg-[#E9E5E8] flex-1" />
               </div>
+            ) : (
+              /* Question Header Card for standalone question rooms */
+              <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-8 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider">
+                    <Brain className="w-3.5 h-3.5" />
+                    <span>Latihan Soal Kontekstual</span>
+                  </span>
 
-              <h1 className="text-xl sm:text-3xl font-black text-[#23212A] tracking-tight">
-                {room.title}
-              </h1>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
+                    <MapPin className="w-3.5 h-3.5 text-[#51465B]" />
+                    <span>{room.region_name}</span>
+                  </span>
 
-              <div className="text-xs text-[#756F7A] font-semibold flex items-center gap-2 pt-1 border-t border-[#E9E5E8]">
-                <span>Pengajar: <strong>{room.teacher_name}</strong></span>
+                  <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
+                    Kelas {room.grade} SD &bull; {room.subject}
+                  </span>
+                </div>
+
+                <h1 className="text-xl sm:text-3xl font-black text-[#23212A] tracking-tight">
+                  {room.title}
+                </h1>
+
+                <div className="text-xs text-[#756F7A] font-semibold flex items-center gap-2 pt-1 border-t border-[#E9E5E8]">
+                  <span>Pengajar: <strong>{room.teacher_name}</strong></span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Question Card */}
             <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6">

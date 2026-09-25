@@ -450,24 +450,128 @@ class PahamiRepository {
     }
     this.setItem<UserProfile[]>("profiles", profiles);
     this.setCurrentRole(profile.role);
+
+    if (this.isBrowser()) {
+      try {
+        const stored = localStorage.getItem("pahami_v2_teacher_profile");
+        const existingData = stored ? JSON.parse(stored) : {};
+        localStorage.setItem(
+          "pahami_v2_teacher_profile",
+          JSON.stringify({
+            ...existingData,
+            fullName: profile.full_name,
+            full_name: profile.full_name,
+            email: profile.email,
+            avatarUrl: profile.avatar_url,
+            avatar_url: profile.avatar_url,
+            schoolId: profile.school_id,
+          })
+        );
+        window.dispatchEvent(new CustomEvent("userProfileChange", { detail: profile }));
+      } catch {
+        // Fallback
+      }
+    }
+  }
+
+  updateUserProfile(
+    data: Partial<UserProfile> & {
+      fullName?: string;
+      avatarUrl?: string;
+      schoolName?: string;
+      usageMode?: "individual" | "school";
+      regionId?: string;
+      regionName?: string;
+      province?: string;
+    }
+  ): UserProfile {
+    const current = this.getCurrentUser();
+    const updated: UserProfile = {
+      ...current,
+      ...data,
+      full_name: data.full_name || data.fullName || current.full_name,
+      avatar_url: data.avatar_url !== undefined ? data.avatar_url : current.avatar_url,
+      email: data.email || current.email,
+    };
+
+    if (this.isBrowser()) {
+      try {
+        const stored = localStorage.getItem("pahami_v2_teacher_profile");
+        const existingData = stored ? JSON.parse(stored) : {};
+        const merged = {
+          ...existingData,
+          fullName: updated.full_name,
+          full_name: updated.full_name,
+          email: updated.email,
+          avatarUrl: updated.avatar_url,
+          avatar_url: updated.avatar_url,
+          schoolId: updated.school_id,
+          schoolName: data.schoolName !== undefined ? data.schoolName : existingData.schoolName,
+          usageMode: data.usageMode !== undefined ? data.usageMode : existingData.usageMode,
+          regionId: data.regionId !== undefined ? data.regionId : existingData.regionId,
+          regionName: data.regionName !== undefined ? data.regionName : existingData.regionName,
+          province: data.province !== undefined ? data.province : existingData.province,
+        };
+        localStorage.setItem("pahami_v2_teacher_profile", JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent("userProfileChange", { detail: updated }));
+      } catch {
+        // Fallback
+      }
+    }
+
+    this.setCurrentUser(updated);
+    return updated;
   }
 
   getCurrentUser(): UserProfile {
     const role = this.getCurrentRole();
     if (role === "TEACHER" && this.isBrowser()) {
       try {
+        // 1. Cek profil guru yang tersimpan di localStorage
         const storedProfile = localStorage.getItem("pahami_v2_teacher_profile");
         if (storedProfile) {
           const parsed = JSON.parse(storedProfile);
-          if (parsed && parsed.fullName) {
+          const name = parsed.fullName || parsed.full_name;
+          if (name && name.trim()) {
             return {
               id: parsed.id || "usr-teacher-active",
               email: parsed.email || "guru@depaskan.id",
-              full_name: parsed.fullName,
+              full_name: name.trim(),
               role: "TEACHER",
-              avatar_url: parsed.avatarUrl || "",
+              avatar_url: parsed.avatarUrl || parsed.avatar_url || "/images/dashboard/teacher-avatar.jpg",
               school_id: parsed.schoolId || "school-active",
             };
+          }
+        }
+
+        // 2. Cek apakah ada sesi Supabase aktif dari Google OAuth di localStorage
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const sessionData = JSON.parse(raw);
+              const authUser = sessionData?.user;
+              if (authUser) {
+                const meta = authUser.user_metadata || {};
+                const googleName =
+                  meta.full_name ||
+                  meta.name ||
+                  meta.display_name ||
+                  (authUser.email ? authUser.email.split("@")[0] : null);
+                if (googleName && typeof googleName === "string" && googleName.trim()) {
+                  const googleAvatar = meta.avatar_url || meta.picture || "";
+                  return {
+                    id: authUser.id || "usr-teacher-active",
+                    email: authUser.email || "guru@depaskan.id",
+                    full_name: googleName.trim(),
+                    role: "TEACHER",
+                    avatar_url: googleAvatar || "/images/dashboard/teacher-avatar.jpg",
+                    school_id: "school-active",
+                  };
+                }
+              }
+            }
           }
         }
       } catch {
@@ -571,20 +675,43 @@ class PahamiRepository {
     return this.getQuestions().find((q) => q.id === id);
   }
 
-  saveQuestion(data: Omit<Question, "id" | "created_at"> & { id?: string }): Question {
+  saveQuestion(
+    data: Partial<Question> & {
+      school_id: string;
+      subject: "Matematika" | "Bahasa Indonesia" | "IPS";
+      grade: number;
+      topic: string;
+      type: "multiple_choice" | "essay";
+      question_text: string;
+      correct_answer: string;
+      explanation: string;
+    }
+  ): Question {
     const questions = this.getQuestions();
     if (data.id) {
       const index = questions.findIndex((q) => q.id === data.id);
       if (index !== -1) {
-        const updated = { ...questions[index], ...data };
+        const updated = { ...questions[index], ...data } as Question;
         questions[index] = updated;
         this.setItem<Question[]>("questions", questions);
         return updated;
       }
     }
+    const current = this.getCurrentUser();
     const newQuestion: Question = {
-      ...data,
-      id: `q-${Date.now()}`,
+      id: data.id || `q-${Date.now()}`,
+      school_id: data.school_id,
+      teacher_id: data.teacher_id || current?.id || "usr-teacher-01",
+      subject: data.subject,
+      grade: data.grade,
+      topic: data.topic,
+      type: data.type,
+      question_text: data.question_text,
+      options: data.options || [],
+      correct_answer: data.correct_answer,
+      explanation: data.explanation,
+      rubric: data.rubric,
+      is_contextualized: data.is_contextualized ?? true,
       created_at: new Date().toISOString(),
     };
     this.setItem<Question[]>("questions", [newQuestion, ...questions]);
@@ -612,7 +739,15 @@ class PahamiRepository {
     return this.getMaterials().find((m) => m.id === id);
   }
 
-  saveMaterial(data: Omit<LearningMaterial, "id" | "created_at"> & { id?: string }): LearningMaterial {
+  saveMaterial(
+    data: Partial<LearningMaterial> & {
+      title: string;
+      subject: string;
+      grade: number;
+      school_id: string;
+      content: string;
+    }
+  ): LearningMaterial {
     const materials = this.getMaterials();
     if (data.id) {
       const index = materials.findIndex((m) => m.id === data.id);
@@ -623,9 +758,17 @@ class PahamiRepository {
         return updated;
       }
     }
+    const current = this.getCurrentUser();
     const newMat: LearningMaterial = {
-      ...data,
-      id: `mat-${Date.now()}`,
+      id: data.id || `mat-${Date.now()}`,
+      title: data.title,
+      subject: data.subject,
+      grade: data.grade,
+      school_id: data.school_id,
+      teacher_id: data.teacher_id || current?.id || "teacher-1",
+      content: data.content,
+      is_contextualized: data.is_contextualized ?? true,
+      published_to_classes: data.published_to_classes || [],
       created_at: new Date().toISOString(),
     };
     this.setItem<LearningMaterial[]>("materials", [newMat, ...materials]);
@@ -641,6 +784,16 @@ class PahamiRepository {
       return item;
     }
     return undefined;
+  }
+
+  deleteMaterial(id: string): boolean {
+    const materials = this.getMaterials();
+    const filtered = materials.filter((m) => m.id !== id);
+    if (filtered.length !== materials.length) {
+      this.setItem<LearningMaterial[]>("materials", filtered);
+      return true;
+    }
+    return false;
   }
 
   // --- EXAMS ---
