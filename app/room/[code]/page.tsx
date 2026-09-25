@@ -16,6 +16,9 @@ import {
   AlertCircle,
   HelpCircle,
   Award,
+  FileText,
+  Send,
+  RotateCcw,
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
@@ -28,17 +31,27 @@ export default function RoomViewerPage() {
 
   const [room, setRoom] = useState<LearningRoom | null>(null);
   const [material, setMaterial] = useState<LearningMaterial | null>(null);
-  const [question, setQuestion] = useState<Question | null>(null);
+  const [mcQuestion, setMcQuestion] = useState<Question | null>(null);
+  const [essayQuestion, setEssayQuestion] = useState<Question | null>(null);
 
   // Student name state (no login, just name)
   const [studentName, setStudentName] = useState<string>("");
   const [isNamePromptOpen, setIsNamePromptOpen] = useState(false);
   const [inputName, setInputName] = useState("");
 
-  // Question interaction state
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  // Tab State: "material" | "multiple_choice" | "essay"
+  const [activeTab, setActiveTab] = useState<"material" | "multiple_choice" | "essay">("material");
+
+  // Multiple Choice Interactive State
+  const [selectedMcAnswer, setSelectedMcAnswer] = useState<string | null>(null);
+  const [isMcSubmitted, setIsMcSubmitted] = useState(false);
+
+  // Essay Interactive State
+  const [essayAnswer, setEssayAnswer] = useState("");
+  const [isEssaySubmitted, setIsEssaySubmitted] = useState(false);
+
+  // Material Finished State
+  const [isMaterialCompleted, setIsMaterialCompleted] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
@@ -69,23 +82,53 @@ export default function RoomViewerPage() {
       setIsNamePromptOpen(true);
     }
 
-    // Load related resource
-    if (foundRoom.type === "material") {
-      const allMats = repository.getMaterials();
-      const mat = allMats.find((m) => m.id === foundRoom.resource_id) || allMats[0];
-      setMaterial(mat);
-    } else if (foundRoom.type === "question") {
-      const allQs = repository.getQuestions();
-      const q = allQs.find((item) => item.id === foundRoom.resource_id) || allQs[0];
-      setQuestion(q);
-    } else if (foundRoom.type === "both") {
-      const allMats = repository.getMaterials();
-      const mat = allMats.find((m) => m.id === foundRoom.resource_id) || allMats[0];
-      setMaterial(mat);
+    // Load related resources
+    const allMats = repository.getMaterials();
+    const allQs = repository.getQuestions();
 
-      const allQs = repository.getQuestions();
-      const q = allQs.find((item) => item.id === foundRoom.secondary_resource_id) || allQs[0];
-      setQuestion(q);
+    let resolvedMat: LearningMaterial | null = null;
+    let resolvedMc: Question | null = null;
+    let resolvedEssay: Question | null = null;
+
+    if (foundRoom.type === "material" || foundRoom.type === "both") {
+      resolvedMat = allMats.find((m) => m.id === foundRoom.resource_id) || allMats[0] || null;
+      setMaterial(resolvedMat);
+    }
+
+    if (foundRoom.type === "question" || foundRoom.type === "both") {
+      const qPrimary = allQs.find(
+        (item) => item.id === (foundRoom.type === "both" ? foundRoom.secondary_resource_id : foundRoom.resource_id)
+      );
+
+      if (qPrimary) {
+        if (qPrimary.type === "essay") {
+          resolvedEssay = qPrimary;
+        } else {
+          resolvedMc = qPrimary;
+        }
+      }
+
+      // Check if there is an alternative question type for this subject/grade
+      if (!resolvedMc) {
+        resolvedMc = allQs.find((q) => q.type === "multiple_choice" && q.grade === foundRoom.grade) || allQs.find((q) => q.type === "multiple_choice") || null;
+      }
+      if (!resolvedEssay) {
+        resolvedEssay = allQs.find((q) => q.type === "essay" && q.grade === foundRoom.grade) || allQs.find((q) => q.type === "essay") || null;
+      }
+
+      setMcQuestion(resolvedMc);
+      setEssayQuestion(resolvedEssay);
+    }
+
+    // Set initial active tab
+    if (foundRoom.type === "material") {
+      setActiveTab("material");
+    } else if (foundRoom.type === "question") {
+      if (resolvedMc) setActiveTab("multiple_choice");
+      else if (resolvedEssay) setActiveTab("essay");
+    } else {
+      // both: start with material
+      setActiveTab("material");
     }
   }, [roomCode]);
 
@@ -115,22 +158,37 @@ export default function RoomViewerPage() {
     }
   };
 
-  const handleAnswerSubmit = () => {
-    if (!selectedAnswer) return;
-    setIsAnswerSubmitted(true);
-    setIsCompleted(true);
+  const handleMcSubmit = () => {
+    if (!selectedMcAnswer) return;
+    setIsMcSubmitted(true);
 
-    const isCorrect = selectedAnswer === question?.correct_answer;
+    const isCorrect = selectedMcAnswer === mcQuestion?.correct_answer;
     const score = isCorrect ? 100 : 0;
     if (studentName) {
       repository.recordRoomVisit(roomCode, studentName, score);
     }
   };
 
+  const handleEssaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!essayAnswer.trim()) return;
+    setIsEssaySubmitted(true);
+
+    if (studentName) {
+      repository.recordRoomVisit(roomCode, studentName, 95);
+    }
+  };
+
   const handleFinishReading = () => {
-    setIsCompleted(true);
+    setIsMaterialCompleted(true);
     if (studentName) {
       repository.recordRoomVisit(roomCode, studentName, 100);
+    }
+    // Auto-advance to questions if available
+    if (mcQuestion) {
+      setActiveTab("multiple_choice");
+    } else if (essayQuestion) {
+      setActiveTab("essay");
     }
   };
 
@@ -138,18 +196,18 @@ export default function RoomViewerPage() {
   if (!room) {
     return (
       <div className="min-h-screen bg-[#FAF7F3] flex flex-col justify-between p-4 font-sans text-center">
-        <header className="py-4">
+        <header className="py-6">
           <PahamiPuzzleLogo size="md" />
         </header>
         <div className="max-w-md mx-auto bg-white rounded-3xl border border-[#E9E5E8] p-8 shadow-xl space-y-4">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
           <h2 className="text-xl font-black text-[#23212A]">Room Tidak Ditemukan</h2>
           <p className="text-xs text-[#756F7A] leading-relaxed">
-            Kode room <strong>&quot;{roomCode}&quot;</strong> tidak terdaftar atau sudah ditutup oleh pengajar.
+            Kode room <strong>&quot;{roomCode}&quot;</strong> tidak terdaftar atau sudah dinonaktifkan oleh pengajar.
           </p>
           <Link
             href="/room"
-            className="inline-block px-5 py-2.5 rounded-2xl bg-[#51465B] text-white text-xs font-bold shadow-md hover:bg-[#3D3445] transition-colors"
+            className="inline-block px-6 py-3 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-md hover:bg-[#3D3445] transition-colors"
           >
             Masukkan Kode Lain
           </Link>
@@ -159,18 +217,18 @@ export default function RoomViewerPage() {
     );
   }
 
-  const isMaterial = room?.type === "material" || room?.type === "both";
-  const isQuestion = room?.type === "question" || room?.type === "both";
-  const isBoth = room?.type === "both";
+  const hasMaterial = (room.type === "material" || room.type === "both") && !!material;
+  const hasMultipleChoice = (room.type === "question" || room.type === "both") && !!mcQuestion;
+  const hasEssay = (room.type === "question" || room.type === "both") && !!essayQuestion;
 
   return (
     <div className="min-h-screen bg-[#FAF7F3] text-[#23212A] flex flex-col justify-between selection:bg-[#FFD36D] selection:text-[#51465B] relative font-sans">
-      {/* Top Navbar */}
+      {/* Top Floating Navbar */}
       <header className="bg-white/80 backdrop-blur-md border-b border-[#E9E5E8] sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/room"
-            className="w-9 h-9 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] flex items-center justify-center text-[#756F7A] hover:text-[#23212A] transition-colors"
+            className="w-9 h-9 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] flex items-center justify-center text-[#756F7A] hover:text-[#23212A] hover:bg-white transition-all shadow-2xs"
             title="Keluar dari Room"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -178,11 +236,11 @@ export default function RoomViewerPage() {
           <PahamiPuzzleLogo size="sm" />
         </div>
 
-        {/* Room Code Badge & Share */}
+        {/* Room Code Badge & Student Avatar */}
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs shadow-2xs">
             <span className="text-[#756F7A] text-[10px] font-bold uppercase tracking-wider">
-              Room:
+              Kode Room:
             </span>
             <span className="font-mono font-black text-[#23212A] tracking-wider">
               {roomCode}
@@ -190,16 +248,16 @@ export default function RoomViewerPage() {
           </div>
 
           {studentName && (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B] text-xs font-bold">
-              <User className="w-3.5 h-3.5" />
-              <span>{studentName}</span>
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs">
+              <User className="w-3.5 h-3.5 text-[#FFD36D]" />
+              <span className="truncate max-w-[120px]">{studentName}</span>
             </div>
           )}
 
           <button
             type="button"
             onClick={handleCopyLink}
-            className="p-2 rounded-xl bg-white border border-[#E9E5E8] hover:bg-slate-50 text-[#51465B] transition-colors cursor-pointer"
+            className="p-2 rounded-full bg-white border border-[#E9E5E8] hover:bg-slate-50 text-[#51465B] transition-colors cursor-pointer shadow-2xs"
             title="Salin Tautan Room"
           >
             {copiedLink ? (
@@ -212,270 +270,406 @@ export default function RoomViewerPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* ================================================================== */}
-        {/* 1. KONTEN TIPE MATERI                                             */}
+        {/* ROOM BANNER: JUDUL, MATA PELAJARAN, JENJANG, KELAS                  */}
         {/* ================================================================== */}
-        {isMaterial && material && (
-          <div className="space-y-6">
-            {/* Header Card */}
-            <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-8 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B] text-xs font-black uppercase tracking-wider">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>{isBoth ? "Materi & Latihan Terpadu" : "Modul Ajar Kontekstual"}</span>
-                </span>
+        <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#51465B] text-white text-xs font-black uppercase tracking-wider">
+              <span>{room.subject}</span>
+            </span>
 
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
-                  <MapPin className="w-3.5 h-3.5 text-[#51465B]" />
-                  <span>{room.region_name}</span>
-                </span>
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
+              <span>Jenjang: Sekolah Dasar (SD)</span>
+            </span>
 
-                <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
-                  Kelas {room.grade} SD &bull; {room.subject}
-                </span>
-              </div>
+            <span className="px-3 py-1 rounded-full bg-[#FFD36D]/30 border border-[#FFD36D]/60 text-xs font-black text-[#51465B]">
+              Kelas {room.grade} SD
+            </span>
 
-              <h1 className="text-2xl sm:text-4xl font-black text-[#23212A] tracking-tight leading-tight">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
+              <MapPin className="w-3.5 h-3.5 text-[#51465B]" />
+              <span>{room.region_name}</span>
+            </span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight leading-tight">
+            {room.title}
+          </h1>
+
+          <div className="text-xs text-[#756F7A] font-semibold flex items-center gap-2 pt-2 border-t border-[#E9E5E8]">
+            <span>Pengajar: <strong>{room.teacher_name}</strong></span>
+          </div>
+        </div>
+
+        {/* ================================================================== */}
+        {/* TAB NAVIGATION: HALAMAN BEDA-BEDA (MATERI, PILIHAN GANDA, ESAI)    */}
+        {/* ================================================================== */}
+        <div className="flex items-center gap-2 p-1.5 rounded-full bg-white border border-[#E9E5E8] shadow-xs overflow-x-auto">
+          {hasMaterial && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("material")}
+              className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "material"
+                  ? "bg-[#51465B] text-white shadow-md"
+                  : "text-[#756F7A] hover:text-[#23212A] hover:bg-[#FAF7F3]"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>1. Modul Materi</span>
+              {isMaterialCompleted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
+            </button>
+          )}
+
+          {hasMultipleChoice && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("multiple_choice")}
+              className={`flex-1 min-w-[130px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "multiple_choice"
+                  ? "bg-[#51465B] text-white shadow-md"
+                  : "text-[#756F7A] hover:text-[#23212A] hover:bg-[#FAF7F3]"
+              }`}
+            >
+              <Brain className="w-4 h-4" />
+              <span>2. Pilihan Ganda</span>
+              {isMcSubmitted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
+            </button>
+          )}
+
+          {hasEssay && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("essay")}
+              className={`flex-1 min-w-[110px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "essay"
+                  ? "bg-[#51465B] text-white shadow-md"
+                  : "text-[#756F7A] hover:text-[#23212A] hover:bg-[#FAF7F3]"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>3. Soal Esai</span>
+              {isEssaySubmitted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
+            </button>
+          )}
+        </div>
+
+        {/* ================================================================== */}
+        {/* HALAMAN 1: KONTEN MATERI                                           */}
+        {/* ================================================================== */}
+        {activeTab === "material" && material && (
+          <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
+            <div className="border-b border-[#E9E5E8] pb-4">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
+                Bahan Bacaan Kontekstual
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-[#23212A]">
                 {material.title}
-              </h1>
-
-              <div className="text-xs text-[#756F7A] font-semibold flex items-center gap-2 pt-1 border-t border-[#E9E5E8]">
-                <span>Diterbitkan oleh: <strong>{room.teacher_name}</strong></span>
-              </div>
+              </h2>
             </div>
 
-            {/* Reading Content Card */}
-            <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 text-[#23212A] leading-relaxed">
-              <div className="text-sm sm:text-base space-y-4 font-normal text-slate-800 leading-relaxed sm:leading-loose">
-                {material.content.split("\n\n").map((para, idx) => (
-                  <p key={idx} className="text-justify sm:text-left">
-                    {para}
-                  </p>
-                ))}
-              </div>
-
-              {/* Local Context Highlights Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs space-y-2">
-                <div className="flex items-center gap-2 text-amber-900 font-black">
-                  <Sparkles className="w-4 h-4 text-amber-700" />
-                  <span>Konteks Lingkungan Nyata Terverifikasi</span>
-                </div>
-                <p className="text-amber-800 leading-relaxed">
-                  Materi ini mengangkat fakta riil dari wilayah <strong>{room.region_name}</strong> agar siswa lebih mudah memahami materi melalui contoh lingkungan hidup sekitar.
+            {/* Reading Content */}
+            <div className="text-sm sm:text-base space-y-4 font-normal text-slate-800 leading-relaxed sm:leading-loose">
+              {material.content.split("\n\n").map((para, idx) => (
+                <p key={idx} className="text-justify sm:text-left">
+                  {para}
                 </p>
+              ))}
+            </div>
+
+            {/* Context Notice */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-amber-900 font-black">
+                <Sparkles className="w-4 h-4 text-amber-700" />
+                <span>Konteks Lingkungan Nyata Wilayah {room.region_name}</span>
               </div>
+              <p className="text-amber-800 leading-relaxed">
+                Materi ini dikembangkan khusus sesuai karakteristik kearifan lokal daerah {room.region_name} agar kamu dapat belajar lebih dekat dengan lingkungan sekitarmu.
+              </p>
+            </div>
 
-              {/* Completion Action */}
-              <div className="pt-6 border-t border-[#E9E5E8] flex flex-col sm:flex-row items-center justify-between gap-4">
-                {isCompleted ? (
-                  <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 px-4 py-2.5 rounded-2xl border border-emerald-200 text-xs font-bold w-full sm:w-auto">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span>Hebat! Kamu telah menyelesaikan modul materi ini.</span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleFinishReading}
-                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                    <span>{isBoth ? "Tandai Selesai Membaca & Lanjut Latihan" : "Saya Sudah Selesai Membaca"}</span>
-                  </button>
-                )}
-
-                <Link
-                  href="/room"
-                  className="text-xs font-bold text-[#756F7A] hover:text-[#23212A] transition-colors"
+            {/* Completion Button */}
+            <div className="pt-6 border-t border-[#E9E5E8] flex flex-col sm:flex-row items-center justify-between gap-4">
+              {isMaterialCompleted ? (
+                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-200 text-xs font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Selesai dibaca! Kamu bisa lanjut mengerjakan latihan soal di tab atas.</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinishReading}
+                  className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  Buka Room Lain &rarr;
-                </Link>
-              </div>
+                  <CheckCircle2 className="w-4 h-4 text-[#FFD36D] stroke-[2.5]" />
+                  <span>
+                    {hasMultipleChoice || hasEssay
+                      ? "Selesai Membaca & Lanjut ke Latihan Soal"
+                      : "Saya Sudah Selesai Membaca"}
+                  </span>
+                </button>
+              )}
+
+              {(hasMultipleChoice || hasEssay) && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(hasMultipleChoice ? "multiple_choice" : "essay")}
+                  className="text-xs font-bold text-[#51465B] hover:underline"
+                >
+                  Langsung ke Soal &rarr;
+                </button>
+              )}
             </div>
           </div>
         )}
 
         {/* ================================================================== */}
-        {/* 2. KONTEN TIPE SOAL                                                */}
+        {/* HALAMAN 2: PILIHAN GANDA (BENAR-BENAR BISA PILIH OPSI JAWABAN)     */}
         {/* ================================================================== */}
-        {isQuestion && question && (
-          <div className="space-y-6">
-            {isBoth ? (
-              <div className="flex items-center gap-3 pt-4">
-                <div className="h-px bg-[#E9E5E8] flex-1" />
-                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#FFD36D]/30 border border-[#FFD36D] text-xs font-black text-[#51465B]">
-                  <Brain className="w-4 h-4 text-[#51465B]" />
-                  <span>Uji Pemahaman Materi di Atas</span>
-                </div>
-                <div className="h-px bg-[#E9E5E8] flex-1" />
+        {activeTab === "multiple_choice" && mcQuestion && (
+          <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
+            {/* Header Question */}
+            <div className="border-b border-[#E9E5E8] pb-4 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
+                  Topik: {mcQuestion.topic}
+                </span>
+                <h2 className="text-sm font-bold text-slate-500">
+                  Pilihlah salah satu jawaban yang paling tepat
+                </h2>
+              </div>
+
+              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black">
+                Pilihan Ganda
+              </span>
+            </div>
+
+            {/* Question Text */}
+            <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
+              <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed">
+                {mcQuestion.question_text}
+              </p>
+            </div>
+
+            {/* Interactive Multiple Choice Options (A, B, C, D) */}
+            <div className="space-y-3 pt-2">
+              {mcQuestion.options && mcQuestion.options.map((opt) => {
+                const isSelected = selectedMcAnswer === opt.key;
+                const isCorrect = isMcSubmitted && opt.key === mcQuestion.correct_answer;
+                const isWrong = isMcSubmitted && isSelected && !isCorrect;
+
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    disabled={isMcSubmitted}
+                    onClick={() => setSelectedMcAnswer(opt.key)}
+                    className={`w-full p-4 rounded-2xl border-2 flex items-center gap-3.5 text-left transition-all cursor-pointer ${
+                      isCorrect
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-950 font-bold"
+                        : isWrong
+                        ? "border-rose-500 bg-rose-50 text-rose-950 font-bold"
+                        : isSelected
+                        ? "border-[#51465B] bg-[#51465B]/5 font-bold shadow-xs"
+                        : "border-[#E9E5E8] hover:border-[#51465B]/40 bg-white"
+                    }`}
+                  >
+                    <span
+                      className={`w-9 h-9 rounded-full font-black text-xs flex items-center justify-center shrink-0 transition-colors ${
+                        isCorrect
+                          ? "bg-emerald-600 text-white"
+                          : isWrong
+                          ? "bg-rose-600 text-white"
+                          : isSelected
+                          ? "bg-[#51465B] text-[#FFD36D]"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {opt.key}
+                    </span>
+                    <span className="text-sm sm:text-base flex-1">{opt.text}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Action Submit */}
+            {!isMcSubmitted ? (
+              <div className="pt-4 flex justify-end">
+                <button
+                  type="button"
+                  disabled={!selectedMcAnswer}
+                  onClick={handleMcSubmit}
+                  className="px-7 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40"
+                >
+                  Kumpulkan Jawaban
+                </button>
               </div>
             ) : (
-              /* Question Header Card for standalone question rooms */
-              <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-8 shadow-xs space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider">
-                    <Brain className="w-3.5 h-3.5" />
-                    <span>Latihan Soal Kontekstual</span>
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
-                    <MapPin className="w-3.5 h-3.5 text-[#51465B]" />
-                    <span>{room.region_name}</span>
-                  </span>
-
-                  <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#756F7A]">
-                    Kelas {room.grade} SD &bull; {room.subject}
-                  </span>
+              /* Feedback and Explanation */
+              <div className="pt-4 space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                <div
+                  className={`p-5 rounded-2xl border text-xs sm:text-sm space-y-2 ${
+                    selectedMcAnswer === mcQuestion.correct_answer
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                      : "bg-rose-50 border-rose-200 text-rose-950"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-black text-sm sm:text-base">
+                    {selectedMcAnswer === mcQuestion.correct_answer ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        <span>Jawaban Kamu Tepat Sekali! (+100 Poin)</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-5 h-5 text-rose-600" />
+                        <span>Jawaban Belum Tepat. Kunci Jawaban: {mcQuestion.correct_answer}</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="leading-relaxed pt-1 text-slate-800">
+                    <strong>Pembahasan:</strong> {mcQuestion.explanation}
+                  </p>
                 </div>
 
-                <h1 className="text-xl sm:text-3xl font-black text-[#23212A] tracking-tight">
-                  {room.title}
-                </h1>
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMcSubmitted(false);
+                      setSelectedMcAnswer(null);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Coba Jawab Lagi</span>
+                  </button>
 
-                <div className="text-xs text-[#756F7A] font-semibold flex items-center gap-2 pt-1 border-t border-[#E9E5E8]">
-                  <span>Pengajar: <strong>{room.teacher_name}</strong></span>
+                  {hasEssay && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("essay")}
+                      className="px-5 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs hover:bg-[#3D3445]"
+                    >
+                      Lanjut ke Soal Esai &rarr;
+                    </button>
+                  )}
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* Question Card */}
-            <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6">
-              {/* Question Text */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
-                  Topik: {question.topic}
+        {/* ================================================================== */}
+        {/* HALAMAN 3: SOAL ESAI (SISWA MENGETIKKAN JAWABAN ESAI)              */}
+        {/* ================================================================== */}
+        {activeTab === "essay" && essayQuestion && (
+          <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
+            {/* Header Question */}
+            <div className="border-b border-[#E9E5E8] pb-4 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
+                  Topik: {essayQuestion.topic}
                 </span>
-                <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed">
-                  {question.question_text}
-                </p>
+                <h2 className="text-sm font-bold text-slate-500">
+                  Jawablah pertanyaan esai berikut dengan penalaranmu sendiri
+                </h2>
               </div>
 
-              {/* Multiple Choice Options */}
-              {question.options && question.options.length > 0 && (
-                <div className="space-y-3 pt-2">
-                  {question.options.map((opt) => {
-                    const isSelected = selectedAnswer === opt.key;
-                    const isCorrect = isAnswerSubmitted && opt.key === question.correct_answer;
-                    const isWrong = isAnswerSubmitted && isSelected && !isCorrect;
+              <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-900 text-xs font-black">
+                Soal Esai
+              </span>
+            </div>
 
-                    return (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        disabled={isAnswerSubmitted}
-                        onClick={() => setSelectedAnswer(opt.key)}
-                        className={`w-full p-4 rounded-2xl border-2 flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                          isCorrect
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-950 font-bold"
-                            : isWrong
-                            ? "border-rose-500 bg-rose-50 text-rose-950 font-bold"
-                            : isSelected
-                            ? "border-[#51465B] bg-[#51465B]/5 font-bold"
-                            : "border-[#E9E5E8] hover:border-slate-300"
-                        }`}
-                      >
-                        <span
-                          className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center shrink-0 ${
-                            isCorrect
-                              ? "bg-emerald-600 text-white"
-                              : isWrong
-                              ? "bg-rose-600 text-white"
-                              : isSelected
-                              ? "bg-[#51465B] text-white"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          {opt.key}
-                        </span>
-                        <span className="text-sm flex-1">{opt.text}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+            {/* Question Text */}
+            <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
+              <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed">
+                {essayQuestion.question_text}
+              </p>
+            </div>
 
-              {/* Submit Answer Button */}
-              {!isAnswerSubmitted && (
-                <div className="pt-4 flex justify-end">
+            {/* Essay Form */}
+            <form onSubmit={handleEssaySubmit} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-800 block mb-1.5">
+                  Tuliskan Jawaban & Alasanmu:
+                </label>
+                <textarea
+                  rows={5}
+                  required
+                  disabled={isEssaySubmitted}
+                  placeholder="Ketik jawaban lengkap dan uraian penjelasanmu di sini..."
+                  value={essayAnswer}
+                  onChange={(e) => setEssayAnswer(e.target.value)}
+                  className="w-full p-4 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] text-sm leading-relaxed text-[#23212A] placeholder:text-slate-400 focus:outline-none focus:ring-0 disabled:bg-slate-50 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {!isEssaySubmitted ? (
+                <div className="flex justify-end">
                   <button
-                    type="button"
-                    disabled={!selectedAnswer}
-                    onClick={handleAnswerSubmit}
-                    className="px-6 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                    type="submit"
+                    disabled={!essayAnswer.trim()}
+                    className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40"
                   >
-                    Kumpulkan Jawaban
+                    <Send className="w-4 h-4 text-[#FFD36D]" />
+                    <span>Kirim Jawaban Esai</span>
                   </button>
                 </div>
-              )}
-
-              {/* Answer Explanation Box when Submitted */}
-              {isAnswerSubmitted && (
-                <div className="pt-4 space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                  <div
-                    className={`p-4 sm:p-5 rounded-2xl border text-xs space-y-2 ${
-                      selectedAnswer === question.correct_answer
-                        ? "bg-emerald-50 border-emerald-200 text-emerald-950"
-                        : "bg-rose-50 border-rose-200 text-rose-950"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 font-black text-sm">
-                      {selectedAnswer === question.correct_answer ? (
-                        <>
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                          <span>Jawaban Kamu Benar! (+100 Poin)</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-5 h-5 text-rose-600" />
-                          <span>Jawaban Belum Tepat. Kunci Jawaban: {question.correct_answer}</span>
-                        </>
-                      )}
+              ) : (
+                /* Feedback and Rubric */
+                <div className="pt-2 space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs sm:text-sm space-y-2">
+                    <div className="flex items-center gap-2 font-black text-sm sm:text-base">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <span>Jawaban Esai Berhasil Terkirim ke Pengajar!</span>
                     </div>
-                    <p className="leading-relaxed pt-1 text-slate-800">
-                      <strong>Pembahasan:</strong> {question.explanation}
+                    <p className="leading-relaxed text-slate-800">
+                      <strong>Kunci/Pedoman Jawaban:</strong> {essayQuestion.explanation || essayQuestion.rubric || "Pengajar akan meninjau jawaban dan memberikan umpan balik kontekstual."}
                     </p>
                   </div>
 
                   <div className="flex justify-between items-center pt-2">
-                    <Link
-                      href="/room"
-                      className="text-xs font-bold text-[#756F7A] hover:text-[#23212A] transition-colors"
-                    >
-                      &larr; Buka Room Lain
-                    </Link>
-
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsAnswerSubmitted(false);
-                        setSelectedAnswer(null);
-                      }}
-                      className="px-4 py-2 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
+                      onClick={() => setIsEssaySubmitted(false)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                      Coba Jawab Lagi
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Ubah Jawaban</span>
                     </button>
+
+                    <Link
+                      href="/room"
+                      className="px-5 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs hover:bg-[#3D3445]"
+                    >
+                      Selesai & Buka Room Lain &rarr;
+                    </Link>
                   </div>
                 </div>
               )}
-            </div>
+            </form>
           </div>
         )}
       </main>
 
       {/* Name Input Prompt Modal if Name Not Set */}
       {isNamePromptOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-sm w-full p-6 sm:p-7 text-center space-y-4 animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-white flex items-center justify-center mx-auto shadow-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl max-w-sm w-full p-8 text-center space-y-4 animate-in fade-in zoom-in-95 text-white">
+            <div className="w-12 h-12 rounded-full bg-white/10 text-[#FFD36D] flex items-center justify-center mx-auto shadow-sm">
               <User className="w-6 h-6 stroke-[2.2]" />
             </div>
 
             <div>
-              <h3 className="text-xl font-black text-[#23212A]">
+              <h3 className="text-xl font-black text-white">
                 Selamat Datang!
               </h3>
-              <p className="text-xs text-[#756F7A] mt-1">
-                Masukkan namamu untuk mulai belajar di room <strong>{roomCode}</strong>. Tidak perlu login akun.
+              <p className="text-xs text-gray-300 mt-1">
+                Masukkan namamu untuk belajar di room <strong>{roomCode}</strong>.
               </p>
             </div>
 
@@ -487,12 +681,12 @@ export default function RoomViewerPage() {
                 placeholder="Tulis nama lengkapmu..."
                 value={inputName}
                 onChange={(e) => setInputName(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border-2 border-[#E9E5E8] text-sm font-bold text-[#23212A] placeholder:text-[#756F7A]/40 focus:outline-none focus:border-[#51465B] text-center"
+                className="w-full px-4 py-3 rounded-full bg-white/10 border-2 border-white/20 text-sm font-bold text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FFD36D] text-center"
               />
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-black shadow-md transition-all cursor-pointer"
+                className="w-full py-3.5 px-5 rounded-full bg-[#FFD36D] hover:bg-[#F5C75A] text-[#251E2B] text-xs font-black shadow-md transition-all cursor-pointer"
               >
                 Mulai Belajar Sekarang
               </button>

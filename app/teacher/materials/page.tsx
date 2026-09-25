@@ -9,7 +9,6 @@ import {
   MapPin,
   Camera,
   Upload,
-  FileText,
   PenTool,
   Search,
   Copy,
@@ -30,17 +29,8 @@ import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-she
 import { repository } from "@/lib/db/repository";
 import { LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
 
-const REGION_OPTIONS = [
-  "Kota Madiun",
-  "Kabupaten Madiun",
-  "Kabupaten Ponorogo",
-  "Kabupaten Ngawi",
-  "Kabupaten Magetan",
-  "Kabupaten Pacitan",
-  "Kota Semarang",
-];
-
 const SUBJECT_OPTIONS = [
+  "Semua Mapel",
   "Matematika",
   "IPAS (Ilmu Pengetahuan Alam & Sosial)",
   "Bahasa Indonesia",
@@ -54,6 +44,7 @@ export default function TeacherMaterialsPage() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [rooms, setRooms] = useState<LearningRoom[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterSubject, setFilterSubject] = useState("Semua Mapel");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Creation Wizard Modal States
@@ -61,26 +52,21 @@ export default function TeacherMaterialsPage() {
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedMethod, setSelectedMethod] = useState<"manual" | "camera" | "pdf" | "ai">("manual");
 
-  // Step 1: Metadata
+  // Step 1: Metadata (Judul, Mata Pelajaran, Jenjang/Kelas)
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("Matematika");
   const [grade, setGrade] = useState(5);
   const [region, setRegion] = useState("Kota Madiun");
 
   // Step 2: Content Inputs
-  const [manualObjective, setManualObjective] = useState("");
-  const [manualNarrative, setManualNarrative] = useState("");
-  const [manualSteps, setManualSteps] = useState("1. Eksplorasi masalah kontekstual\n2. Diskusi kelompok terarah\n3. Refleksi dan penarikan kesimpulan");
-  const [aiPrompt, setAiPrompt] = useState("");
+  const [manualDraft, setManualDraft] = useState("");
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [capturedPhotoName, setCapturedPhotoName] = useState<string | null>(null);
 
-  // Step 3: Editable Preview
+  // Step 3: Editable AI Review / Preview
   const [previewTitle, setPreviewTitle] = useState("");
-  const [previewObjective, setPreviewObjective] = useState("");
   const [previewNarrative, setPreviewNarrative] = useState("");
-  const [previewSteps, setPreviewSteps] = useState<string[]>([]);
 
   // Step 4: Result
   const [createdMaterialId, setCreatedMaterialId] = useState<string | null>(null);
@@ -124,89 +110,57 @@ export default function TeacherMaterialsPage() {
         ? "Modul Kurikulum Merdeka Fase C"
         : "Penerapan Konsep Belajar Kontekstual"
     );
-    setManualObjective("Peserta didik mampu memahami konsep kontekstual melalui studi kasus nyata di lingkungan sekitar.");
-    setManualNarrative("Pembelajaran dimulai dengan menelaah kegiatan ekonomi dan budaya lokal daerah " + (activeSchool?.region_name || "Madiun") + ".");
+    setManualDraft("Siswa diajak mengamati kegiatan transaksi pasar dan menghitung modal serta laba penjualan.");
     setIsWizardOpen(true);
   };
 
-  // Proceed from Step 1 to Step 2
+  // Proceed Step 1 -> Step 2
   const handleNextToContent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     setWizardStep(2);
   };
 
-  // Process AI Generation in Step 2
-  const handleSimulateAi = () => {
+  // Process AI Context Transformation (Sistem AI kita yang mengubah konteks lokal!)
+  const handleTriggerAiContextTransformation = () => {
     setIsAiGenerating(true);
     setTimeout(() => {
-      setPreviewTitle(title || `Modul Ajar Tematik ${subject} Berbasis Konteks ${region}`);
-      setPreviewObjective(`Peserta didik dapat menganalisis permasalahan numerasi dan sains nyata di lingkungan ${region} dengan kritis.`);
+      setPreviewTitle(title || `Modul Ajar Tematik ${subject} Berbasis Kearifan Lokal ${region}`);
       setPreviewNarrative(
-        `Kawasan ${region} memiliki potensi komoditas dan aktivitas ekonomi yang unik. Melalui modul ajar ini, siswa diajak mengeksplorasi kalkulasi harga satuan, estimasi keuntungan UMKM lokal, dan gotong royong antar pedagang pasar tradisional secara langsung.`
+        `Kawasan ${region} memiliki potensi komoditas pangan dan kerajinan khas yang kaya. Melalui bahan ajar kontekstual ini, peserta didik diajak menelaah aktivitas ekonomi nyata para pedagang pasar tradisional di ${region}.\n\nDalam proses pembelajaran, siswa tidak hanya menghitung angka abstrak, tetapi langsung menganalisis simulasi transaksi harga grosir, perhitungan laba-rugi warung lokal, dan pengenalan mata uang secara bijak sesuai nilai-nilai kearifan lokal.`
       );
-      setPreviewSteps([
-        "Identifikasi data komoditas pangan lokal yang diperoleh dari data publik daerah.",
-        "Simulasi transaksi jual beli dengan penerapan operasi hitung campuran (tambah, kurang, kali, bagi).",
-        "Refleksi nilai sosial dan kearifan lokal para pelaku usaha di lingkungan sekitar.",
-      ]);
       setIsAiGenerating(false);
       setWizardStep(3);
     }, 1200);
   };
 
-  // Proceed from Step 2 to Step 3 (Review & Preview)
-  const handleNextToPreview = () => {
-    if (selectedMethod === "ai") {
-      handleSimulateAi();
-      return;
-    }
-
-    setPreviewTitle(title);
-    setPreviewObjective(manualObjective || "Peserta didik menguasai capaian pembelajaran fase C.");
-    setPreviewNarrative(
-      manualNarrative ||
-        `Modul ini disusun khusus untuk peserta didik di ${region}, mengintegrasikan narasi lokal ke dalam materi ${subject}.`
-    );
-    const splitSteps = manualSteps
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    setPreviewSteps(splitSteps.length > 0 ? splitSteps : ["Pengenalan masalah", "Aktivitas terbimbing", "Evaluasi mandiri"]);
-    setWizardStep(3);
-  };
-
-  // Final Save to Repository in Step 3
+  // Final Save in Step 3
   const handleFinalSave = () => {
     if (!activeSchool) return;
 
-    const formattedContent = `${previewObjective}\n\nNarasi Konteks:\n${previewNarrative}\n\nLangkah Belajar:\n${previewSteps.join("\n")}`;
-
-    const newMaterial = repository.saveMaterial({
+    const newMat = repository.saveMaterial({
+      school_id: activeSchool.id,
+      teacher_id: currentUser?.id || "usr-teacher-01",
       title: previewTitle,
       subject,
       grade,
-      school_id: activeSchool.id,
-      teacher_id: currentUser?.id || "usr-teacher-01",
-      content: formattedContent,
+      content: previewNarrative,
       is_contextualized: true,
       published_to_classes: [],
     });
 
-    setCreatedMaterialId(newMaterial.id);
+    setCreatedMaterialId(newMat.id);
     loadData();
     setWizardStep(4);
   };
 
-  // Delete Material
   const handleDeleteMaterial = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus modul ajar ini dari daftar?")) {
+    if (confirm("Apakah Anda yakin ingin menghapus modul materi ini?")) {
       repository.deleteMaterial(id);
       loadData();
     }
   };
 
-  // Publish Material to Room
   const handleOpenPublishRoom = (mat: LearningMaterial) => {
     setMaterialToPublish(mat);
     const randomCode = `MTR-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -235,170 +189,152 @@ export default function TeacherMaterialsPage() {
   };
 
   const filteredMaterials = materials.filter((m) => {
-    return (
+    const matchesSearch =
       m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.subject.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+      m.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterSubject === "Semua Mapel" || m.subject.toLowerCase() === filterSubject.toLowerCase();
+    return matchesSearch && matchesFilter;
   });
 
   return (
     <TeacherWorkspaceShell activeGroupId="materials">
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12 font-sans">
         {/* ===================================================================
-            1. HEADER BANNER
+            1. JUDUL SAJA (HAPUS CARD PALING ATAS BERISI JUDUL)
             =================================================================== */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 sm:p-7 rounded-[28px] sm:rounded-[32px] border border-[#E9E5E8] shadow-xs">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-white flex items-center justify-center shadow-xs shrink-0">
-              <BookOpen className="w-6 h-6 stroke-[2.2]" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                Modul Materi Pembelajaran
-              </h1>
-              <p className="text-xs text-[#756F7A] mt-0.5">
-                Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name}.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Cari naskah materi..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-semibold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
-              />
-            </div>
-          </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
+            Modul Materi Pembelajaran
+          </h1>
+          <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-1">
+            Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name}.
+          </p>
         </div>
 
         {/* ===================================================================
-            2. OPSI METODE INPUT MATERI (4 PILIHAN UTAMA SESUAI PERMINTAAN)
-            Ketik Manual, Motret Langsung, Upload PDF, Generate AI
+            2. INPUT-INPUT MATERI: CARD BERWARNA, IKON AGAK BESAR & NAMA SAJA
             =================================================================== */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm sm:text-base font-black text-[#23212A] tracking-tight">
-              Pilih Metode Pembuatan Modul Ajar
-            </h2>
-            <span className="text-xs font-bold text-[#756F7A]">
-              Form Terpandu Step-by-Step
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Opsi 1: Ketik Manual */}
+        <div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            {/* Opsi 1: Ketik Manual - Warna Pastel Lavender / Purple */}
             <button
               type="button"
               onClick={() => handleOpenWizard("manual")}
-              className="p-5 rounded-[24px] bg-white border border-[#E9E5E8] hover:border-[#51465B] hover:shadow-md transition-all text-left group flex flex-col justify-between cursor-pointer"
+              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#F5F0FA] to-[#ECE3F5] border-2 border-[#51465B]/25 hover:border-[#51465B] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#51465B]/10 text-[#51465B] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <PenTool className="w-6 h-6 stroke-[2.2]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#51465B] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                <PenTool className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <div>
-                <h3 className="text-sm font-black text-[#23212A] group-hover:text-[#51465B] transition-colors">
-                  Ketik Manual
-                </h3>
-                <p className="text-[11px] text-[#756F7A] mt-0.5 leading-relaxed">
-                  Tulis narasi kontekstual, tujuan, dan langkah ajar secara langsung.
-                </p>
-              </div>
+              <span className="text-sm sm:text-base font-black text-[#51465B] tracking-tight">
+                Ketik Manual
+              </span>
             </button>
 
-            {/* Opsi 2: Motret Langsung */}
+            {/* Opsi 2: Motret Langsung - Warna Pastel Sky / Blue */}
             <button
               type="button"
               onClick={() => handleOpenWizard("camera")}
-              className="p-5 rounded-[24px] bg-white border border-[#E9E5E8] hover:border-[#51465B] hover:shadow-md transition-all text-left group flex flex-col justify-between cursor-pointer"
+              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#EBF5FB] to-[#D6EAF8] border-2 border-[#2980B9]/30 hover:border-[#2980B9] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Camera className="w-6 h-6 stroke-[2.2]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#2980B9] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                <Camera className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <div>
-                <h3 className="text-sm font-black text-[#23212A] group-hover:text-blue-700 transition-colors">
-                  Motret Langsung
-                </h3>
-                <p className="text-[11px] text-[#756F7A] mt-0.5 leading-relaxed">
-                  Pindai lembar naskah materi cetak via kamera & Vision OCR.
-                </p>
-              </div>
+              <span className="text-sm sm:text-base font-black text-[#1F618D] tracking-tight">
+                Motret Langsung
+              </span>
             </button>
 
-            {/* Opsi 3: Upload PDF */}
+            {/* Opsi 3: Upload PDF - Warna Pastel Orange / Coral */}
             <button
               type="button"
               onClick={() => handleOpenWizard("pdf")}
-              className="p-5 rounded-[24px] bg-white border border-[#E9E5E8] hover:border-[#51465B] hover:shadow-md transition-all text-left group flex flex-col justify-between cursor-pointer"
+              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#FEF5E7] to-[#FDEBD0] border-2 border-[#D35400]/30 hover:border-[#D35400] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Upload className="w-6 h-6 stroke-[2.2]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#D35400] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                <Upload className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <div>
-                <h3 className="text-sm font-black text-[#23212A] group-hover:text-amber-800 transition-colors">
-                  Upload PDF
-                </h3>
-                <p className="text-[11px] text-[#756F7A] mt-0.5 leading-relaxed">
-                  Unggah berkas PDF modul siap dikontekstualisasikan.
-                </p>
-              </div>
+              <span className="text-sm sm:text-base font-black text-[#A04000] tracking-tight">
+                Upload PDF
+              </span>
             </button>
 
-            {/* Opsi 4: Generate AI */}
+            {/* Opsi 4: Generate AI - Warna Pastel Gold / Amber */}
             <button
               type="button"
               onClick={() => handleOpenWizard("ai")}
-              className="p-5 rounded-[24px] bg-[#FFD36D]/30 border-2 border-[#FFD36D] hover:border-[#51465B] hover:shadow-md transition-all text-left group flex flex-col justify-between cursor-pointer"
+              className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#FFFBF0] to-[#FFF3CD] border-2 border-[#FFD36D] hover:border-[#B7950B] shadow-xs hover:shadow-md transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:scale-95"
             >
-              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Sparkles className="w-6 h-6 stroke-[2.2]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                <Sparkles className="w-7 h-7 stroke-[2.2]" />
               </div>
-              <div>
-                <h3 className="text-sm font-black text-[#23212A] group-hover:text-[#51465B] transition-colors">
-                  Generate AI
-                </h3>
-                <p className="text-[11px] text-[#756F7A] mt-0.5 leading-relaxed">
-                  Otomasi penyusunan materi berbasis data riil statistik BPS daerah.
-                </p>
-              </div>
+              <span className="text-sm sm:text-base font-black text-[#251E2B] tracking-tight">
+                Generate AI
+              </span>
             </button>
           </div>
         </div>
 
         {/* ===================================================================
-            3. DAFTAR BERKAS MATERI PEMBELAJARAN
-            Format berkas kartu yang rapi dengan kode unik & relasi room
+            3. DAFTAR BERKAS MATERI: JUDUL DAFTAR + SEARCH BAR & FILTER DI BAWAHNYA
             =================================================================== */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-[#23212A] tracking-tight">
-                Daftar Berkas Materi ({filteredMaterials.length})
-              </h2>
-              <p className="text-xs text-[#756F7A]">
-                Salin kode unik materi untuk membuat soal latihan atau publikasikan ke Ruang Belajar siswa
-              </p>
+        <div className="space-y-4 pt-2">
+          {/* Judul Daftar */}
+          <div>
+            <h2 className="text-lg sm:text-xl font-black text-[#23212A] tracking-tight">
+              Daftar Berkas Materi ({filteredMaterials.length})
+            </h2>
+            <p className="text-xs text-[#756F7A] mt-0.5 font-medium">
+              Koleksi bahan ajar tematik kontekstual siap pakai atau dibagikan via room.
+            </p>
+          </div>
+
+          {/* Search Bar & Instant Filter Langsung di Bawah Judul Daftar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-3xl border border-[#E9E5E8] shadow-xs">
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-md w-full">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
+              <input
+                type="text"
+                placeholder="Cari judul materi atau kode unik..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A]/60 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+              />
+            </div>
+
+            {/* Instant Filter Dropdown (Langsung Aktif Tanpa Tombol Konfirmasi) */}
+            <div className="flex items-center gap-2 shrink-0">
+              <select
+                value={filterSubject}
+                onChange={(e) => setFilterSubject(e.target.value)}
+                className="px-4 py-2.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold text-[#51465B] focus:outline-none cursor-pointer"
+              >
+                {SUBJECT_OPTIONS.map((subj) => (
+                  <option key={subj} value={subj}>
+                    {subj}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
+          {/* ===================================================================
+              CARD HORIZONTAL DAFTAR MATERI DENGAN IKON & WARNA KHAS
+              =================================================================== */}
           {filteredMaterials.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-[28px] border border-[#E9E5E8] space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-[#FAF7F3] text-slate-400 mx-auto flex items-center justify-center">
+            <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
+              <div className="w-14 h-14 rounded-full bg-[#FAF7F3] text-slate-400 mx-auto flex items-center justify-center">
                 <BookOpen className="w-7 h-7" />
               </div>
-              <h3 className="text-sm font-bold text-slate-800">Belum ada modul ajar</h3>
+              <h3 className="text-base font-bold text-slate-800">Belum ada modul ajar</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Mulai buat modul ajar baru menggunakan salah satu dari 4 metode input di atas.
+                Mulai buat modul ajar baru menggunakan salah satu metode input di atas.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+            <div className="space-y-3 sm:space-y-4">
               {filteredMaterials.map((mat) => {
-                // Find if this material is already active in a room
                 const activeRoom = rooms.find(
                   (r) => r.type === "material" && r.resource_id === mat.id
                 );
@@ -406,81 +342,81 @@ export default function TeacherMaterialsPage() {
                 return (
                   <div
                     key={mat.id}
-                    className="p-5 sm:p-6 rounded-[24px] sm:rounded-[28px] bg-white border border-[#E9E5E8] hover:border-[#51465B]/30 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                    className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-r from-[#FBF8FC] to-white border-2 border-[#51465B]/20 hover:border-[#51465B] hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
                   >
-                    <div>
-                      {/* Top Bar: Subject Badge & Unique Code */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="px-3 py-1 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] font-extrabold text-[11px]">
-                          {mat.subject} • Kelas {mat.grade} SD
-                        </span>
-
-                        {/* Kode Unik Materi with Copy Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(mat.id)}
-                          className="py-1 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[10px] font-mono font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Klik untuk menyalin kode unik materi"
-                        >
-                          {copiedCode === mat.id ? (
-                            <>
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span className="text-emerald-700 font-sans">Tersalin</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3 text-slate-500" />
-                              <span>{mat.id}</span>
-                            </>
-                          )}
-                        </button>
+                    {/* Left: Characteristic Material Icon + Info */}
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <BookOpen className="w-6 h-6 stroke-[2.2]" />
                       </div>
 
-                      {/* Title */}
-                      <h3 className="text-base font-black text-[#23212A] tracking-tight leading-snug">
-                        {mat.title}
-                      </h3>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="px-3 py-1 rounded-full bg-[#51465B]/10 text-[#51465B] font-black text-[10px] uppercase tracking-wider">
+                            {mat.subject} &bull; Kelas {mat.grade} SD
+                          </span>
 
-                      {/* Narrative Snippet */}
-                      <p className="text-xs text-[#756F7A] line-clamp-3 leading-relaxed mt-2">
-                        {mat.content.replace(/^Narasi Konteks:/m, "")}
-                      </p>
+                          {/* Kode Unik Materi with Copy Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(mat.id)}
+                            className="py-1 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-[10px] font-mono font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Klik untuk menyalin kode unik materi"
+                          >
+                            {copiedCode === mat.id ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-emerald-700 font-sans">Tersalin</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3 text-slate-500" />
+                                <span>{mat.id}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        <h3 className="text-base sm:text-lg font-black text-[#23212A] tracking-tight truncate group-hover:text-[#51465B] transition-colors">
+                          {mat.title}
+                        </h3>
+
+                        <p className="text-xs text-[#756F7A] line-clamp-1 leading-relaxed">
+                          {mat.content.replace(/^Narasi Konteks:/m, "")}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Bottom Status & Actions */}
-                    <div className="pt-3 border-t border-[#E9E5E8] flex flex-wrap items-center justify-between gap-2.5">
-                      {/* Room Publication Status */}
+                    {/* Right: Actions Row */}
+                    <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                       {activeRoom ? (
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>Aktif di Room: <strong>{activeRoom.code}</strong></span>
-                        </div>
+                        <Link
+                          href={`/room/${activeRoom.code}`}
+                          target="_blank"
+                          className="px-4 py-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors"
+                        >
+                          <DoorOpen className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Room: {activeRoom.code}</span>
+                        </Link>
                       ) : (
-                        <span className="text-[11px] font-semibold text-slate-400">
-                          Belum dipublikasikan
-                        </span>
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        {/* Publish via Room Button */}
                         <button
                           type="button"
                           onClick={() => handleOpenPublishRoom(mat)}
-                          className="py-2 px-3.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                          className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                         >
                           <DoorOpen className="w-3.5 h-3.5 text-[#FFD36D]" />
-                          <span>{activeRoom ? "Kelola Room" : "Bagikan ke Room"}</span>
+                          <span>Buka Room</span>
                         </button>
+                      )}
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMaterial(mat.id)}
-                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="Hapus materi ini"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMaterial(mat.id)}
+                        className="p-2 rounded-full border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Hapus Materi"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -491,35 +427,25 @@ export default function TeacherMaterialsPage() {
       </div>
 
       {/* =====================================================================
-          4. MODAL WIZARD STEP-BY-STEP INPUT MATERI
-          Step 1: Identitas & Konteks
-          Step 2: Input Konten Sesuai Metode
-          Step 3: Preview, Review & Edit
-          Step 4: Berhasil Disimpan
+          CREATION WIZARD MODAL (STEP 1: JUDUL, MAPEL, JENJANG -> STEP 2: INPUT ->
+          STEP 3: AI UBAH KONTEKS & REVIEW EDITABLE -> STEP 4: SELESAI)
           ===================================================================== */}
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-slate-200 shadow-2xl max-w-2xl w-full p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto">
-            {/* Header Wizard & Step Indicator */}
+          <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 relative my-auto max-h-[90vh] overflow-y-auto">
+            {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] block">
-                  Langkah {wizardStep} dari 4 •{" "}
-                  {selectedMethod === "manual"
-                    ? "Ketik Manual"
-                    : selectedMethod === "camera"
-                    ? "Motret Langsung (OCR)"
-                    : selectedMethod === "pdf"
-                    ? "Upload PDF"
-                    : "Generate AI"}
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] bg-[#51465B]/10 px-2.5 py-0.5 rounded-full">
+                  Langkah {wizardStep} dari 3
                 </span>
-                <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                <h3 className="text-lg font-black text-[#23212A] mt-1">
                   {wizardStep === 1
-                    ? "Form Identitas & Konteks Modul"
+                    ? "Form Identitas Modul Ajar"
                     : wizardStep === 2
-                    ? "Input Konten Materi"
+                    ? "Input Bahan Materi"
                     : wizardStep === 3
-                    ? "Tinjau & Edit Pratinjau Modul"
+                    ? "Review & Tinjau Hasil Konteks AI"
                     : "Modul Berhasil Dibuat!"}
                 </h3>
               </div>
@@ -527,18 +453,18 @@ export default function TeacherMaterialsPage() {
               <button
                 type="button"
                 onClick={() => setIsWizardOpen(false)}
-                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* STEP 1: FORM IDENTITAS & KONTEKS */}
+            {/* STEP 1: IDENTITAS (JUDUL, MAPEL, JENJANG) */}
             {wizardStep === 1 && (
-              <form onSubmit={handleNextToContent} className="space-y-4 pt-5">
+              <form onSubmit={handleNextToContent} className="space-y-4 pt-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Judul / Topik Pembelajaran
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    Judul Materi
                   </label>
                   <input
                     type="text"
@@ -546,329 +472,207 @@ export default function TeacherMaterialsPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Contoh: Operasi Hitung Campuran dalam Perdagangan Tradisional"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
                       Mata Pelajaran
                     </label>
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-semibold text-slate-900"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#23212A]"
                     >
-                      {SUBJECT_OPTIONS.map((sub) => (
-                        <option key={sub} value={sub}>
-                          {sub}
-                        </option>
-                      ))}
+                      <option value="Matematika">Matematika</option>
+                      <option value="IPAS (Ilmu Pengetahuan Alam & Sosial)">IPAS</option>
+                      <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                      <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                      <option value="Seni Budaya & Prakarya">Seni Budaya & Prakarya</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Tingkat Kelas
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Jenjang / Tingkat Kelas
                     </label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-semibold text-slate-900"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#23212A]"
                     >
-                      <option value={5}>Fase C • Kelas 5 SD</option>
-                      <option value={4}>Fase B • Kelas 4 SD</option>
-                      <option value={6}>Fase C • Kelas 6 SD</option>
+                      {[1, 2, 3, 4, 5, 6].map((g) => (
+                        <option key={g} value={g}>
+                          Kelas {g} Sekolah Dasar (SD)
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Wilayah Konteks Lokal (BPS & Kearifan Daerah)
-                  </label>
-                  <select
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-semibold text-slate-900"
-                  >
-                    {REGION_OPTIONS.map((reg) => (
-                      <option key={reg} value={reg}>
-                        {reg}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsWizardOpen(false)}
-                    className="py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer"
-                  >
-                    Batal
-                  </button>
+                <div className="pt-4 flex justify-end">
                   <button
                     type="submit"
-                    className="py-2.5 px-6 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    className="px-6 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span>Lanjut ke Input Konten</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#FFD36D]" />
+                    <span>Lanjut ke Input Materi</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </form>
             )}
 
-            {/* STEP 2: INPUT KONTEN SESUAI METODE */}
+            {/* STEP 2: INPUT KONTEN SESUAI METODE + TOMBOL AI PROSES */}
             {wizardStep === 2 && (
-              <div className="space-y-4 pt-5">
+              <div className="space-y-4 pt-4">
                 {selectedMethod === "manual" && (
-                  <div className="space-y-3.5">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-800 mb-1">
-                        Tujuan Pembelajaran
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={manualObjective}
-                        onChange={(e) => setManualObjective(e.target.value)}
-                        placeholder="Peserta didik mampu menyelesaikan kalkulasi numerasi belanja komoditas lokal..."
-                        className="w-full p-3 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-800 mb-1">
-                        Narasi Kontekstual ({region})
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={manualNarrative}
-                        onChange={(e) => setManualNarrative(e.target.value)}
-                        placeholder="Tuliskan latar belakang situasi lokal, komoditas, atau studi kasus..."
-                        className="w-full p-3 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-800 mb-1">
-                        Langkah Aktivitas Belajar (Satu per baris)
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={manualSteps}
-                        onChange={(e) => setManualSteps(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Tulis Draf Materi / Konsep Asli:
+                    </label>
+                    <textarea
+                      rows={5}
+                      required
+                      value={manualDraft}
+                      onChange={(e) => setManualDraft(e.target.value)}
+                      placeholder="Tuliskan pokok bahasan atau materi dasar yang ingin dikontekstualisasikan oleh sistem AI..."
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs leading-relaxed text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                    />
                   </div>
                 )}
 
                 {selectedMethod === "camera" && (
-                  <div className="p-6 rounded-2xl bg-[#FAF7F3] border-2 border-dashed border-slate-300 text-center space-y-3">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center mx-auto">
-                      <Camera className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">Motret Lembar Naskah Modul</h4>
-                      <p className="text-xs text-slate-500">Ambil foto dokumen menggunakan kamera atau unggah foto</p>
-                    </div>
+                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+                    <Camera className="w-8 h-8 text-[#2980B9] mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">Foto lembar naskah materi cetak</p>
                     <button
                       type="button"
-                      onClick={() => setCapturedPhotoName("naskah_modul_sd_halaman1.jpg")}
-                      className="py-2.5 px-5 rounded-xl bg-blue-700 text-white font-bold text-xs shadow-xs hover:bg-blue-800 transition-colors cursor-pointer"
+                      onClick={() => setCapturedPhotoName("foto_lks_materi.jpg")}
+                      className="px-4 py-2 rounded-full bg-[#2980B9] text-white text-xs font-bold"
                     >
-                      {capturedPhotoName ? "Foto Terpilih: " + capturedPhotoName : "Ambil Foto Sekarang"}
+                      {capturedPhotoName ? "Foto Terpindai: foto_lks_materi.jpg" : "Ambil Foto via Kamera"}
                     </button>
                   </div>
                 )}
 
                 {selectedMethod === "pdf" && (
-                  <div className="p-6 rounded-2xl bg-[#FAF7F3] border-2 border-dashed border-slate-300 text-center space-y-3">
-                    <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
-                      <Upload className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">Unggah Dokumen PDF Modul</h4>
-                      <p className="text-xs text-slate-500">Pilih berkas PDF modul kurikulum merdeka (.pdf)</p>
-                    </div>
+                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+                    <Upload className="w-8 h-8 text-[#D35400] mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">Unggah berkas modul ajar PDF</p>
                     <button
                       type="button"
-                      onClick={() => setUploadedFileName("modul_fase_c_matematika.pdf")}
-                      className="py-2.5 px-5 rounded-xl bg-amber-800 text-white font-bold text-xs shadow-xs hover:bg-amber-900 transition-colors cursor-pointer"
+                      onClick={() => setUploadedFileName("modul_ajar_kurikulum.pdf")}
+                      className="px-4 py-2 rounded-full bg-[#D35400] text-white text-xs font-bold"
                     >
-                      {uploadedFileName ? "Berkas: " + uploadedFileName : "Pilih Berkas PDF"}
+                      {uploadedFileName ? "Berkas Terunggah: modul_ajar_kurikulum.pdf" : "Pilih Berkas PDF"}
                     </button>
                   </div>
                 )}
 
                 {selectedMethod === "ai" && (
-                  <div className="space-y-3">
-                    <div className="p-4 rounded-2xl bg-[#FFD36D]/20 border border-[#FFD36D] space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-[#51465B]" />
-                        <h4 className="text-xs font-bold text-slate-900">Contextual AI Generator</h4>
-                      </div>
-                      <p className="text-[11px] text-slate-600">
-                        AI akan secara otomatis merelasikan topik dengan data publik BPS komoditas wilayah {region}.
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-800 mb-1">
-                        Instruksi Tambahan (Opsional)
-                      </label>
-                      <input
-                        type="text"
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="Contoh: Fokuskan pada sentra brem Madiun dan penghitungan keuntungan dagang"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-medium text-slate-900"
-                      />
-                    </div>
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                    <span className="font-bold block">Integrasi Data Kontekstual {region}:</span>
+                    <p>
+                      Sistem AI akan otomatis meramu materi berbasis data kearifan lokal, komoditas, dan fakta lingkungan riil daerah {region}.
+                    </p>
                   </div>
                 )}
 
-                <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setWizardStep(1)}
-                    className="py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Kembali</span>
+                    Kembali
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleNextToPreview}
                     disabled={isAiGenerating}
-                    className="py-2.5 px-6 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    onClick={handleTriggerAiContextTransformation}
+                    className="px-6 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    {isAiGenerating ? (
-                      <span>Mengontekstualisasikan AI...</span>
-                    ) : (
-                      <>
-                        <span>Tinjau & Edit Pratinjau</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-[#FFD36D]" />
-                      </>
-                    )}
+                    <Sparkles className="w-3.5 h-3.5 text-[#FFD36D]" />
+                    <span>{isAiGenerating ? "AI Sedang Menyesuaikan Konteks..." : "Sesuaikan Konteks dengan AI"}</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: PREVIEW & REVIEW / EDITABLE FIELDS */}
+            {/* STEP 3: REVIEW & TINJAU (DAPAT DIEDIT SEBELUM SIMPAN) */}
             {wizardStep === 3 && (
-              <div className="space-y-4 pt-5">
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
+              <div className="space-y-4 pt-4">
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Pratinjau Modul: Anda dapat mengoreksi dan mengedit teks di bawah ini sebelum menyimpan.</span>
+                  <span>Konteks berhasil disesuaikan oleh sistem AI! Anda dapat meninjau dan mengedit di bawah ini:</span>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Judul Modul (Bisa diedit)
-                    </label>
-                    <input
-                      type="text"
-                      value={previewTitle}
-                      onChange={(e) => setPreviewTitle(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-bold text-slate-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Tujuan Pembelajaran
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={previewObjective}
-                      onChange={(e) => setPreviewObjective(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-medium text-slate-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Narasi Kontekstual Lokal
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={previewNarrative}
-                      onChange={(e) => setPreviewNarrative(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] text-xs font-medium text-slate-900 leading-relaxed"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    Judul Modul
+                  </label>
+                  <input
+                    type="text"
+                    value={previewTitle}
+                    onChange={(e) => setPreviewTitle(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-[#23212A]"
+                  />
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    Narasi Materi Kontekstual (Dapat Diedit)
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={previewNarrative}
+                    onChange={(e) => setPreviewNarrative(e.target.value)}
+                    className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs leading-relaxed text-[#23212A] focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
-                    className="py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Kembali Edit</span>
+                    Ubah Draf
                   </button>
 
                   <button
                     type="button"
                     onClick={handleFinalSave}
-                    className="py-2.5 px-6 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    className="px-6 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-md"
                   >
-                    <span>Simpan & Terbitkan</span>
-                    <Check className="w-4 h-4 text-[#FFD36D]" />
+                    Simpan ke Daftar Materi
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 4: RESULT / FINISH */}
+            {/* STEP 4: SUKSES */}
             {wizardStep === 4 && (
-              <div className="py-6 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div className="text-center py-6 space-y-4">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">
-                    Modul Ajar Berhasil Disimpan!
-                  </h3>
-                  <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">
-                    Modul telah masuk ke daftar berkas materi dan siap digunakan untuk mengajar atau membuat soal latihan.
-                  </p>
-                </div>
-
-                {createdMaterialId && (
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 inline-flex items-center gap-2">
-                    <span className="text-xs text-slate-500 font-semibold">Kode Unik Materi:</span>
-                    <span className="text-xs font-mono font-bold text-[#51465B]">{createdMaterialId}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-center gap-3 pt-3">
+                <h4 className="text-lg font-black text-[#23212A]">
+                  Modul Ajar Berhasil Disimpan!
+                </h4>
+                <p className="text-xs text-[#756F7A] max-w-sm mx-auto">
+                  Modul ajar Anda telah berhasil masuk ke daftar materi dan siap dibagikan ke siswa via Room Akses.
+                </p>
+                <div className="pt-2">
                   <button
                     type="button"
                     onClick={() => setIsWizardOpen(false)}
-                    className="py-2.5 px-5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer"
+                    className="px-6 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold"
                   >
-                    Tutup & Lihat Berkas
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsWizardOpen(false);
-                      const saved = materials.find((m) => m.id === createdMaterialId);
-                      if (saved) handleOpenPublishRoom(saved);
-                    }}
-                    className="py-2.5 px-5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <DoorOpen className="w-4 h-4 text-[#FFD36D]" />
-                    <span>Publikasikan via Room</span>
+                    Selesai & Tutup
                   </button>
                 </div>
               </div>
@@ -877,93 +681,51 @@ export default function TeacherMaterialsPage() {
         </div>
       )}
 
-      {/* =====================================================================
-          5. MODAL PUBLIKASIKAN MATERI KE ROOM (AKSES SISWA TANPA LOGIN)
-          ===================================================================== */}
+      {/* Publish Room Modal */}
       {isRoomModalOpen && materialToPublish && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-slate-200 shadow-2xl max-w-md w-full p-6 sm:p-7 relative animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-sm w-full p-6 text-center space-y-4 animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-full bg-[#51465B] text-white flex items-center justify-center mx-auto shadow-sm">
+              <DoorOpen className="w-6 h-6 stroke-[2.2]" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-black text-[#23212A]">
+                Buka Room untuk Materi Ini
+              </h3>
+              <p className="text-xs text-[#756F7A] mt-1">
+                Siswa dapat langsung mengakses tanpa akun dengan kode berikut:
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#FAF7F3] border border-[#E9E5E8] rounded-2xl">
+              <span className="font-mono text-xl font-black tracking-widest text-[#23212A]">
+                {generatedRoomCode}
+              </span>
+            </div>
+
+            {roomCreatedSuccess ? (
+              <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+                <Check className="w-4 h-4" />
+                <span>Room berhasil diaktifkan!</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCreateRoomForMaterial}
+                className="w-full py-3 rounded-full bg-[#51465B] text-white font-bold text-xs shadow-md"
+              >
+                Aktifkan Room Sekarang
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setIsRoomModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600"
+              className="text-xs font-bold text-slate-500 hover:text-slate-800"
             >
-              <X className="w-5 h-5" />
+              Tutup
             </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-xs">
-                <DoorOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-slate-900">
-                  Publikasikan Materi via Room
-                </h3>
-                <p className="text-xs text-slate-500">Siswa dapat langsung membaca tanpa perlu login</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="p-3 rounded-xl bg-[#FAF7F3] border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Modul Terpilih:</span>
-                <span className="font-bold text-slate-900">{materialToPublish.title}</span>
-              </div>
-
-              {!roomCreatedSuccess ? (
-                <>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Kode Akses Room
-                    </label>
-                    <input
-                      type="text"
-                      value={generatedRoomCode}
-                      onChange={(e) => setGeneratedRoomCode(e.target.value.toUpperCase())}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#FAF7F3] font-mono font-bold text-sm text-[#51465B]"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleCreateRoomForMaterial}
-                    className="w-full py-3 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>Terbitkan Room Belajar</span>
-                    <ArrowRight className="w-4 h-4 text-[#FFD36D]" />
-                  </button>
-                </>
-              ) : (
-                <div className="text-center space-y-3 pt-2">
-                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
-                    <p className="text-xs font-bold">Room Belajar Berhasil Dibuka!</p>
-                    <div className="text-2xl font-mono font-black text-[#51465B] tracking-wider my-2">
-                      {generatedRoomCode}
-                    </div>
-                    <p className="text-[11px] text-slate-600">
-                      Tautan siswa: <code>{typeof window !== "undefined" ? window.location.origin : ""}/room/{generatedRoomCode}</code>
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(`${typeof window !== "undefined" ? window.location.origin : ""}/room/${generatedRoomCode}`)}
-                      className="flex-1 py-2.5 rounded-xl bg-[#FAF7F3] border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs"
-                    >
-                      {copiedCode ? "Tautan Tersalin!" : "Salin Tautan"}
-                    </button>
-                    <Link
-                      href={`/room/${generatedRoomCode}`}
-                      target="_blank"
-                      className="py-2.5 px-4 rounded-xl bg-[#51465B] text-white font-bold text-xs flex items-center gap-1.5"
-                    >
-                      <span>Buka Room</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}

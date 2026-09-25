@@ -75,37 +75,13 @@ export default function OnboardingPage() {
       setUserIntent(intent);
     }
 
-    // Auto-check if user already completed onboarding, or prefill user name from Google account
-    const checkUserStatus = async () => {
+    // Auto-fill user name from Google account if logged in
+    const fetchGoogleUserName = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const meta = user.user_metadata || {};
-          // If user already completed onboarding, redirect immediately to dashboard
-          if (meta.onboarding_completed || meta.role) {
-            if (typeof window !== "undefined") {
-              localStorage.setItem("pahami_v2_onboarding_completed", "true");
-            }
-            router.replace(meta.role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard");
-            return;
-          }
-
-          // Check user_profiles table as well
-          const { data: profile } = await supabase
-            .from("user_profiles")
-            .select("id, role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          if (profile) {
-            if (typeof window !== "undefined") {
-              localStorage.setItem("pahami_v2_onboarding_completed", "true");
-            }
-            router.replace(profile.role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard");
-            return;
-          }
-
           const googleName =
             meta.full_name ||
             meta.name ||
@@ -120,7 +96,7 @@ export default function OnboardingPage() {
       }
     };
 
-    checkUserStatus();
+    fetchGoogleUserName();
   }, [router]);
 
   // Filter regions by selected province
@@ -327,7 +303,7 @@ export default function OnboardingPage() {
 
       {/* Consistent Card (Same 480px max-width & #3E3547 theme as Login) */}
       <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-7 sm:p-9 relative overflow-hidden text-white z-10">
-        
+
         {/* Header: Pertanyaan Form & Progress Bar */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/15">
           <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
@@ -341,13 +317,12 @@ export default function OnboardingPage() {
             {stepsList.map((s, idx) => (
               <div
                 key={s}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentStepIndex
+                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentStepIndex
                     ? "w-6 bg-[#FFD36D]"
                     : idx < currentStepIndex
-                    ? "w-2 bg-[#FFD36D]/50"
-                    : "w-2 bg-white/20"
-                }`}
+                      ? "w-2 bg-[#FFD36D]/50"
+                      : "w-2 bg-white/20"
+                  }`}
               />
             ))}
           </div>
@@ -414,22 +389,20 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setUsageMode("individual")}
-                className={`py-6 px-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${
-                  usageMode === "individual"
+                className={`py-6 px-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${usageMode === "individual"
                     ? "border-[#FFD36D] bg-white/15 ring-2 ring-[#FFD36D]/30 shadow-lg"
                     : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
-                }`}
+                  }`}
               >
                 {usageMode === "individual" && (
                   <CheckCircle2 className="w-4 h-4 text-[#FFD36D] absolute top-3 right-3" />
                 )}
                 {/* Ikon di atas */}
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
-                    usageMode === "individual"
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${usageMode === "individual"
                       ? "bg-[#FFD36D] text-[#251E2B]"
                       : "bg-white/10 text-gray-300 group-hover:text-white"
-                  }`}
+                    }`}
                 >
                   <UserCheck className="w-6 h-6" />
                 </div>
@@ -443,22 +416,20 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setUsageMode("school")}
-                className={`py-6 px-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${
-                  usageMode === "school"
+                className={`py-6 px-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center relative cursor-pointer group ${usageMode === "school"
                     ? "border-[#FFD36D] bg-white/15 ring-2 ring-[#FFD36D]/30 shadow-lg"
                     : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
-                }`}
+                  }`}
               >
                 {usageMode === "school" && (
                   <CheckCircle2 className="w-4 h-4 text-[#FFD36D] absolute top-3 right-3" />
                 )}
                 {/* Ikon di atas */}
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
-                    usageMode === "school"
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-colors ${usageMode === "school"
                       ? "bg-[#FFD36D] text-[#251E2B]"
                       : "bg-white/10 text-gray-300 group-hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Building2 className="w-6 h-6" />
                 </div>

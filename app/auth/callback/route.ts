@@ -26,44 +26,23 @@ export async function GET(request: Request) {
       const user = data.user;
       if (user) {
         // Query user profile in Supabase to determine role and onboarding status
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("user_profiles")
           .select("id, role, school_id, is_verified")
           .eq("id", user.id)
-          .maybeSingle();
+          .single();
 
-        const meta = user.user_metadata || {};
-        const isTeacher = profile?.role === "TEACHER" || meta.role === "TEACHER";
-        const isStudent = profile?.role === "STUDENT" || meta.role === "STUDENT";
-        const isRegistered = !!profile || !!meta.onboarding_completed || isTeacher || isStudent;
-
-        if (isRegistered) {
-          // If profile table didn't have the user yet, ensure it is created
-          if (!profile) {
-            try {
-              await supabase.from("user_profiles").upsert({
-                id: user.id,
-                email: user.email || "",
-                full_name: meta.full_name || meta.name || user.email?.split("@")[0] || "Guru Depaskan",
-                role: isStudent ? "STUDENT" : "TEACHER",
-                school_id: null,
-                is_verified: true,
-                updated_at: new Date().toISOString(),
-              });
-            } catch (err) {
-              console.warn("Silent fallback upserting profile in callback:", err);
-            }
-          }
-
-          // Existing user with established profile -> directly to dashboard
-          if (isStudent) {
-            return NextResponse.redirect(`${origin}/student/dashboard`);
-          }
-          return NextResponse.redirect(`${origin}/teacher/dashboard`);
+        if (profileError || !profile) {
+          // New user -> direct to onboarding
+          return NextResponse.redirect(`${origin}/auth/onboarding`);
         }
 
-        // Truly new user who hasn't completed onboarding yet
-        return NextResponse.redirect(`${origin}/auth/onboarding`);
+        // Existing user with established profile
+        if (profile.role === "TEACHER") {
+          return NextResponse.redirect(`${origin}/teacher/dashboard`);
+        } else if (profile.role === "STUDENT") {
+          return NextResponse.redirect(`${origin}/student/dashboard`);
+        }
       }
     } catch (err: any) {
       console.error("Unexpected callback exception:", err);

@@ -14,6 +14,9 @@ import {
   Search,
   Sparkles,
   Share2,
+  Trash2,
+  MapPin,
+  Calendar,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -29,13 +32,17 @@ export default function TeacherRoomsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<LearningRoom | null>(null);
 
-  useEffect(() => {
+  const loadData = () => {
     const activeSchool = repository.getActiveSchool();
     setSchool(activeSchool);
     const currentUser = repository.getCurrentUser();
     setUser(currentUser);
     const allRooms = repository.getRooms(currentUser?.id);
     setRooms(allRooms);
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleCopyCode = (code: string) => {
@@ -52,6 +59,13 @@ export default function TeacherRoomsPage() {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
+  const handleDeleteRoom = (id: string) => {
+    if (confirm("Apakah Anda yakin ingin menghapus room akses ini?")) {
+      repository.deleteRoom(id);
+      loadData();
+    }
+  };
+
   const filteredRooms = rooms.filter((r) => {
     const matchesFilter = filterType === "all" || r.type === filterType;
     const matchesSearch =
@@ -63,349 +77,326 @@ export default function TeacherRoomsPage() {
 
   return (
     <TeacherWorkspaceShell activeGroupId="rooms">
-      <div className="space-y-6 sm:space-y-8">
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] bg-[#51465B]/10 px-2.5 py-0.5 rounded-full">
-                Sistem Berbagi Akses Siswa
-              </span>
-              <span className="text-xs text-[#756F7A] font-semibold">
-                Tanpa Akun Murid
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight mt-1">
-              Room Akses Materi & Soal
-            </h1>
-            <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-0.5">
-              Bagikan modul dan paket soal kontekstual ke siswa via URL langsung atau 6 digit kode room.
-            </p>
-          </div>
+      <div className="space-y-6 sm:space-y-8 pb-12">
+        {/* ===================================================================
+            1. JUDUL SAJA (HAPUS CARD PALING ATAS BERISI JUDUL)
+            =================================================================== */}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
+            Room Akses Materi & Soal
+          </h1>
+          <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-1">
+            Bagikan modul materi dan paket soal kontekstual langsung ke siswa via URL atau kode room tanpa akun.
+          </p>
+        </div>
 
+        {/* ===================================================================
+            2. TOOLBAR: BUTTON TAMBAH ROOM + SEARCH BAR + FILTER ROOM LANGSUNG AKTIF
+            =================================================================== */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-3xl border border-[#E9E5E8] shadow-xs">
+          {/* Button Tambah Room */}
           <Link
             href="/teacher/rooms/new"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-0.5 active:scale-95 shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-0.5 active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Buat Room Baru</span>
+            <span>Tambah Room</span>
           </Link>
-        </div>
 
-        {/* Info Banner: How It Works */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs sm:text-[13px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-200/70 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold block">Akses Praktis untuk Siswa:</span>
-              <span className="text-amber-800/90 leading-relaxed block mt-0.5">
-                Siswa tidak memerlukan akun atau login. Cukup beri siswa <strong>URL langsung</strong> atau minta siswa memasukkan <strong>Kode Room</strong> di beranda lalu mengisi nama mereka.
-              </span>
-            </div>
-          </div>
-          <Link
-            href="/room"
-            target="_blank"
-            className="px-3.5 py-1.5 rounded-xl bg-white text-amber-900 font-bold border border-amber-300 shadow-2xs hover:bg-amber-100/50 transition-colors shrink-0 flex items-center gap-1.5 text-xs"
-          >
-            <span>Coba Portal Masuk Kode</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Filters and Search Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Segmented Filter */}
-          <div className="flex items-center gap-1 bg-[#23212A]/5 p-1 rounded-2xl self-start">
-            <button
-              type="button"
-              onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                filterType === "all"
-                  ? "bg-white text-[#23212A] shadow-xs"
-                  : "text-[#756F7A] hover:text-[#23212A]"
-              }`}
-            >
-              Semua Room ({rooms.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType("material")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                filterType === "material"
-                  ? "bg-white text-[#23212A] shadow-xs"
-                  : "text-[#756F7A] hover:text-[#23212A]"
-              }`}
-            >
-              Materi Modul
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType("question")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                filterType === "question"
-                  ? "bg-white text-[#23212A] shadow-xs"
-                  : "text-[#756F7A] hover:text-[#23212A]"
-              }`}
-            >
-              Latihan Soal
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType("both")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                filterType === "both"
-                  ? "bg-white text-[#23212A] shadow-xs"
-                  : "text-[#756F7A] hover:text-[#23212A]"
-              }`}
-            >
-              Materi & Soal
-            </button>
-          </div>
-
-          {/* Search Box */}
-          <div className="relative max-w-xs w-full">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md w-full">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari kode atau judul..."
-              className="w-full pl-9 pr-3.5 py-2 rounded-2xl bg-white border border-[#E9E5E8] text-xs font-medium text-[#23212A] placeholder:text-[#756F7A]/60 focus:outline-none focus:ring-2 focus:ring-[#51465B]"
+              placeholder="Cari kode room, judul, atau mapel..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A]/60 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
             />
           </div>
-        </div>
 
-        {/* Room Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {filteredRooms.map((room) => {
-            const isMaterial = room.type === "material";
-            const isBoth = room.type === "both";
-            const visitorCount = room.visitors?.length || room.access_count || 0;
-
-            return (
-              <div
-                key={room.id}
-                className="bg-white rounded-3xl border border-[#E9E5E8] p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  {/* Badge & Type */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        isBoth
-                          ? "bg-emerald-50 text-emerald-800"
-                          : isMaterial
-                          ? "bg-[#51465B]/10 text-[#51465B]"
-                          : "bg-[#FFD36D]/30 text-[#51465B]"
-                      }`}
-                    >
-                      {isBoth ? (
-                        <Sparkles className="w-3 h-3 text-emerald-600" />
-                      ) : isMaterial ? (
-                        <BookOpen className="w-3 h-3" />
-                      ) : (
-                        <Brain className="w-3 h-3" />
-                      )}
-                      <span>{isBoth ? "Materi + Soal" : isMaterial ? "Modul Materi" : "Paket Soal"}</span>
-                    </span>
-
-                    <span className="text-[11px] font-bold text-[#756F7A] bg-[#FAF7F3] px-2 py-0.5 rounded-lg border border-[#E9E5E8]">
-                      Kelas {room.grade} &bull; {room.subject}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-base font-black text-[#23212A] group-hover:text-[#51465B] transition-colors leading-snug line-clamp-2 mb-2">
-                    {room.title}
-                  </h3>
-
-                  {/* Region Context Tag */}
-                  <div className="text-[11px] font-semibold text-[#756F7A] mb-4">
-                    Konteks: {room.region_name}
-                  </div>
-
-                  {/* Code Highlight Box */}
-                  <div className="bg-[#FAF7F3] border border-[#E9E5E8] rounded-2xl p-3 flex items-center justify-between mb-4">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#756F7A] block">
-                        Kode Akses Siswa
-                      </span>
-                      <span className="font-mono text-base font-black tracking-widest text-[#23212A]">
-                        {room.code}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCode(room.code)}
-                      className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E9E5E8] text-[11px] font-bold text-[#51465B] hover:bg-[#51465B] hover:text-white transition-all cursor-pointer flex items-center gap-1"
-                      title="Salin Kode Akses"
-                    >
-                      {copiedCode === room.code ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Tersalin</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Salin</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="space-y-2 pt-3 border-t border-[#E9E5E8]">
-                  <div className="flex items-center justify-between text-xs text-[#756F7A]">
-                    <span className="font-bold flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-[#51465B]" />
-                      <span>{visitorCount} siswa mengakses</span>
-                    </span>
-
-                    {room.visitors && room.visitors.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRoom(room)}
-                        className="text-[11px] font-bold text-[#51465B] hover:underline cursor-pointer"
-                      >
-                        Lihat Nama &rarr;
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyLink(room.code)}
-                      className="w-full py-2 px-3 rounded-xl bg-white border border-[#E9E5E8] text-[11px] font-bold text-[#23212A] hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      {copiedLink === room.code ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Link Tersalin!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Share2 className="w-3.5 h-3.5" />
-                          <span>Salin Link</span>
-                        </>
-                      )}
-                    </button>
-
-                    <Link
-                      href={`/room/${room.code}`}
-                      target="_blank"
-                      className="w-full py-2 px-3 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-[11px] font-bold text-[#51465B] hover:bg-[#51465B] hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 text-center"
-                    >
-                      <span>Buka Room</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {filteredRooms.length === 0 && (
-          <div className="py-16 text-center bg-white rounded-3xl border border-[#E9E5E8] p-8 max-w-md mx-auto">
-            <DoorOpen className="w-12 h-12 text-[#756F7A]/40 mx-auto mb-3" />
-            <h3 className="text-base font-black text-[#23212A]">Belum Ada Room</h3>
-            <p className="text-xs text-[#756F7A] mt-1 mb-5">
-              Terbitkan materi atau latihan soal Anda menjadi room dengan kode unik dan URL yang dapat langsung diakses siswa.
-            </p>
-            <Link
-              href="/teacher/rooms/new"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#51465B] text-white text-xs font-bold"
+          {/* Filter Room (Langsung Aktif Tanpa Tombol Konfirmasi) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => setFilterType("all")}
+              className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                filterType === "all"
+                  ? "bg-[#51465B] text-white shadow-xs"
+                  : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A] hover:bg-slate-100"
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              <span>Buat Room Pertama</span>
-            </Link>
+              Semua ({rooms.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("material")}
+              className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                filterType === "material"
+                  ? "bg-[#51465B] text-white shadow-xs"
+                  : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A] hover:bg-slate-100"
+              }`}
+            >
+              Materi Saja
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("question")}
+              className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                filterType === "question"
+                  ? "bg-[#51465B] text-white shadow-xs"
+                  : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A] hover:bg-slate-100"
+              }`}
+            >
+              Soal Saja
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("both")}
+              className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                filterType === "both"
+                  ? "bg-[#51465B] text-white shadow-xs"
+                  : "bg-[#FAF7F3] text-[#756F7A] hover:text-[#23212A] hover:bg-slate-100"
+              }`}
+            >
+              Materi & Soal
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Modal List Visitors */}
-        {selectedRoom && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 relative animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <div>
-                  <span className="text-[10px] font-bold text-[#756F7A] uppercase tracking-wider">
-                    Kode: {selectedRoom.code}
-                  </span>
-                  <h3 className="text-base font-black text-[#23212A]">
-                    Daftar Siswa Mengakses
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRoom(null)}
-                  className="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500 font-bold"
+        {/* ===================================================================
+            3. ROOM CARDS: KOTAK (GRID) DENGAN WARNA SESUAI ISI:
+               - Soal saja: Warna khas soal (#FFD36D / Amber)
+               - Materi saja: Warna khas materi (#51465B / Purple)
+               - Keduanya: Gradasi antara warna materi & soal
+            =================================================================== */}
+        {filteredRooms.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
+            <div className="w-14 h-14 rounded-full bg-[#FAF7F3] text-[#756F7A] mx-auto flex items-center justify-center">
+              <DoorOpen className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-bold text-[#23212A]">Tidak ada room ditemukan</h3>
+            <p className="text-xs text-[#756F7A] max-w-sm mx-auto">
+              Silakan sesuaikan kata kunci pencarian atau buat room baru untuk dibagikan ke siswa.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredRooms.map((room) => {
+              const isMaterial = room.type === "material";
+              const isQuestion = room.type === "question";
+              const isBoth = room.type === "both";
+              const visitorCount = room.visitors?.length || room.access_count || 0;
+
+              // Card Color Style by Content Type
+              const cardColorClass = isBoth
+                ? "bg-gradient-to-br from-[#FAF5FD] via-[#FFFDF5] to-[#FFF7DC] border-2 border-[#E5C97A] shadow-xs hover:shadow-lg"
+                : isMaterial
+                ? "bg-gradient-to-br from-[#F8F5FA] via-[#FAF7FB] to-[#F1EBF5] border-2 border-[#51465B]/30 shadow-xs hover:shadow-lg"
+                : "bg-gradient-to-br from-[#FFFBF0] via-[#FFFDF5] to-[#FFF4D4] border-2 border-[#FFD36D] shadow-xs hover:shadow-lg";
+
+              const badgeColorClass = isBoth
+                ? "bg-gradient-to-r from-[#51465B] to-[#D99A1C] text-white"
+                : isMaterial
+                ? "bg-[#51465B] text-white"
+                : "bg-[#FFD36D] text-[#251E2B]";
+
+              const iconBoxClass = isBoth
+                ? "bg-gradient-to-br from-[#51465B] to-[#F3B738] text-white"
+                : isMaterial
+                ? "bg-[#51465B] text-white"
+                : "bg-[#FFD36D] text-[#251E2B]";
+
+              return (
+                <div
+                  key={room.id}
+                  className={`rounded-[32px] p-6 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden ${cardColorClass}`}
                 >
-                  &times;
-                </button>
-              </div>
-
-              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
-                {selectedRoom.visitors && selectedRoom.visitors.length > 0 ? (
-                  selectedRoom.visitors.map((visitor, idx) => (
-                    <div
-                      key={idx}
-                      className="py-2.5 flex items-center justify-between text-xs"
-                    >
+                  {/* Top Content Header */}
+                  <div>
+                    {/* Top Row: Icon + Type Badge + Grade */}
+                    <div className="flex items-center justify-between gap-2 mb-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-[#51465B]/10 text-[#51465B] font-black flex items-center justify-center text-[11px]">
-                          {visitor.name.charAt(0).toUpperCase()}
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-xs ${iconBoxClass}`}>
+                          {isBoth ? (
+                            <Sparkles className="w-5 h-5 stroke-[2.2]" />
+                          ) : isMaterial ? (
+                            <BookOpen className="w-5 h-5 stroke-[2.2]" />
+                          ) : (
+                            <Brain className="w-5 h-5 stroke-[2.2]" />
+                          )}
                         </div>
-                        <div>
-                          <div className="font-bold text-[#23212A]">{visitor.name}</div>
-                          <div className="text-[10px] text-[#756F7A]">
-                            {new Date(visitor.accessed_at).toLocaleString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </div>
-                        </div>
+
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs ${badgeColorClass}`}>
+                          <span>{isBoth ? "Materi & Soal" : isMaterial ? "Materi Saja" : "Soal Saja"}</span>
+                        </span>
                       </div>
 
-                      {visitor.score !== undefined ? (
-                        <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/60 text-xs">
-                          Skor: {visitor.score}
+                      <span className="text-[11px] font-bold text-[#51465B] bg-white/80 px-2.5 py-1 rounded-full border border-black/5 shadow-2xs">
+                        Kelas {room.grade} SD
+                      </span>
+                    </div>
+
+                    {/* Room Title */}
+                    <h3 className="text-base font-black text-[#23212A] leading-snug line-clamp-2 mb-2 group-hover:text-[#51465B] transition-colors">
+                      {room.title}
+                    </h3>
+
+                    {/* Subject & Region Context */}
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-[#756F7A] mb-4">
+                      <span>{room.subject}</span>
+                      <span>&bull;</span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-[#51465B]" />
+                        <span>{room.region_name}</span>
+                      </span>
+                    </div>
+
+                    {/* Code Highlight Box (Square Styled) */}
+                    <div className="bg-white/90 backdrop-blur-xs border border-black/10 rounded-2xl p-3.5 flex items-center justify-between mb-4 shadow-2xs">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#756F7A] block">
+                          Kode Room Siswa
                         </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md">
-                          Selesai Membaca
+                        <span className="font-mono text-base font-black tracking-widest text-[#23212A]">
+                          {room.code}
                         </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(room.code)}
+                          className="px-3 py-1.5 rounded-full bg-[#FAF7F3] hover:bg-[#51465B] hover:text-white text-[#51465B] text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border border-[#E9E5E8]"
+                          title="Salin Kode Akses"
+                        >
+                          {copiedCode === room.code ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>Tersalin</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Salin</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Bottom Actions */}
+                  <div className="pt-3 border-t border-black/10 space-y-3">
+                    <div className="flex items-center justify-between text-xs text-[#756F7A]">
+                      <span className="font-bold flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-[#51465B]" />
+                        <span>{visitorCount} siswa mengakses</span>
+                      </span>
+
+                      {room.visitors && room.visitors.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRoom(room)}
+                          className="text-xs font-bold text-[#51465B] hover:underline cursor-pointer"
+                        >
+                          Lihat Siswa &rarr;
+                        </button>
                       )}
                     </div>
-                  ))
-                ) : (
-                  <div className="py-8 text-center text-xs text-slate-400">
-                    Belum ada siswa yang mengakses room ini.
-                  </div>
-                )}
-              </div>
 
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRoom(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
+                    {/* Action Buttons Row */}
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/room/${room.code}`}
+                        target="_blank"
+                        className="flex-1 py-2 px-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs"
+                      >
+                        <span>Buka Room</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyLink(room.code)}
+                        className="p-2 rounded-full bg-white hover:bg-slate-100 text-[#51465B] transition-colors border border-black/10 cursor-pointer shadow-2xs"
+                        title="Salin Tautan Room Langsung"
+                      >
+                        {copiedLink === room.code ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Share2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRoom(room.id)}
+                        className="p-2 rounded-full bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors border border-black/10 cursor-pointer shadow-2xs"
+                        title="Hapus Room"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Visitor List Modal */}
+      {selectedRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-base font-black text-[#23212A]">
+                  Daftar Siswa Mengakses
+                </h3>
+                <p className="text-xs text-[#756F7A]">
+                  Room: {selectedRoom.title} ({selectedRoom.code})
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedRoom(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 py-2 divide-y divide-slate-100">
+              {selectedRoom.visitors && selectedRoom.visitors.map((v, i) => (
+                <div key={i} className="pt-2 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-[#23212A] block">{v.name}</span>
+                    <span className="text-[10px] text-[#756F7A]">{new Date(v.accessed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  {v.score !== undefined && (
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-black text-[11px]">
+                      Skor: {v.score}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedRoom(null)}
+                className="w-full py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </TeacherWorkspaceShell>
   );
 }

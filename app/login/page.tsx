@@ -43,35 +43,14 @@ function LoginForm() {
         }
 
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const user = session.user;
-          const meta = user.user_metadata || {};
-
-          // Check if user has already registered / completed onboarding
-          const { data: profile } = await supabase
-            .from("user_profiles")
-            .select("id, role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          const isTeacher = profile?.role === "TEACHER" || meta.role === "TEACHER";
-          const isStudent = profile?.role === "STUDENT" || meta.role === "STUDENT";
-
-          if (profile || meta.onboarding_completed || isTeacher || isStudent) {
-            if (typeof window !== "undefined") {
-              localStorage.setItem("pahami_v2_onboarding_completed", "true");
-            }
-            if (intent === "material") {
-              router.replace("/teacher/materials/new");
-            } else if (intent === "question") {
-              router.replace("/teacher/questions/new");
-            } else {
-              router.replace(isStudent ? "/student/dashboard" : "/teacher/dashboard");
-            }
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.user) {
+          if (intent === "material") {
+            router.replace("/teacher/materials/new");
+          } else if (intent === "question") {
+            router.replace("/teacher/questions/new");
           } else {
-            // Authenticated without completed profile -> go to onboarding
-            router.replace("/auth/onboarding");
+            router.replace("/teacher/dashboard");
           }
         }
       } catch {
@@ -96,7 +75,7 @@ function LoginForm() {
           redirectTo: redirectUrl,
           queryParams: {
             access_type: "offline",
-            prompt: "select_account",
+            prompt: "consent",
           },
         },
       });
@@ -113,7 +92,7 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-8 sm:p-10 relative overflow-hidden flex flex-col items-center text-center text-white z-10">
-      
+
       {/* 1. PALING ATAS: DEPASKAN LOGO */}
       <div className="transform hover:scale-105 transition-transform duration-200 pt-1">
         <PahamiPuzzleLogo size="md" theme="dark" />
@@ -178,6 +157,19 @@ function LoginForm() {
             </>
           )}
         </button>
+
+        {/* Notice for Students: No Login Required */}
+        <div className="pt-2 text-center">
+          <p className="text-[11px] text-gray-300">
+            Siswa tidak memerlukan akun.{" "}
+            <Link
+              href="/room"
+              className="text-[#FFD36D] font-bold hover:underline"
+            >
+              Masuk via Kode Room &rarr;
+            </Link>
+          </p>
+        </div>
       </div>
 
       {/* 4. BAWAHNYA: KEMBALI KE BERANDA */}

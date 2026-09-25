@@ -367,24 +367,19 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
       {isSettingsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-slate-200 shadow-2xl max-w-lg w-full p-6 sm:p-7 relative animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
-            {/* Header Modal */}
+            {/* Header Modal - Tanpa Ikon Setting, Hanya Judul di Paling Atas */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-xs">
-                  <Settings className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                    Pengaturan Profil & Workspace
-                  </h3>
-                  <p className="text-xs text-slate-500">Sesuaikan identitas, sekolah, dan wilayah pengajaran</p>
-                </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  Pengaturan Profil & Workspace
+                </h3>
+                <p className="text-xs text-slate-500">Sesuaikan identitas, sekolah, dan wilayah pengajaran</p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsSettingsModalOpen(false)}
-                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
                 title="Tutup Pengaturan"
               >
                 <X className="w-4 h-4" />
@@ -413,10 +408,10 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                     <button
                       type="button"
                       onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                      className="py-1.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-[#51465B] text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      className="py-1.5 px-4 rounded-full bg-white border border-slate-200 hover:border-[#51465B] text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                     >
                       <Camera className="w-3.5 h-3.5 text-[#51465B]" />
-                      <span>{showAvatarPicker ? "Tutup Pilihan Foto" : "Ganti Gambar Profil"}</span>
+                      <span>{showAvatarPicker ? "tutup galeri" : "pilih dari galeri"}</span>
                     </button>
                     <p className="text-[11px] text-slate-500">Pilih salah satu avatar yang tersedia</p>
                   </div>
@@ -446,7 +441,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                 {/* Input Nama User */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Nama Lengkap & Gelar
+                    nama
                   </label>
                   <input
                     type="text"
@@ -454,70 +449,70 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="Contoh: Ibu Siti Aminah, S.Pd."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                   />
                 </div>
 
                 {/* Input Email (Readonly) */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
-                    Alamat Email (Google)
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    email
                   </label>
                   <input
                     type="email"
                     disabled
                     value={formEmail || "guru@depaskan.id"}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500 cursor-not-allowed"
+                    className="w-full px-4 py-2 rounded-full border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500 cursor-not-allowed"
                   />
                 </div>
 
                 {/* ===========================================================
-                    TOMBOL LOGOUT (TEPAT DI BAWAH NAMA USER SESUAI PERMINTAAN)
+                    TOMBOL LOGOUT (BULAT DENGAN WARNA SESUAI DESAIN SISTEM)
                     =========================================================== */}
                 <div className="pt-1">
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-rose-200 bg-rose-50/80 text-rose-700 hover:bg-rose-100 hover:border-rose-300 font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-full border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors cursor-pointer shadow-2xs"
                   >
                     <LogOut className="w-4 h-4 text-rose-600" />
-                    <span>Keluar Akun (Logout)</span>
+                    <span>keluar akun</span>
                   </button>
                 </div>
               </div>
 
               {/* =============================================================
-                  2. SEKSI SEKOLAH & PENGGUNAAN
+                  2. SEKSI SEKOLAH & PENGGUNAAN (OPSI: SEKOLAH & PERORANGAN)
                   ============================================================= */}
               <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] space-y-3">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
-                  Jenis Penggunaan
+                  jenis penggunaan
                 </span>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setUsageMode("school")}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       usageMode === "school"
                         ? "bg-[#51465B] text-white shadow-xs"
                         : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                     }`}
                   >
                     <Building2 className="w-3.5 h-3.5" />
-                    <span>Sekolah (SD)</span>
+                    <span>sekolah</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setUsageMode("individual")}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       usageMode === "individual"
                         ? "bg-[#51465B] text-white shadow-xs"
                         : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                     }`}
                   >
                     <User className="w-3.5 h-3.5" />
-                    <span>Mandiri / Privat</span>
+                    <span>perorangan</span>
                   </button>
                 </div>
 
@@ -532,7 +527,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                       value={formSchoolName}
                       onChange={(e) => setFormSchoolName(e.target.value)}
                       placeholder="Contoh: SD Negeri 1 Madiun"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
+                      className="w-full px-4 py-2.5 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                     />
                   </div>
                 )}
@@ -554,7 +549,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                   type="button"
                   onClick={handleDetectGps}
                   disabled={isLocating}
-                  className="w-full py-2.5 px-3.5 rounded-2xl border border-[#51465B]/20 bg-[#51465B]/5 hover:bg-[#51465B]/10 text-[#51465B] font-black text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
+                  className="w-full py-2.5 px-4 rounded-full border border-[#51465B]/20 bg-[#51465B]/5 hover:bg-[#51465B]/10 text-[#51465B] font-black text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs"
                 >
                   <Compass className={`w-4 h-4 text-[#51465B] ${isLocating ? "animate-spin" : ""}`} />
                   <span>{isLocating ? "Mendeteksi Koordinat GPS..." : "Sinkronkan dengan Lokasi GPS Perangkat"}</span>
@@ -580,7 +575,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                         const firstReg = SUPPORTED_REGIONS.find((r) => r.province === newProv);
                         if (firstReg) setFormRegionId(firstReg.code);
                       }}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
+                      className="w-full px-4 py-2 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-800"
                     >
                       <option value="Jawa Timur">Jawa Timur</option>
                       <option value="Jawa Tengah">Jawa Tengah</option>
@@ -594,7 +589,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
                     <select
                       value={formRegionId}
                       onChange={(e) => setFormRegionId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
+                      className="w-full px-4 py-2 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-800"
                     >
                       {availableRegions.map((reg) => (
                         <option key={reg.code} value={reg.code}>
@@ -607,26 +602,26 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
               </div>
 
               {savedSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
+                <div className="p-3 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Pengaturan profil dan lokasi berhasil disimpan!</span>
                 </div>
               )}
 
               {/* =============================================================
-                  TOMBOL AKSI SESUAI KAIDAH UI/UX (BATAL VS SIMPAN)
+                  TOMBOL AKSI: BATAL & SIMPAN BULAT SESUAI DESAIN SISTEM
                   ============================================================= */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsSettingsModalOpen(false)}
-                  className="py-2.5 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                  className="py-2.5 px-6 rounded-full border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="py-2.5 px-6 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="py-2.5 px-7 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
                 >
                   Simpan Perubahan
                 </button>

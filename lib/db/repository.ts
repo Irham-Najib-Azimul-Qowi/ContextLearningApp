@@ -989,6 +989,17 @@ class PahamiRepository {
     this.setItem<LearningRoom[]>("rooms", rooms);
     return true;
   }
+
+  deleteRoom(id: string): boolean {
+    let rooms = this.getRooms();
+    const initialLength = rooms.length;
+    rooms = rooms.filter((r) => r.id !== id);
+    if (rooms.length !== initialLength) {
+      this.setItem<LearningRoom[]>("rooms", rooms);
+      return true;
+    }
+    return false;
+  }
 }
 
 export const repository = new PahamiRepository();
