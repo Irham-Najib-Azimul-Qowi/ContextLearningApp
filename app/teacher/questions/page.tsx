@@ -464,7 +464,9 @@ export default function TeacherQuestionsPage() {
           </div>
 
           {/* ===================================================================
-              DAFTAR SOAL: CARD BERWARNA SOLID, TANPA IKON & TANPA DESKRIPSI
+              DAFTAR SOAL: CARD DENGAN WARNA KHAS SOAL (#854D0E)
+              Layout: Judul & ID di kanan, Kategori di bawahnya, Deskripsi di tengah,
+              Button Lihat Soal + Button Hapus di samping kanannya.
               =================================================================== */}
           {filteredQuestions.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
@@ -477,40 +479,33 @@ export default function TeacherQuestionsPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredQuestions.map((q) => {
-                const activeRoom = rooms.find(
-                  (r) => r.type === "question" && r.resource_id === q.id
-                );
                 const isEssay = q.type === "essay";
 
                 return (
                   <div
                     key={q.id}
-                    className="p-5 sm:p-6 rounded-[24px] sm:rounded-[28px] bg-[#854D0E] text-white border border-[#A16207]/40 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                    className="p-5 sm:p-6 rounded-[28px] bg-[#854D0E] text-white border border-[#A16207]/40 shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between group relative overflow-hidden min-h-[220px]"
                   >
-                    {/* Left: Info Only (Ikon & Deskripsi Dihapus) */}
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-3 py-1 rounded-full bg-white/15 text-[#FFD36D] font-black text-[10px] uppercase tracking-wider">
-                          {q.subject} &bull; Kelas {q.grade} SD
-                        </span>
+                    {/* Top: Judul & ID di samping kanan, Kategori di bawahnya */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-base sm:text-lg font-black text-white leading-snug line-clamp-2">
+                          {q.topic || q.question_text}
+                        </h3>
 
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
-                          {isEssay ? "Soal Esai" : "Pilihan Ganda"}
-                        </span>
-
-                        {/* Kode Unik Soal with Copy Button */}
+                        {/* ID di samping kanan judul */}
                         <button
                           type="button"
                           onClick={() => handleCopy(q.id)}
-                          className="py-1 px-3 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-mono font-bold text-gray-200 flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Klik untuk menyalin kode unik soal"
+                          className="shrink-0 py-1 px-2.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 font-mono text-[11px] font-bold text-gray-200 flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Klik untuk menyalin ID soal"
                         >
                           {copiedCode === q.id ? (
                             <>
                               <Check className="w-3 h-3 text-emerald-400" />
-                              <span className="text-emerald-300 font-sans">Tersalin</span>
+                              <span className="text-emerald-300 font-sans text-[10px]">Tersalin</span>
                             </>
                           ) : (
                             <>
@@ -521,48 +516,34 @@ export default function TeacherQuestionsPage() {
                         </button>
                       </div>
 
-                      <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
-                        {q.topic}
-                      </h3>
+                      {/* Di bawah judul: Kategori dengan warna lain */}
+                      <div className="mt-1.5 text-xs sm:text-sm font-extrabold text-[#FFD36D] tracking-wide">
+                        {isEssay ? "Esai" : "Pilihan Ganda"} &bull; {q.subject} &bull; Kelas {q.grade} SD
+                      </div>
                     </div>
 
-                    {/* Right: Actions Row */}
-                    <div className="flex items-center gap-2.5 self-end md:self-center shrink-0">
-                      {activeRoom ? (
-                        <Link
-                          href={`/room/${activeRoom.code}`}
-                          target="_blank"
-                          className="px-3.5 py-2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition-colors"
-                        >
-                          <DoorOpen className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Room: {activeRoom.code}</span>
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenPublishRoom(q)}
-                          className="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 transition-all cursor-pointer"
-                        >
-                          <DoorOpen className="w-3.5 h-3.5 text-[#FFD36D]" />
-                          <span>Buka Room</span>
-                        </button>
-                      )}
+                    {/* Di antara di tengah secara vertikal: sedikit deskripsi */}
+                    <div className="my-auto py-3.5">
+                      <p className="text-xs sm:text-sm text-gray-200/90 font-medium leading-relaxed line-clamp-2">
+                        {q.question_text ? q.question_text.replace(/\n+/g, " ") : "Butir soal asesmen kontekstual Kurikulum Merdeka."}
+                      </p>
+                    </div>
 
-                      {/* Tombol Lihat Soal */}
+                    {/* Bottom: Button Lihat Soal + Button Hapus di samping kanannya */}
+                    <div className="pt-3 border-t border-white/15 flex items-center gap-2.5">
                       <button
                         type="button"
                         onClick={() => setSelectedQuestionForPreview(q)}
-                        className="px-4 py-2 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                        className="flex-1 py-2.5 px-4 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
                       >
-                        <Eye className="w-3.5 h-3.5 stroke-[2.2]" />
+                        <Eye className="w-4 h-4 stroke-[2.2]" />
                         <span>Lihat Soal</span>
                       </button>
 
-                      {/* Tombol Sampah Merah */}
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(q.id)}
-                        className="p-2 sm:p-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer shadow-md active:scale-95 shrink-0"
+                        className="p-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer shadow-md active:scale-95 shrink-0"
                         title="Hapus Soal"
                       >
                         <Trash2 className="w-4 h-4" />
