@@ -16,6 +16,7 @@ import {
   DoorOpen,
   Trash2,
   Edit,
+  Pencil,
   Eye,
   ArrowRight,
   ArrowLeft,
@@ -78,8 +79,37 @@ export default function TeacherMaterialsPage() {
   const [generatedRoomCode, setGeneratedRoomCode] = useState("");
   const [roomCreatedSuccess, setRoomCreatedSuccess] = useState(false);
 
-  // Material Preview Modal State
-  const [selectedMaterialForPreview, setSelectedMaterialForPreview] = useState<LearningMaterial | null>(null);
+  // Full-page Live Preview & Edit State (No Modal Overlay)
+  const [previewMaterial, setPreviewMaterial] = useState<LearningMaterial | null>(null);
+  const [isEditingPreview, setIsEditingPreview] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editSubject, setEditSubject] = useState("Matematika");
+  const [editGrade, setEditGrade] = useState(5);
+  const [editContent, setEditContent] = useState("");
+
+  const handleStartEditMaterial = () => {
+    if (!previewMaterial) return;
+    setIsEditingPreview(true);
+    setEditTitle(previewMaterial.title);
+    setEditSubject(previewMaterial.subject || "Matematika");
+    setEditGrade(previewMaterial.grade || 5);
+    setEditContent(previewMaterial.content || "");
+  };
+
+  const handleSaveEditedMaterial = () => {
+    if (!previewMaterial || !editTitle.trim()) return;
+    const updated = repository.saveMaterial({
+      id: previewMaterial.id,
+      title: editTitle.trim(),
+      subject: editSubject,
+      grade: editGrade,
+      school_id: previewMaterial.school_id || activeSchool?.id || "sch-ponorogo-01",
+      content: editContent,
+    });
+    setPreviewMaterial(updated);
+    setIsEditingPreview(false);
+    loadData();
+  };
 
   const loadData = () => {
     const school = repository.getActiveSchool();
@@ -217,160 +247,269 @@ export default function TeacherMaterialsPage() {
   return (
     <TeacherWorkspaceShell activeGroupId="materials">
       <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 pb-12 font-sans">
-        {/* ===================================================================
-            1. HEADER: BUTTON TAMBAH DI SEBELAH KIRI JUDUL & DESKRIPSI
-            =================================================================== */}
-        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-4 sm:gap-5">
-          <button
-            type="button"
-            onClick={handleOpenWizard}
-            className="px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#645770]/40 text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tambah Materi</span>
-          </button>
+        {previewMaterial ? (
+          /* ===================================================================
+              LIVE PREVIEW & EDIT MATERI (LANGSUNG DI HALAMAN KONTEN - TANPA OVERLAY)
+              =================================================================== */
+          <div className="space-y-5 animate-in fade-in duration-200">
+            {/* Top Bar: Tombol Kembali, Identitas Bersih & Tombol Edit/Simpan */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[#51465B]/15">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewMaterial(null);
+                    setIsEditingPreview(false);
+                  }}
+                  className="px-3.5 py-1.5 rounded-full bg-white border-2 border-[#51465B]/25 text-[#51465B] hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali</span>
+                </button>
 
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-              Modul Materi Pembelajaran
-            </h1>
-            <p className="text-xs sm:text-sm text-[#756F7A] mt-0.5">
-              Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
-            </p>
-          </div>
-        </div>
-
-        {/* ===================================================================
-            2. SEARCH BAR & FILTER: LANGSUNG TANPA DIBUNGKUS CARD
-            =================================================================== */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Search Bar: Kontras & Berpadu dengan Desain Web */}
-          <div className="relative flex-1 max-w-md w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#51465B]" />
-            <input
-              type="text"
-              placeholder="Cari judul materi atau ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A] focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
-            />
-          </div>
-
-          {/* Instant Filter Dropdown: Rata Kanan, Ukuran Mengikuti Isi */}
-          <div className="flex items-center justify-end gap-2 ml-auto shrink-0">
-            <select
-              value={filterSubject}
-              onChange={(e) => setFilterSubject(e.target.value)}
-              className="w-auto px-4 py-2 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
-            >
-              {SUBJECT_OPTIONS.map((subj) => (
-                <option key={subj} value={subj}>
-                  {subj}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* ===================================================================
-            3. DAFTAR MATERI: MINI DASHBOARD CARD (DARK MAUVE #51465B & BORDER #FFD36D)
-            =================================================================== */}
-        <div>
-          {filteredMaterials.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border-2 border-[#51465B]/20 space-y-3 shadow-xs">
-              <div className="w-14 h-14 rounded-2xl bg-[#51465B]/10 text-[#51465B] mx-auto flex items-center justify-center">
-                <BookOpen className="w-7 h-7" />
+                {/* Identitas Bersih & Rapi Tanpa Terlalu Banyak Teks */}
+                <div className="flex items-center gap-2 text-xs font-bold text-[#756F7A]">
+                  <span className="font-mono text-[#51465B] font-black">{previewMaterial.id}</span>
+                  <span>&bull;</span>
+                  <span>{previewMaterial.subject}</span>
+                  <span>&bull;</span>
+                  <span>Kelas {previewMaterial.grade} SD</span>
+                </div>
               </div>
-              <h3 className="text-base font-black text-[#23212A]">Belum ada modul ajar</h3>
-              <p className="text-xs text-[#756F7A] max-w-sm mx-auto font-medium">
-                Mulai buat modul ajar baru menggunakan tombol Tambah Materi di atas.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {filteredMaterials.map((mat) => {
-                return (
-                  <div
-                    key={mat.id}
-                    className="relative p-5 rounded-[26px] bg-[#51465B] text-white border-2 border-[#FFD36D] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[220px]"
-                  >
-                    {/* Ambient Glow khas Dashboard */}
-                    <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
 
-                    {/* Top: Judul, Ikon & ID di samping kanan */}
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-11 h-11 rounded-2xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:rotate-1 transition-transform shrink-0">
-                            <BookOpen className="w-5 h-5 text-[#51465B] stroke-[2.4]" />
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1">
-                              {mat.title}
-                            </h3>
-                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white/90 border border-white/20">
-                                {mat.subject} &bull; Kelas {mat.grade} SD
-                              </span>
-                            </div>
-                          </div>
+              {/* Action Buttons Top Right: Bulat */}
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                {!isEditingPreview ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleStartEditMaterial}
+                      className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPublishRoom(previewMaterial)}
+                      className="px-4 py-2 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <DoorOpen className="w-3.5 h-3.5" />
+                      <span>Buat Room</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingPreview(false);
+                        setEditTitle(previewMaterial.title);
+                        setEditContent(previewMaterial.content || "");
+                      }}
+                      className="px-4 py-2 rounded-full bg-slate-200 hover:bg-slate-300 text-[#23212A] text-xs font-bold cursor-pointer transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveEditedMaterial}
+                      className="px-5 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Simpan</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Content Area */}
+            {!isEditingPreview ? (
+              <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-4">
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  {previewMaterial.title}
+                </h1>
+                <div className="text-xs sm:text-sm text-[#23212A] leading-relaxed whitespace-pre-wrap font-medium">
+                  {previewMaterial.content || "Belum ada konten materi."}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-6 sm:p-8 shadow-sm space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#51465B] mb-1">Judul Materi</label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border-2 border-[#51465B]/25 text-sm font-bold text-[#23212A] focus:border-[#51465B] focus:outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#51465B] mb-1">Mata Pelajaran</label>
+                    <select
+                      value={editSubject}
+                      onChange={(e) => setEditSubject(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-2xl border-2 border-[#51465B]/25 text-xs font-bold text-[#23212A] focus:border-[#51465B] focus:outline-none"
+                    >
+                      {SUBJECT_OPTIONS.filter((s) => s !== "Semua Mapel").map((subj) => (
+                        <option key={subj} value={subj}>{subj}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#51465B] mb-1">Kelas SD</label>
+                    <select
+                      value={editGrade}
+                      onChange={(e) => setEditGrade(Number(e.target.value))}
+                      className="w-full px-3.5 py-2 rounded-2xl border-2 border-[#51465B]/25 text-xs font-bold text-[#23212A] focus:border-[#51465B] focus:outline-none"
+                    >
+                      {[1, 2, 3, 4, 5, 6].map((g) => (
+                        <option key={g} value={g}>Kelas {g} SD</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#51465B] mb-1">Isi Materi</label>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={12}
+                    className="w-full p-4 rounded-2xl border-2 border-[#51465B]/25 text-xs sm:text-sm text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Normal List View */
+          <>
+            {/* ===================================================================
+                1. HEADER: BUTTON TAMBAH DI SEBELAH KIRI JUDUL & DESKRIPSI
+                =================================================================== */}
+            <div className="flex flex-col sm:flex-row sm:items-center items-start gap-4 sm:gap-5">
+              <button
+                type="button"
+                onClick={handleOpenWizard}
+                className="px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#645770]/40 text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>Tambah Materi</span>
+              </button>
+
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                  Modul Materi Pembelajaran
+                </h1>
+                <p className="text-xs sm:text-sm text-[#756F7A] mt-0.5">
+                  Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
+                </p>
+              </div>
+            </div>
+
+            {/* ===================================================================
+                2. SEARCH BAR & FILTER: LANGSUNG TANPA DIBUNGKUS CARD
+                =================================================================== */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1 max-w-md w-full">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#51465B]" />
+                <input
+                  type="text"
+                  placeholder="Cari judul materi atau ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A] focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
+                />
+              </div>
+
+              {/* Instant Filter Dropdown: Rata Kanan, Ukuran Mengikuti Isi */}
+              <div className="flex items-center justify-end gap-2 ml-auto shrink-0">
+                <select
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value)}
+                  className="w-auto px-4 py-2 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
+                >
+                  {SUBJECT_OPTIONS.map((subj) => (
+                    <option key={subj} value={subj}>
+                      {subj}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* ===================================================================
+                3. DAFTAR MATERI: CARD BERSIH TANPA IKON/KATEGORI/DESKRIPSI, ID JELAS, BUTTON BULAT
+                =================================================================== */}
+            <div>
+              {filteredMaterials.length === 0 ? (
+                <div className="p-12 text-center bg-white rounded-3xl border-2 border-[#51465B]/20 space-y-3 shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-[#51465B]/10 text-[#51465B] mx-auto flex items-center justify-center">
+                    <BookOpen className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-base font-black text-[#23212A]">Belum ada modul ajar</h3>
+                  <p className="text-xs text-[#756F7A] max-w-sm mx-auto font-medium">
+                    Mulai buat modul ajar baru menggunakan tombol Tambah Materi di atas.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                  {filteredMaterials.map((mat) => {
+                    return (
+                      <div
+                        key={mat.id}
+                        className="relative p-5 rounded-[26px] bg-[#51465B] text-white border-2 border-[#FFD36D] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[140px]"
+                      >
+                        {/* Ambient Glow */}
+                        <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
+
+                        {/* Top: Judul di kiri, ID di kanan tanpa kapsul */}
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
+                            {mat.title}
+                          </h3>
+                          <span className="shrink-0 font-mono text-[11px] font-bold text-[#FFD36D] tracking-wider pt-0.5">
+                            {mat.id}
+                          </span>
                         </div>
 
-                        {/* ID di samping kanan: mini kapsul rapi */}
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(mat.id)}
-                          className="shrink-0 py-1 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 font-mono text-[10px] font-bold text-[#FFD36D] flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Klik untuk menyalin ID materi"
-                        >
-                          {copiedCode === mat.id ? (
-                            <>
-                              <Check className="w-3 h-3 text-[#FFD36D]" />
-                              <span className="font-sans text-[9px]">Tersalin</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3 text-[#FFD36D]" />
-                              <span>{mat.id}</span>
-                            </>
-                          )}
-                        </button>
+                        {/* Bottom: Button Bulat */}
+                        <div className="pt-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreviewMaterial(mat);
+                              setIsEditingPreview(false);
+                              setEditTitle(mat.title);
+                              setEditContent(mat.content || "");
+                              setEditSubject(mat.subject || "Matematika");
+                              setEditGrade(mat.grade || 5);
+                            }}
+                            className="flex-1 py-2.5 px-5 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                          >
+                            <span>Lihat Materi</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMaterial(mat.id)}
+                            className="w-9 h-9 rounded-full bg-white/10 hover:bg-rose-500/25 text-white/70 hover:text-rose-300 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                            title="Hapus Materi"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Tengah: Cuplikan Konten */}
-                    <div className="my-auto py-2.5">
-                      <p className="text-xs text-white/85 font-normal leading-relaxed line-clamp-2">
-                        {mat.content ? mat.content.replace(/\n+/g, " ") : "Bahan ajar tematik Kurikulum Merdeka berbasis kearifan lokal."}
-                      </p>
-                    </div>
-
-                    {/* Bottom: Button Lihat Materi (Warm Yellow) + Button Hapus */}
-                    <div className="pt-3 border-t border-white/20 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMaterialForPreview(mat)}
-                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#FFD36D] hover:bg-[#F5C75A] text-[#23212A] text-xs font-black flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer group/btn"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-[#23212A] stroke-[2.4]" />
-                        <span>Lihat Materi</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMaterial(mat.id)}
-                        className="p-2 rounded-xl bg-white/10 hover:bg-rose-500/25 text-white/70 hover:text-rose-300 border border-white/15 hover:border-rose-400/40 transition-all cursor-pointer shrink-0"
-                        title="Hapus Materi"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* =====================================================================
@@ -814,69 +953,6 @@ export default function TeacherMaterialsPage() {
             >
               Tutup
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          PREVIEW MODAL MATERI (OVERLAY LIHAT MATERI)
-          ===================================================================== */}
-      {selectedMaterialForPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[90vh] flex flex-col text-white">
-            {/* Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-white/15">
-              <div className="space-y-1 pr-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-white/15 text-[#FFD36D] font-black text-[10px] uppercase tracking-wider">
-                    {selectedMaterialForPreview.subject} &bull; Kelas {selectedMaterialForPreview.grade} SD
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300 font-mono text-[10px] font-bold">
-                    {selectedMaterialForPreview.id}
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-2">
-                  {selectedMaterialForPreview.title}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedMaterialForPreview(null)}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-colors cursor-pointer shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content Body */}
-            <div className="my-5 overflow-y-auto pr-2 space-y-4 max-h-[50vh]">
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#251E2B]/80 border border-white/10 text-gray-200 text-sm leading-relaxed whitespace-pre-wrap font-medium">
-                {selectedMaterialForPreview.content}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="pt-4 border-t border-white/15 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const targetMat = selectedMaterialForPreview;
-                  setSelectedMaterialForPreview(null);
-                  handleOpenPublishRoom(targetMat);
-                }}
-                className="py-2.5 px-5 rounded-2xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all cursor-pointer border border-white/20 flex items-center gap-1.5"
-              >
-                <DoorOpen className="w-3.5 h-3.5 text-[#FFD36D]" />
-                <span>Buka Room Siswa</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedMaterialForPreview(null)}
-                className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs font-black shadow-md transition-all cursor-pointer"
-              >
-                Tutup
-              </button>
-            </div>
           </div>
         </div>
       )}

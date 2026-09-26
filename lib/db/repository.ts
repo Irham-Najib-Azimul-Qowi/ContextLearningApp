@@ -1015,6 +1015,18 @@ class PahamiRepository {
     return newRoom;
   }
 
+  updateRoom(id: string, data: Partial<LearningRoom>): LearningRoom | undefined {
+    const rooms = this.getRooms();
+    const index = rooms.findIndex((r) => r.id === id || r.code === id);
+    if (index !== -1) {
+      const updated = { ...rooms[index], ...data };
+      rooms[index] = updated;
+      this.setItem<LearningRoom[]>("rooms", rooms);
+      return updated;
+    }
+    return undefined;
+  }
+
   recordRoomVisit(code: string, visitorName: string, score?: number): boolean {
     const rooms = this.getRooms();
     const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
