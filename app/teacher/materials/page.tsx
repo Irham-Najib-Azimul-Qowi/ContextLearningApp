@@ -245,86 +245,66 @@ export default function TeacherMaterialsPage() {
 
   return (
     <TeacherWorkspaceShell activeGroupId="materials">
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12 font-sans">
+      <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 pb-12 font-sans">
         {/* ===================================================================
-            1. JUDUL HALAMAN
+            1. HEADER: JUDUL & DESKRIPSI DI KIRI, BUTTON TAMBAH DI KANAN
             =================================================================== */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#23212A] tracking-tight">
-            Modul Materi Pembelajaran
-          </h1>
-          <p className="text-xs sm:text-sm text-[#756F7A] font-semibold mt-1">
-            Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name}.
-          </p>
-        </div>
-
-        {/* ===================================================================
-            2. CARD UNTUK TAMBAH MATERI (DI ATAS SEARCH & FILTER BAR)
-            =================================================================== */}
-        <div className="p-4 sm:p-5 rounded-[24px] sm:rounded-3xl bg-gradient-to-r from-[#3E3547] via-[#332A3B] to-[#251E2B] border border-[#5A4F65] shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[#FFD36D]/15 text-[#FFD36D] flex items-center justify-center shrink-0 border border-[#FFD36D]/30">
-              <BookOpen className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
-                Tambah Modul Materi
-              </h2>
-              <p className="text-xs text-gray-300 font-medium">
-                Buat modul ajar tematik kontekstual dengan alur cepat step-by-step.
-              </p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              Modul Materi Pembelajaran
+            </h1>
+            <p className="text-xs sm:text-sm text-[#756F7A] mt-1">
+              Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
+            </p>
           </div>
 
           <button
             type="button"
             onClick={handleOpenWizard}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-0.5 active:scale-95 shrink-0 flex items-center justify-center gap-2"
+            className="self-start sm:self-auto px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Tambah Materi</span>
           </button>
         </div>
 
         {/* ===================================================================
-            3. SEARCH BAR & FILTER
+            2. SEARCH BAR & FILTER: LANGSUNG TANPA DIBUNGKUS CARD
             =================================================================== */}
-        <div className="space-y-4 pt-1">
-          {/* Toolbar: Search Bar + Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gradient-to-r from-[#3E3547] via-[#332A3B] to-[#251E2B] p-3.5 sm:p-4 rounded-[24px] sm:rounded-3xl border border-[#5A4F65] shadow-lg">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md w-full">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#FFD36D]" />
-              <input
-                type="text"
-                placeholder="Cari judul materi atau kode unik..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#251E2B]/80 border-2 border-white/20 text-xs font-semibold text-white placeholder:text-gray-400 focus:outline-none focus:border-[#FFD36D] transition-colors"
-              />
-            </div>
-
-            {/* Instant Filter Dropdown */}
-            <div className="flex items-center gap-2 shrink-0">
-              <select
-                value={filterSubject}
-                onChange={(e) => setFilterSubject(e.target.value)}
-                className="px-4 py-2.5 rounded-full bg-[#251E2B] border-2 border-white/20 text-xs font-bold text-[#FFD36D] focus:outline-none focus:border-[#FFD36D] cursor-pointer shadow-xs transition-colors"
-              >
-                {SUBJECT_OPTIONS.map((subj) => (
-                  <option key={subj} value={subj} className="bg-[#251E2B] text-white">
-                    {subj}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
+            <input
+              type="text"
+              placeholder="Cari judul materi atau ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-medium text-[#23212A] placeholder:text-[#756F7A]/70 focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
+            />
           </div>
 
-          {/* ===================================================================
-              DAFTAR MATERI: CARD DENGAN WARNA KHAS MATERI (#51465B)
-              Layout: Judul & ID di kanan, Kategori di bawahnya, Deskripsi di tengah,
-              Button Lihat Materi + Button Hapus di samping kanannya.
-              =================================================================== */}
+          {/* Instant Filter Dropdown */}
+          <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={filterSubject}
+              onChange={(e) => setFilterSubject(e.target.value)}
+              className="px-4 py-2.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-semibold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
+            >
+              {SUBJECT_OPTIONS.map((subj) => (
+                <option key={subj} value={subj}>
+                  {subj}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* ===================================================================
+            3. DAFTAR MATERI: CARD PUTIH DENGAN STROKE, PROPORSIONAL & BERSIH
+            =================================================================== */}
+        <div>
           {filteredMaterials.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
               <div className="w-14 h-14 rounded-full bg-[#FAF7F3] text-slate-400 mx-auto flex items-center justify-center">
@@ -332,76 +312,78 @@ export default function TeacherMaterialsPage() {
               </div>
               <h3 className="text-base font-bold text-slate-800">Belum ada modul ajar</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Mulai buat modul ajar baru menggunakan salah satu metode input di atas.
+                Mulai buat modul ajar baru menggunakan tombol Tambah Materi di atas.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {filteredMaterials.map((mat) => {
                 return (
                   <div
                     key={mat.id}
-                    className="p-5 sm:p-6 rounded-[28px] bg-[#51465B] text-white border border-[#675B73] shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between group relative overflow-hidden min-h-[220px]"
+                    className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9E5E8] shadow-[0_2px_8px_rgba(81,70,91,0.03)] hover:shadow-md hover:border-[#51465B]/30 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden min-h-[190px]"
                   >
                     {/* Top: Judul & ID di samping kanan, Kategori di bawahnya */}
                     <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base sm:text-lg font-black text-white leading-snug line-clamp-2">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <h3 className="text-sm sm:text-base font-bold text-[#23212A] leading-snug line-clamp-2">
                           {mat.title}
                         </h3>
 
-                        {/* ID di samping kanan judul */}
+                        {/* ID di samping kanan judul: proporsional, kecil */}
                         <button
                           type="button"
                           onClick={() => handleCopy(mat.id)}
-                          className="shrink-0 py-1 px-2.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 font-mono text-[11px] font-bold text-gray-200 flex items-center gap-1 cursor-pointer transition-colors"
+                          className="shrink-0 py-0.5 px-2 rounded-md bg-[#FAF7F3] hover:bg-slate-100 border border-[#E9E5E8] font-mono text-[10px] font-medium text-[#756F7A] flex items-center gap-1 cursor-pointer transition-colors"
                           title="Klik untuk menyalin ID materi"
                         >
                           {copiedCode === mat.id ? (
                             <>
-                              <Check className="w-3 h-3 text-emerald-400" />
-                              <span className="text-emerald-300 font-sans text-[10px]">Tersalin</span>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-700 font-sans text-[9px]">Tersalin</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3 text-gray-300" />
+                              <Copy className="w-3 h-3 text-[#756F7A]" />
                               <span>{mat.id}</span>
                             </>
                           )}
                         </button>
                       </div>
 
-                      {/* Di bawah judul: Kategori dengan warna lain */}
-                      <div className="mt-1.5 text-xs sm:text-sm font-extrabold text-[#FFD36D] tracking-wide">
-                        {mat.subject} &bull; Kelas {mat.grade} SD
+                      {/* Di bawah judul: Kategori kecil tidak bold dibungkus kapsul */}
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#51465B]/10 text-[#51465B] border border-[#51465B]/15">
+                          {mat.subject} &bull; Kelas {mat.grade} SD
+                        </span>
                       </div>
                     </div>
 
                     {/* Di antara di tengah secara vertikal: sedikit deskripsi */}
-                    <div className="my-auto py-3.5">
-                      <p className="text-xs sm:text-sm text-gray-200/90 font-medium leading-relaxed line-clamp-2">
+                    <div className="my-auto py-2.5">
+                      <p className="text-xs text-[#756F7A] font-normal leading-relaxed line-clamp-2">
                         {mat.content ? mat.content.replace(/\n+/g, " ") : "Bahan ajar tematik Kurikulum Merdeka berbasis kearifan lokal."}
                       </p>
                     </div>
 
                     {/* Bottom: Button Lihat Materi + Button Hapus di samping kanannya */}
-                    <div className="pt-3 border-t border-white/15 flex items-center gap-2.5">
+                    <div className="pt-3 border-t border-[#E9E5E8] flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setSelectedMaterialForPreview(mat)}
-                        className="flex-1 py-2.5 px-4 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#FAF7F3] hover:bg-[#51465B] text-[#51465B] hover:text-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                       >
-                        <Eye className="w-4 h-4 stroke-[2.2]" />
+                        <Eye className="w-3.5 h-3.5" />
                         <span>Lihat Materi</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteMaterial(mat.id)}
-                        className="p-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer shadow-md active:scale-95 shrink-0"
+                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-[#E9E5E8] hover:border-rose-200 transition-all cursor-pointer shrink-0"
                         title="Hapus Materi"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
