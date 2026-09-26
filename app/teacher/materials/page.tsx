@@ -70,6 +70,7 @@ export default function TeacherMaterialsPage() {
 
   // Step 4: Result
   const [createdMaterialId, setCreatedMaterialId] = useState<string | null>(null);
+  const [patentMaterialId, setPatentMaterialId] = useState("");
 
   // Room Publish Modal
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
@@ -108,6 +109,9 @@ export default function TeacherMaterialsPage() {
     setManualDraft("");
     setUploadedFileName(null);
     setCapturedPhotoName(null);
+    setPreviewTitle("");
+    setPreviewNarrative("");
+    setPatentMaterialId(repository.getNextMaterialId());
     setIsWizardOpen(true);
   };
 
@@ -130,41 +134,11 @@ export default function TeacherMaterialsPage() {
     setWizardStep(2);
   };
 
-  // Submit Step 2
+  // Submit Step 2: Validasi Identitas & Masuk Form Konten
   const handleStep2Submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-
-    if (selectedMethod === "ai") {
-      handleTriggerAiContextTransformation();
-    } else {
-      if (!activeSchool) return;
-      const content =
-        selectedMethod === "manual"
-          ? manualDraft
-          : selectedMethod === "camera"
-          ? capturedPhotoName
-            ? `Naskah hasil pindai: ${capturedPhotoName}\n\n${manualDraft}`
-            : manualDraft
-          : uploadedFileName
-          ? `Berkas dokumen: ${uploadedFileName}\n\n${manualDraft}`
-          : manualDraft;
-
-      const newMat = repository.saveMaterial({
-        school_id: activeSchool.id,
-        teacher_id: currentUser?.id || "usr-teacher-01",
-        title: title.trim(),
-        subject,
-        grade,
-        content: content || "Bahan ajar tematik Kurikulum Merdeka berbasis kearifan lokal.",
-        is_contextualized: true,
-        published_to_classes: [],
-      });
-
-      setCreatedMaterialId(newMat.id);
-      loadData();
-      setWizardStep(4);
-    }
+    setWizardStep(3);
   };
 
   // Process AI Context Transformation
@@ -176,21 +150,30 @@ export default function TeacherMaterialsPage() {
         `Kawasan ${region} memiliki potensi komoditas pangan dan kerajinan khas yang kaya. Melalui bahan ajar kontekstual ini, peserta didik diajak menelaah aktivitas ekonomi nyata para pedagang pasar tradisional di ${region}.\n\nDalam proses pembelajaran, siswa tidak hanya menghitung angka abstrak, tetapi langsung menganalisis simulasi transaksi harga grosir, perhitungan laba-rugi warung lokal, dan pengenalan mata uang secara bijak sesuai nilai-nilai kearifan lokal.`
       );
       setIsAiGenerating(false);
-      setWizardStep(3);
-    }, 1200);
+    }, 1000);
   };
 
-  // Final Save in Step 3
-  const handleFinalSave = () => {
-    if (!activeSchool) return;
+  // Submit Step 3: Simpan Modul Materi dari Form Konten
+  const handleStep3Save = () => {
+    if (!activeSchool || !title.trim()) return;
+
+    let content = manualDraft;
+    if (selectedMethod === "camera") {
+      content = capturedPhotoName ? `Naskah hasil pindai: ${capturedPhotoName}\n\n${manualDraft}` : manualDraft;
+    } else if (selectedMethod === "pdf") {
+      content = uploadedFileName ? `Berkas dokumen: ${uploadedFileName}\n\n${manualDraft}` : manualDraft;
+    } else if (selectedMethod === "ai") {
+      content = previewNarrative || manualDraft;
+    }
 
     const newMat = repository.saveMaterial({
+      id: patentMaterialId || undefined,
       school_id: activeSchool.id,
       teacher_id: currentUser?.id || "usr-teacher-01",
-      title: previewTitle || title,
+      title: (selectedMethod === "ai" && previewTitle) ? previewTitle : title.trim(),
       subject,
       grade,
-      content: previewNarrative,
+      content: content || "Bahan ajar tematik Kurikulum Merdeka berbasis kearifan lokal.",
       is_contextualized: true,
       published_to_classes: [],
     });
@@ -247,26 +230,26 @@ export default function TeacherMaterialsPage() {
     <TeacherWorkspaceShell activeGroupId="materials">
       <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 pb-12 font-sans">
         {/* ===================================================================
-            1. HEADER: JUDUL & DESKRIPSI DI KIRI, BUTTON TAMBAH DI KANAN
+            1. HEADER: BUTTON TAMBAH DI SEBELAH KIRI JUDUL & DESKRIPSI
             =================================================================== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-              Modul Materi Pembelajaran
-            </h1>
-            <p className="text-xs sm:text-sm text-[#756F7A] mt-1">
-              Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
-            </p>
-          </div>
-
+        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-4 sm:gap-5">
           <button
             type="button"
             onClick={handleOpenWizard}
-            className="self-start sm:self-auto px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
+            className="px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#645770]/40 text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Tambah Materi</span>
           </button>
+
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              Modul Materi Pembelajaran
+            </h1>
+            <p className="text-xs sm:text-sm text-[#756F7A] mt-0.5">
+              Rancang bahan ajar tematik Kurikulum Merdeka yang dikontekstualisasikan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
+            </p>
+          </div>
         </div>
 
         {/* ===================================================================
@@ -403,137 +386,126 @@ export default function TeacherMaterialsPage() {
           ===================================================================== */}
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-7 sm:p-9 relative my-auto max-h-[90vh] overflow-y-auto text-white flex flex-col items-center text-center">
-            
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setIsWizardOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div
+            className={`w-full ${
+              wizardStep === 3 ? "max-w-4xl lg:max-w-5xl" : "max-w-[540px]"
+            } bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300`}
+          >
+            {/* ===================================================================
+                MODAL HEADER: JUDUL DI KIRI ATAS, PROGRES STEP DI BAWAHNYA, X DI KANAN ATAS
+                =================================================================== */}
+            <div className="w-full flex items-start justify-between pb-4 border-b border-white/10 mb-5">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                  {wizardStep === 4 ? "Modul Materi Berhasil Disimpan" : "Tambah Modul Materi"}
+                </h3>
+                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi) */}
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : wizardStep > 2 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#FFD36D]">
+                    Langkah {wizardStep} dari 4: {wizardStep === 1 ? "Cara Input" : wizardStep === 2 ? "Identitas" : wizardStep === 3 ? "Konten Materi" : "Selesai"}
+                  </span>
+                </div>
+              </div>
 
-            {/* Top Icon Badge */}
-            <div className="w-12 h-12 rounded-2xl bg-white/10 text-[#FFD36D] flex items-center justify-center shadow-xs">
-              <BookOpen className="w-6 h-6 stroke-[2.2]" />
+              {/* Close / Batal Button di pojok kanan atas */}
+              <button
+                type="button"
+                onClick={() => setIsWizardOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                title="Batal / Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Step Dots Indicator (seperti di form login & masuk room) */}
-            <div className="flex items-center justify-center gap-1.5 mt-3 mb-4">
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/50"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep >= 3 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-            </div>
-
-            {/* STEP 1: PILIH METODE (seperti memilih cara login) */}
+            {/* ===================================================================
+                STEP 1: PILIH CARA INPUT (BENTUK CARD KOTAK BERISI IKON & NAMA FITUR)
+                =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="text-center mb-1">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Pilih Metode Materi
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-1">
-                    Pilih cara menyiapkan modul pembelajaran kontekstual
-                  </p>
-                </div>
-
-                <div className="space-y-2.5 pt-1">
-                  {/* Ketik Manual */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                  {/* Card Kotak 1: Ketik Manual */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("manual")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <PenTool className="w-5 h-5" />
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <PenTool className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Ketik Manual
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Tulis naskah materi secara mandiri
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Ketik Manual
+                    </span>
                   </button>
 
-                  {/* Motret Naskah */}
+                  {/* Card Kotak 2: Motret Naskah */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("camera")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Camera className="w-5 h-5" />
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Camera className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Motret Naskah
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Pindai buku atau lembar fisik materi
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Motret Naskah
+                    </span>
                   </button>
 
-                  {/* Upload PDF */}
+                  {/* Card Kotak 3: Upload PDF */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("pdf")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Upload className="w-5 h-5" />
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Upload className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Upload PDF
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Unggah berkas modul dari perangkat
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Upload PDF
+                    </span>
                   </button>
 
-                  {/* Generate AI */}
+                  {/* Card Kotak 4: Generate AI */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("ai")}
-                    className="w-full p-4 rounded-2xl bg-gradient-to-r from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-5 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-                      <Sparkles className="w-5 h-5" />
+                    <div className="w-12 h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
+                      <Sparkles className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-[#FFD36D]">
-                        Generate AI
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Ramu materi otomatis dengan kearifan lokal {region}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-[#FFD36D] transition-colors leading-tight">
+                      Generate AI
+                    </span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: LENGKAPI DATA MATERI */}
+            {/* ===================================================================
+                STEP 2: IDENTITAS MATERI & ID PATEN DARI SISTEM
+                =================================================================== */}
             {wizardStep === 2 && (
-              <form onSubmit={handleStep2Submit} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
-                <div className="text-center mb-2">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Lengkapi Materi
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-0.5">
-                    Metode: {selectedMethod === "manual" ? "Ketik Manual" : selectedMethod === "camera" ? "Motret Naskah" : selectedMethod === "pdf" ? "Upload PDF" : "Generate AI"}
-                  </p>
+              <form onSubmit={handleStep2Submit} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {/* ID Paten Sistem (Non-editable, tidak bisa diacak atau dibuat manual) */}
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-gray-300 block">ID Modul Materi (Paten Sistem)</span>
+                    <span className="text-[10px] text-gray-400">Ditetapkan permanen oleh sistem, tidak dapat diacak</span>
+                  </div>
+                  <span className="font-mono text-xs font-black text-[#FFD36D] bg-[#251E2B] px-3 py-1.5 rounded-xl border border-[#FFD36D]/30 select-none">
+                    {patentMaterialId}
+                  </span>
                 </div>
 
+                {/* Judul Materi */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
                     Judul Materi
@@ -548,6 +520,7 @@ export default function TeacherMaterialsPage() {
                   />
                 </div>
 
+                {/* Mapel & Kelas */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
@@ -584,148 +557,197 @@ export default function TeacherMaterialsPage() {
                   </div>
                 </div>
 
-                {/* Konten Spesifik Metode */}
-                {selectedMethod === "manual" && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Draf Materi
-                    </label>
-                    <textarea
-                      rows={4}
-                      required
-                      value={manualDraft}
-                      onChange={(e) => setManualDraft(e.target.value)}
-                      placeholder="Tuliskan pokok materi pembelajaran..."
-                      className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed"
-                    />
-                  </div>
-                )}
-
-                {selectedMethod === "camera" && (
-                  <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
-                    <Camera className="w-7 h-7 text-[#FFD36D] mx-auto" />
-                    <p className="text-xs font-bold text-gray-200">Foto lembar naskah materi</p>
-                    <button
-                      type="button"
-                      onClick={() => setCapturedPhotoName("foto_lembar_materi.jpg")}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
-                    >
-                      {capturedPhotoName ? "Foto Terpindai: foto_lembar_materi.jpg" : "Ambil Foto Sekarang"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "pdf" && (
-                  <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
-                    <Upload className="w-7 h-7 text-[#FFD36D] mx-auto" />
-                    <p className="text-xs font-bold text-gray-200">Unggah berkas modul PDF</p>
-                    <button
-                      type="button"
-                      onClick={() => setUploadedFileName("modul_ajar.pdf")}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
-                    >
-                      {uploadedFileName ? "Berkas Terunggah: modul_ajar.pdf" : "Pilih Berkas PDF"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "ai" && (
-                  <div className="p-3.5 rounded-2xl bg-white/10 border border-white/20 text-xs text-gray-200 space-y-1">
-                    <span className="font-bold text-[#FFD36D] block">Kearifan Lokal: {region}</span>
-                    <p className="text-gray-300 text-[11px] leading-relaxed">
-                      AI akan menyelaraskan narasi materi berbasis potensi dan data nyata daerah {region}.
-                    </p>
-                  </div>
-                )}
-
-                {/* Footer Buttons */}
-                <div className="pt-2 flex items-center gap-3">
+                {/* Footer Navigasi Identitas */}
+                <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(1)}
-                    className="w-1/2 py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                    className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
                     Kembali
                   </button>
-
                   <button
                     type="submit"
-                    disabled={isAiGenerating}
-                    className="w-1/2 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    disabled={!title.trim()}
+                    className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    {selectedMethod === "ai" ? (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>{isAiGenerating ? "Memproses..." : "Buat dengan AI"}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Simpan Materi</span>
-                        <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                      </>
-                    )}
+                    <span>Lanjut ke Konten</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </form>
             )}
 
-            {/* STEP 3: REVIEW AI (JIKA MENGGUNAKAN AI) */}
+            {/* ===================================================================
+                STEP 3: FORM INPUT KONTEN MATERI (OVERLAY LEBAR & LUAS AGAR NYAMAN)
+                =================================================================== */}
             {wizardStep === 3 && (
-              <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
-                <div className="text-center mb-1">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Review Hasil AI
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-0.5">
-                    Periksa draf materi kontekstual sebelum disimpan
-                  </p>
+              <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {/* Ringkasan Konteks Singkat */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-bold text-[#FFD36D] bg-[#251E2B] px-2.5 py-0.5 rounded-lg border border-[#FFD36D]/30">
+                      {patentMaterialId}
+                    </span>
+                    <span className="font-bold text-white">{title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-gray-300">
+                    <span>{subject} &bull; Kelas {grade} SD</span>
+                    <span className="text-[#FFD36D]">&bull; {region}</span>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Judul Modul
-                  </label>
-                  <input
-                    type="text"
-                    value={previewTitle}
-                    onChange={(e) => setPreviewTitle(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
-                  />
-                </div>
+                {/* Input Manual Konten: Naskah Lebar & Lapang */}
+                {selectedMethod === "manual" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-gray-200">
+                        Naskah Modul Pembelajaran Kontekstual
+                      </label>
+                      <span className="text-[11px] text-gray-400 font-mono">
+                        {manualDraft.length} karakter
+                      </span>
+                    </div>
+                    <textarea
+                      rows={12}
+                      required
+                      value={manualDraft}
+                      onChange={(e) => setManualDraft(e.target.value)}
+                      placeholder="Ketik materi pembelajaran secara lengkap di sini. Masukkan stimulus cerita lokal, data rill komoditas, atau aktivitas eksplorasi siswa..."
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[280px]"
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Narasi Materi Kontekstual
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={previewNarrative}
-                    onChange={(e) => setPreviewNarrative(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs text-white focus:outline-none leading-relaxed"
-                  />
-                </div>
+                {/* Motret Naskah: Scan Simulator & Editor */}
+                {selectedMethod === "camera" && (
+                  <div className="space-y-4">
+                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
+                      <Camera className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                      <p className="text-xs font-bold text-gray-200">
+                        {capturedPhotoName ? `Foto terlampir: ${capturedPhotoName}` : "Foto lembar naskah materi dari buku atau modul fisik"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setCapturedPhotoName("foto_lembar_materi.jpg")}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+                      >
+                        {capturedPhotoName ? "Ambil Foto Ulang" : "Pindai / Ambil Foto Sekarang"}
+                      </button>
+                    </div>
 
-                <div className="pt-2 flex items-center gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-200">
+                        Hasil Transkripsi & Tambahan Catatan Materi
+                      </label>
+                      <textarea
+                        rows={8}
+                        value={manualDraft}
+                        onChange={(e) => setManualDraft(e.target.value)}
+                        placeholder="Periksa atau tambahkan penjelasan untuk hasil pindaian..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload PDF: File & Editor */}
+                {selectedMethod === "pdf" && (
+                  <div className="space-y-4">
+                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
+                      <Upload className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                      <p className="text-xs font-bold text-gray-200">
+                        {uploadedFileName ? `Dokumen terunggah: ${uploadedFileName}` : "Unggah berkas modul ajar format PDF"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setUploadedFileName("modul_ajar_kontekstual.pdf")}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+                      >
+                        {uploadedFileName ? "Ganti Berkas PDF" : "Pilih Berkas PDF dari Perangkat"}
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-200">
+                        Catatan Pokok Pembelajaran Dokumen
+                      </label>
+                      <textarea
+                        rows={8}
+                        value={manualDraft}
+                        onChange={(e) => setManualDraft(e.target.value)}
+                        placeholder="Ketik intisari atau panduan belajar dari modul PDF ini..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Generate AI: Penyesuaian Kearifan Lokal & Editor Luas */}
+                {selectedMethod === "ai" && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="font-bold text-[#FFD36D] text-xs block">Kearifan Lokal Wilayah: {region}</span>
+                        <span className="text-[11px] text-gray-300">
+                          AI merumuskan narasi tematik berbasis komoditas dan budaya nyata {region}.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleTriggerAiContextTransformation}
+                        disabled={isAiGenerating}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{isAiGenerating ? "Merumuskan Materi..." : previewNarrative ? "Generate Ulang Narasi" : "Mulai Generate AI"}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-200">
+                        Narasi Materi Kontekstual (Dapat Diedit Langsung)
+                      </label>
+                      <textarea
+                        rows={11}
+                        value={previewNarrative || manualDraft}
+                        onChange={(e) => {
+                          setPreviewNarrative(e.target.value);
+                          setManualDraft(e.target.value);
+                        }}
+                        placeholder="Klik Mulai Generate AI di atas atau ketik langsung draf narasi tematik di sini..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[260px]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer Buttons Step 3 */}
+                <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
-                    className="w-1/2 py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                    className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
-                    Ubah Draf
+                    Kembali ke Identitas
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleFinalSave}
-                    className="w-1/2 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer"
+                    onClick={handleStep3Save}
+                    disabled={isAiGenerating || (!manualDraft.trim() && !previewNarrative.trim() && !capturedPhotoName && !uploadedFileName)}
+                    className="py-2.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    Simpan Materi
+                    <span>Simpan Modul Materi</span>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 4: SUKSES */}
+            {/* ===================================================================
+                STEP 4: SUKSES / BERHASIL DISIMPAN DENGAN ID PATEN
+                =================================================================== */}
             {wizardStep === 4 && (
               <div className="text-center py-4 space-y-4 animate-in fade-in zoom-in-95 duration-200 w-full">
                 <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
@@ -733,19 +755,33 @@ export default function TeacherMaterialsPage() {
                 </div>
                 <div>
                   <h4 className="text-lg sm:text-xl font-black text-white">
-                    Modul Ajar Berhasil Disimpan!
+                    Modul Materi Berhasil Disimpan!
                   </h4>
-                  <p className="text-xs text-gray-300 mt-1 max-w-xs mx-auto">
-                    Materi telah tersimpan dan siap dibagikan ke siswa via room akses.
-                  </p>
+                  <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-xl bg-white/10 border border-white/15">
+                    <span className="text-[11px] text-gray-300">ID Paten:</span>
+                    <span className="font-mono text-xs font-bold text-[#FFD36D]">{createdMaterialId || patentMaterialId}</span>
+                  </div>
                 </div>
-                <div className="pt-2">
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWizardOpen(false);
+                      const mat = materials.find((m) => m.id === createdMaterialId) || materials[0];
+                      if (mat) handleOpenPublishRoom(mat);
+                    }}
+                    className="w-full sm:w-auto py-3 px-6 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold border border-[#645770]/40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <DoorOpen className="w-4 h-4" />
+                    <span>Terbitkan Room Materi</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setIsWizardOpen(false)}
-                    className="w-full py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs sm:text-sm font-extrabold shadow-md cursor-pointer"
+                    className="w-full sm:w-auto py-3 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-extrabold shadow-md cursor-pointer"
                   >
-                    Selesai & Tutup
+                    Selesai & Lihat Modul
                   </button>
                 </div>
               </div>

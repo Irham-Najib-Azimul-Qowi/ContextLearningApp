@@ -10,7 +10,6 @@ import {
   Brain,
   Check,
   Sparkles,
-  Shuffle,
   Layers,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
@@ -33,13 +32,6 @@ export default function CreateRoomPage() {
   const [grade, setGrade] = useState<number>(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generate random 7-character room code without hyphen in lowercase
-  const generateRandomCode = (type: "material" | "question" | "both") => {
-    const prefix = type === "material" ? "mat" : type === "question" ? "sol" : "rom";
-    const num = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}${num}`;
-  };
-
   useEffect(() => {
     const activeSchool = repository.getActiveSchool();
     setSchool(activeSchool);
@@ -61,12 +53,11 @@ export default function CreateRoomPage() {
       setSecondaryResourceId(qs[0].id);
     }
 
-    setRoomCode(generateRandomCode("material"));
+    setRoomCode(repository.getNextRoomCode());
   }, []);
 
   const handleTypeChange = (newType: "material" | "question" | "both") => {
     setRoomType(newType);
-    setRoomCode(generateRandomCode(newType));
     if (newType === "material" && materials.length > 0) {
       setSelectedResourceId(materials[0].id);
       setCustomTitle(materials[0].title);
@@ -335,22 +326,14 @@ export default function CreateRoomPage() {
             <div>
               <label className="block text-xs font-bold text-gray-200 mb-1.5 flex items-center justify-between">
                 <span>Kode Akses Siswa</span>
-                <button
-                  type="button"
-                  onClick={() => setRoomCode(generateRandomCode(roomType))}
-                  className="text-[11px] text-[#FFD36D] font-bold flex items-center gap-1 cursor-pointer hover:underline"
-                >
-                  <Shuffle className="w-3 h-3" />
-                  <span>Acak Kode</span>
-                </button>
+                <span className="text-[10px] font-semibold text-gray-400">Paten Sistem</span>
               </label>
-              <input
-                type="text"
-                required
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
-                className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] font-mono lowercase tracking-widest text-xs sm:text-sm font-black text-[#FFD36D] focus:outline-none transition-all shadow-inner"
-              />
+              <div className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 font-mono lowercase tracking-widest text-xs sm:text-sm font-black text-[#FFD36D] flex items-center justify-between shadow-inner">
+                <span>{roomCode}</span>
+                <span className="text-[10px] font-bold text-gray-400 bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10">
+                  Otomatis Paten
+                </span>
+              </div>
             </div>
           </div>
 

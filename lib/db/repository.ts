@@ -675,6 +675,20 @@ class PahamiRepository {
     return this.getQuestions().find((q) => q.id === id);
   }
 
+  getNextQuestionId(): string {
+    const questions = this.getQuestions();
+    let maxNum = 0;
+    questions.forEach((q) => {
+      const match = q.id.match(/(?:sol|q|soal)-?(\d+)/i);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val > maxNum) maxNum = val;
+      }
+    });
+    const nextNum = Math.max(maxNum + 1, questions.length + 1);
+    return `sol-${String(nextNum).padStart(2, "0")}`;
+  }
+
   saveQuestion(
     data: Partial<Question> & {
       school_id: string;
@@ -698,9 +712,9 @@ class PahamiRepository {
       }
     }
     const current = this.getCurrentUser();
-    const cleanQuestionId = (data.id || `sol${Math.floor(1000 + Math.random() * 9000)}`)
+    const cleanQuestionId = (data.id || this.getNextQuestionId())
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+      .replace(/[^a-z0-9_-]/g, "");
 
     const newQuestion: Question = {
       id: cleanQuestionId,
@@ -743,6 +757,20 @@ class PahamiRepository {
     return this.getMaterials().find((m) => m.id === id);
   }
 
+  getNextMaterialId(): string {
+    const materials = this.getMaterials();
+    let maxNum = 0;
+    materials.forEach((m) => {
+      const match = m.id.match(/(?:mat|m)-?(\d+)/i);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val > maxNum) maxNum = val;
+      }
+    });
+    const nextNum = Math.max(maxNum + 1, materials.length + 1);
+    return `mat-${String(nextNum).padStart(2, "0")}`;
+  }
+
   saveMaterial(
     data: Partial<LearningMaterial> & {
       title: string;
@@ -763,9 +791,9 @@ class PahamiRepository {
       }
     }
     const current = this.getCurrentUser();
-    const cleanMaterialId = (data.id || `mat${Math.floor(1000 + Math.random() * 9000)}`)
+    const cleanMaterialId = (data.id || this.getNextMaterialId())
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+      .replace(/[^a-z0-9_-]/g, "");
 
     const newMat: LearningMaterial = {
       id: cleanMaterialId,
@@ -945,18 +973,35 @@ class PahamiRepository {
     return rooms;
   }
 
+  getNextRoomCode(): string {
+    const rooms = this.getRooms();
+    let maxNum = 0;
+    rooms.forEach((r) => {
+      const match = (r.code || r.id).match(/(?:rom|room|mtr)-?(\d+)/i);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val > maxNum) maxNum = val;
+      }
+    });
+    const nextNum = Math.max(maxNum + 1, rooms.length + 1);
+    return `rom${String(nextNum).padStart(2, "0")}`;
+  }
+
   getRoomByCode(code: string): LearningRoom | undefined {
     const rooms = this.getRooms();
-    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    return rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanCode);
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    return rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9_-]/g, "") === cleanCode);
   }
 
   createRoom(
     data: Omit<LearningRoom, "id" | "created_at" | "access_count" | "visitors">
   ): LearningRoom {
     const rooms = this.getRooms();
-    const cleanCode = data.code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    const cleanRoomId = `rom${Math.floor(1000 + Math.random() * 9000)}`;
+    const cleanCode = (data.code || this.getNextRoomCode())
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, "");
+    const cleanRoomId = cleanCode.startsWith("rom") ? cleanCode : `rom-${cleanCode}`;
     const newRoom: LearningRoom = {
       ...data,
       id: cleanRoomId,
@@ -972,8 +1017,8 @@ class PahamiRepository {
 
   recordRoomVisit(code: string, visitorName: string, score?: number): boolean {
     const rooms = this.getRooms();
-    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    const target = rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanCode);
+    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const target = rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9_-]/g, "") === cleanCode);
     if (!target) return false;
 
     target.access_count = (target.access_count || 0) + 1;

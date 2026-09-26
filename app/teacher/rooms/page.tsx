@@ -35,7 +35,7 @@ export default function TeacherRoomsPage() {
 
   // Creation Wizard Modal State (Login & Room Entry Style)
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
   const [roomType, setRoomType] = useState<"material" | "question" | "both">("material");
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const [secondaryResourceId, setSecondaryResourceId] = useState("");
@@ -45,12 +45,6 @@ export default function TeacherRoomsPage() {
   const [grade, setGrade] = useState(5);
   const [createdRoom, setCreatedRoom] = useState<LearningRoom | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const generateRandomCode = (type: "material" | "question" | "both") => {
-    const prefix = type === "material" ? "mat" : type === "question" ? "sol" : "rom";
-    const num = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}${num}`;
-  };
 
   const loadData = () => {
     const school = repository.getActiveSchool();
@@ -86,8 +80,8 @@ export default function TeacherRoomsPage() {
   const handleOpenWizard = () => {
     setWizardStep(1);
     setRoomType("material");
-    const code = generateRandomCode("material");
-    setRoomCode(code);
+    const patentCode = repository.getNextRoomCode();
+    setRoomCode(patentCode);
     if (materials.length > 0) {
       setSelectedResourceId(materials[0].id);
       setCustomTitle(materials[0].title);
@@ -95,6 +89,11 @@ export default function TeacherRoomsPage() {
       setGrade(materials[0].grade || 5);
     } else {
       setCustomTitle("Modul Pembelajaran Tematik");
+      setSubject("Matematika");
+      setGrade(5);
+    }
+    if (questions.length > 0) {
+      setSecondaryResourceId(questions[0].id);
     }
     setCreatedRoom(null);
     setIsWizardOpen(true);
@@ -103,7 +102,6 @@ export default function TeacherRoomsPage() {
   // Step 1: Select Type
   const handleSelectType = (type: "material" | "question" | "both") => {
     setRoomType(type);
-    setRoomCode(generateRandomCode(type));
     if (type === "material" && materials.length > 0) {
       setSelectedResourceId(materials[0].id);
       setCustomTitle(materials[0].title);
@@ -128,13 +126,20 @@ export default function TeacherRoomsPage() {
     setWizardStep(2);
   };
 
-  // Step 2: Submit Room
+  // Step 2: Next to Content Picker
+  const handleStep2Next = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customTitle.trim()) return;
+    setWizardStep(3);
+  };
+
+  // Step 3: Submit Room
   const handleSaveRoom = (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCode || !customTitle || isSubmitting) return;
 
     setIsSubmitting(true);
-    const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
     const newRoom = repository.createRoom({
       code: cleanCode,
       title: customTitle.trim(),
@@ -150,7 +155,7 @@ export default function TeacherRoomsPage() {
 
     setIsSubmitting(false);
     setCreatedRoom(newRoom);
-    setWizardStep(3);
+    setWizardStep(4);
     loadData();
   };
 
@@ -167,21 +172,9 @@ export default function TeacherRoomsPage() {
     <TeacherWorkspaceShell activeGroupId="rooms">
       <div className="space-y-6 sm:space-y-8 pb-12 font-sans">
         {/* ===================================================================
-            1. JUDUL HALAMAN
+            1. HEADER: BUTTON TAMBAH DI SEBELAH KIRI JUDUL & DESKRIPSI
             =================================================================== */}
-        {/* ===================================================================
-            1. HEADER: JUDUL & DESKRIPSI DI KIRI, BUTTON TAMBAH DI KANAN
-            =================================================================== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-              Room Akses Siswa
-            </h1>
-            <p className="text-xs sm:text-sm text-[#756F7A] mt-1">
-              Bagikan modul materi dan paket soal kontekstual langsung ke siswa via URL atau kode room tanpa akun.
-            </p>
-          </div>
-
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <button
             type="button"
             onClick={handleOpenWizard}
@@ -190,6 +183,15 @@ export default function TeacherRoomsPage() {
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Tambah Room</span>
           </button>
+
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              Room Akses Siswa
+            </h1>
+            <p className="text-xs sm:text-sm text-[#756F7A] mt-1">
+              Bagikan modul materi dan paket soal kontekstual langsung ke siswa via URL atau kode room tanpa akun.
+            </p>
+          </div>
         </div>
 
         {/* ===================================================================
@@ -359,183 +361,117 @@ export default function TeacherRoomsPage() {
         </div>
       {/* =====================================================================
           CREATION WIZARD MODAL (LOGIN & ROOM ENTRY INSPIRED CLEAN STEP FORM)
-          Step 1: Pilih Tipe Ruang (Materi, Soal, Materi & Soal)
-          Step 2: Konfigurasi Konten & Nama Room (Pilih materi/soal, Judul, Kode)
-          Step 3: Berhasil / Salin Link & Buka Room
+          Step 1: Pilih Tipe Ruang (Card Kotak Berisi Ikon & Nama Fitur)
+          Step 2: Identitas Ruang Belajar (Kode Paten Sistem)
+          Step 3: Pilih Konten (Modul Materi / Butir Soal)
+          Step 4: Berhasil / Salin Link & Buka Room
           ===================================================================== */}
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-7 sm:p-9 relative my-auto max-h-[90vh] overflow-y-auto text-white flex flex-col items-center text-center">
-            
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setIsWizardOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="w-full max-w-[540px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300">
+            {/* ===================================================================
+                MODAL HEADER: JUDUL DI KIRI ATAS, PROGRES STEP DI BAWAHNYA, X DI KANAN ATAS
+                =================================================================== */}
+            <div className="w-full flex items-start justify-between pb-4 border-b border-white/10 mb-5">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                  {wizardStep === 4 ? "Ruang Belajar Siap Diakses" : "Tambah Ruang Belajar"}
+                </h3>
+                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi) */}
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : wizardStep > 2 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#FFD36D]">
+                    Langkah {wizardStep} dari 4: {wizardStep === 1 ? "Tipe Room" : wizardStep === 2 ? "Identitas Room" : wizardStep === 3 ? "Pilih Konten" : "Selesai"}
+                  </span>
+                </div>
+              </div>
 
-            {/* Top Icon Badge */}
-            <div className="w-12 h-12 rounded-2xl bg-white/10 text-[#FFD36D] flex items-center justify-center shadow-xs">
-              <DoorOpen className="w-6 h-6 stroke-[2.2]" />
+              {/* Close / Batal Button di pojok kanan atas */}
+              <button
+                type="button"
+                onClick={() => setIsWizardOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                title="Batal / Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Step Dots Indicator */}
-            <div className="flex items-center justify-center gap-1.5 mt-3 mb-4">
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/50"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-            </div>
-
-            {/* STEP 1: PILIH TIPE ROOM (seperti memilih cara login) */}
+            {/* ===================================================================
+                STEP 1: PILIH TIPE ROOM (BENTUK CARD KOTAK BERISI IKON & NAMA FITUR)
+                =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="text-center mb-1">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Pilih Tipe Ruang
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-1">
-                    Tentukan format aktivitas yang akan diakses siswa
-                  </p>
-                </div>
-
-                <div className="space-y-2.5 pt-1">
-                  {/* Tipe 1: Materi */}
+                <div className="grid grid-cols-3 gap-3 pt-1">
+                  {/* Card Kotak 1: Room Materi */}
                   <button
                     type="button"
                     onClick={() => handleSelectType("material")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <BookOpen className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <BookOpen className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Room Materi
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Siswa membaca & mempelajari modul tematik
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Room Materi
+                    </span>
                   </button>
 
-                  {/* Tipe 2: Soal Latihan */}
+                  {/* Card Kotak 2: Room Soal */}
                   <button
                     type="button"
                     onClick={() => handleSelectType("question")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <FileQuestion className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <FileQuestion className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Room Soal Latihan
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Siswa mengerjakan butir asesmen kontekstual
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Room Soal
+                    </span>
                   </button>
 
-                  {/* Tipe 3: Materi & Soal */}
+                  {/* Card Kotak 3: Materi & Soal */}
                   <button
                     type="button"
                     onClick={() => handleSelectType("both")}
-                    className="w-full p-4 rounded-2xl bg-gradient-to-r from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-                      <Layers className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
+                      <Layers className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-[#FFD36D]">
-                        Room Materi & Soal
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Paket komplit modul ajar sekaligus latihan soal
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-[#FFD36D] transition-colors leading-tight">
+                      Materi & Soal
+                    </span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: KONFIGURASI KONTEN & NAMA ROOM */}
+            {/* ===================================================================
+                STEP 2: IDENTITAS RUANG BELAJAR (KODE PATEN SISTEM & FORM IDENTITAS)
+                =================================================================== */}
             {wizardStep === 2 && (
-              <form onSubmit={handleSaveRoom} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
-                <div className="text-center mb-2">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Konfigurasi Room
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-0.5">
-                    Tipe: {roomType === "material" ? "Room Materi" : roomType === "question" ? "Room Soal Latihan" : "Materi & Soal"}
-                  </p>
+              <form onSubmit={handleStep2Next} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {/* Badge ID Paten Sistem */}
+                <div className="p-3 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-300">Kode Room Paten:</span>
+                    <span className="font-mono text-sm font-black text-[#FFD36D] tracking-wider px-2.5 py-0.5 rounded-lg bg-black/30 border border-[#FFD36D]/30">
+                      {roomCode}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-gray-400">
+                    Tipe: {roomType === "material" ? "Materi" : roomType === "question" ? "Soal" : "Materi & Soal"}
+                  </span>
                 </div>
 
-                {/* Resource Picker */}
-                {(roomType === "material" || roomType === "both") && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Modul Materi
-                    </label>
-                    <select
-                      value={selectedResourceId}
-                      onChange={(e) => {
-                        setSelectedResourceId(e.target.value);
-                        const mat = materials.find((m) => m.id === e.target.value);
-                        if (mat) {
-                          setCustomTitle(roomType === "both" ? `Paket: ${mat.title}` : mat.title);
-                          setSubject(mat.subject);
-                          setGrade(mat.grade);
-                        }
-                      }}
-                      className="w-full px-3.5 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
-                    >
-                      {materials.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          [{m.id}] {m.title} ({m.subject})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {(roomType === "question" || roomType === "both") && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Butir / Paket Soal
-                    </label>
-                    <select
-                      value={roomType === "both" ? secondaryResourceId : selectedResourceId}
-                      onChange={(e) => {
-                        if (roomType === "both") {
-                          setSecondaryResourceId(e.target.value);
-                        } else {
-                          setSelectedResourceId(e.target.value);
-                          const q = questions.find((item) => item.id === e.target.value);
-                          if (q) {
-                            setCustomTitle(`Latihan: ${q.topic || "Kontekstual"}`);
-                            setSubject(q.subject);
-                            setGrade(q.grade);
-                          }
-                        }
-                      }}
-                      className="w-full px-3.5 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
-                    >
-                      {questions.map((q) => (
-                        <option key={q.id} value={q.id}>
-                          [{q.id}] {q.topic || "Butir Asesmen"} ({q.subject})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Nama Room */}
+                {/* Judul Room */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
                     Nama / Judul Ruang Belajar
@@ -550,32 +486,45 @@ export default function TeacherRoomsPage() {
                   />
                 </div>
 
-                {/* Kode Room */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-gray-200">
-                      Kode Akses Room
+                {/* Mata Pelajaran & Kelas */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-200 mb-1">
+                      Mata Pelajaran
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setRoomCode(generateRandomCode(roomType))}
-                      className="text-[11px] font-bold text-[#FFD36D] hover:underline flex items-center gap-1 cursor-pointer"
+                    <select
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
-                      <Shuffle className="w-3 h-3" />
-                      <span>Acak Ulang</span>
-                    </button>
+                      <option value="Matematika">Matematika</option>
+                      <option value="IPAS">IPAS</option>
+                      <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                      <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                      <option value="Seni Budaya">Seni Budaya</option>
+                    </select>
                   </div>
-                  <input
-                    type="text"
-                    required
-                    maxLength={10}
-                    value={roomCode}
-                    onChange={(e) => setRoomCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-base font-mono font-black text-[#FFD36D] text-center tracking-widest focus:outline-none"
-                  />
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-200 mb-1">
+                      Kelas (SD)
+                    </label>
+                    <select
+                      value={grade}
+                      onChange={(e) => setGrade(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                    >
+                      {[1, 2, 3, 4, 5, 6].map((g) => (
+                        <option key={g} value={g}>
+                          Kelas {g} SD
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between border-t border-white/15">
+                {/* Footer Buttons Step 2 */}
+                <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(1)}
@@ -586,27 +535,129 @@ export default function TeacherRoomsPage() {
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="py-3 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer disabled:opacity-50"
+                    disabled={!customTitle.trim()}
+                    className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    {isSubmitting ? "Menerbitkan..." : "Terbitkan Room"}
+                    <span>Lanjut: Pilih Konten</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </form>
             )}
 
-            {/* STEP 3: SUKSES */}
-            {wizardStep === 3 && createdRoom && (
+            {/* ===================================================================
+                STEP 3: PILIH KONTEN SUMBER DAYA
+                =================================================================== */}
+            {wizardStep === 3 && (
+              <form onSubmit={handleSaveRoom} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <div className="text-xs text-gray-300">
+                    Ruang Belajar: <span className="font-bold text-white">{customTitle}</span>
+                  </div>
+                  <div className="text-[11px] text-gray-400">
+                    {subject} &bull; Kelas {grade} SD &bull; Kode: <span className="font-mono text-[#FFD36D]">{roomCode}</span>
+                  </div>
+                </div>
+
+                {/* Resource Picker Materi */}
+                {(roomType === "material" || roomType === "both") && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-200 mb-1">
+                      Pilih Modul Materi
+                    </label>
+                    {materials.length === 0 ? (
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
+                        Belum ada modul materi tersimpan di sekolah ini.
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedResourceId}
+                        onChange={(e) => setSelectedResourceId(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      >
+                        {materials.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            [{m.id}] {m.title} ({m.subject})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {/* Resource Picker Soal */}
+                {(roomType === "question" || roomType === "both") && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-200 mb-1">
+                      Pilih Butir / Paket Soal
+                    </label>
+                    {questions.length === 0 ? (
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
+                        Belum ada butir soal tersimpan di sekolah ini.
+                      </div>
+                    ) : (
+                      <select
+                        value={roomType === "both" ? secondaryResourceId : selectedResourceId}
+                        onChange={(e) => {
+                          if (roomType === "both") {
+                            setSecondaryResourceId(e.target.value);
+                          } else {
+                            setSelectedResourceId(e.target.value);
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      >
+                        {questions.map((q) => (
+                          <option key={q.id} value={q.id}>
+                            [{q.id}] {q.topic || "Butir Asesmen"} ({q.subject})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer Buttons Step 3 */}
+                <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(2)}
+                    className="py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                  >
+                    Kembali ke Identitas
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <DoorOpen className="w-4 h-4 stroke-[2.2]" />
+                    <span>{isSubmitting ? "Menerbitkan..." : "Terbitkan Room"}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ===================================================================
+                STEP 4: SUKSES / SELESAI
+                =================================================================== */}
+            {wizardStep === 4 && createdRoom && (
               <div className="w-full text-center py-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
                 <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h4 className="text-lg sm:text-xl font-black text-white">
-                  Ruang Belajar Siap Diakses!
-                </h4>
-                <p className="text-xs text-gray-300 max-w-sm mx-auto">
-                  Siswa dapat langsung membuka room tanpa registrasi menggunakan kode:
-                </p>
+                <div>
+                  <h4 className="text-lg sm:text-xl font-black text-white">
+                    Ruang Belajar Berhasil Diterbitkan!
+                  </h4>
+                  <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-xl bg-white/10 border border-white/15">
+                    <span className="text-[11px] text-gray-300">Kode Paten:</span>
+                    <span className="font-mono text-sm font-bold text-[#FFD36D]">
+                      {createdRoom.code}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Big Code Card */}
                 <div className="p-4 rounded-2xl bg-white/10 border-2 border-[#FFD36D]/60 max-w-xs mx-auto text-center space-y-2">

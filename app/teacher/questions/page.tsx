@@ -87,6 +87,7 @@ export default function TeacherQuestionsPage() {
 
   // Step 4: Result
   const [createdQuestionId, setCreatedQuestionId] = useState<string | null>(null);
+  const [patentQuestionId, setPatentQuestionId] = useState("");
 
   // Room Publish Modal
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
@@ -120,12 +121,24 @@ export default function TeacherQuestionsPage() {
 
   // Open Wizard (Step 1: Pilih Metode)
   const handleOpenWizard = (method?: "manual" | "camera" | "pdf" | "ai" | "from_material", linkedMaterial?: LearningMaterial) => {
+    setPatentQuestionId(repository.getNextQuestionId());
+    setUploadedFileName(null);
+    setCapturedPhotoName(null);
+    setPreviewPrompt("");
+    setPreviewOptionA("Rp3.000");
+    setPreviewOptionB("Rp4.500");
+    setPreviewOptionC("Rp5.000");
+    setPreviewOptionD("Rp2.500");
+    setPreviewCorrect("A");
+    setPreviewExplanation("Perhitungan harga total dan pengembalian belanja kontekstual.");
+    setPreviewRubric("Skor 100: Langkah perhitungan runut dan jawaban benar sesuai konteks.");
+
     if (linkedMaterial) {
       setSelectedMethod("from_material");
       setTopic(linkedMaterial.title);
       setSubject(linkedMaterial.subject);
       setGrade(linkedMaterial.grade);
-      setManualQuestionDraft(`Berdasarkan materi "${linkedMaterial.title}", buatkan butir pertanyaan kontekstual untuk siswa.`);
+      setManualQuestionDraft(`Berdasarkan materi "${linkedMaterial.title}", tentukan penyelesaian masalah kontekstual berikut:`);
       setWizardStep(2);
     } else if (method) {
       setSelectedMethod(method);
@@ -184,11 +197,14 @@ export default function TeacherQuestionsPage() {
     handleOpenWizard("from_material", target);
   };
 
-  // Proceed Step 1 -> Step 2
-  const handleNextToContent = (e: React.FormEvent) => {
+  // Step 2 -> Step 3: Validasi Identitas & Masuk Form Konten Soal
+  const handleStep2Submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
-    setWizardStep(2);
+    if (!previewPrompt) {
+      setPreviewPrompt(manualQuestionDraft || `Berdasarkan topik ${topic}, jawablah pertanyaan kontekstual berikut:`);
+    }
+    setWizardStep(3);
   };
 
   // Process AI Context Transformation (Perubahan konteks otomatis oleh sistem AI kita!)
@@ -220,34 +236,34 @@ export default function TeacherQuestionsPage() {
         );
       }
       setIsAiGenerating(false);
-      setWizardStep(3);
-    }, 1200);
+    }, 1000);
   };
 
-  // Final Save in Step 3
-  const handleFinalSave = () => {
-    if (!activeSchool) return;
+  // Step 3 Save: Simpan Butir Soal dari Form Konten
+  const handleStep3Save = () => {
+    if (!activeSchool || !topic.trim()) return;
 
     const options =
       questionType === "multiple_choice"
         ? [
-            { key: "A", text: previewOptionA },
-            { key: "B", text: previewOptionB },
-            { key: "C", text: previewOptionC },
-            { key: "D", text: previewOptionD },
+            { key: "A", text: previewOptionA || "Opsi A" },
+            { key: "B", text: previewOptionB || "Opsi B" },
+            { key: "C", text: previewOptionC || "Opsi C" },
+            { key: "D", text: previewOptionD || "Opsi D" },
           ]
         : [];
 
     const newQuestion = repository.saveQuestion({
+      id: patentQuestionId || undefined,
       school_id: activeSchool.id,
       subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
       grade,
-      topic,
+      topic: topic.trim(),
       type: questionType,
-      question_text: previewPrompt,
+      question_text: previewPrompt || manualQuestionDraft || "Butir pertanyaan kontekstual.",
       options,
       correct_answer: questionType === "multiple_choice" ? previewCorrect : "",
-      explanation: previewExplanation,
+      explanation: previewExplanation || "Pembahasan butir evaluasi kontekstual.",
       rubric: questionType === "essay" ? previewRubric : undefined,
       teacher_id: currentUser?.id || "usr-teacher-01",
       is_contextualized: true,
@@ -314,26 +330,27 @@ export default function TeacherQuestionsPage() {
     <TeacherWorkspaceShell activeGroupId="questions">
       <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 pb-12 font-sans">
         {/* ===================================================================
-            1. HEADER: JUDUL & DESKRIPSI DI KIRI, BUTTON TAMBAH DI KANAN
+            1. HEADER: BUTTON TAMBAH DI SEBELAH KIRI JUDUL & DESKRIPSI
+            Warnanya menyesuaikan dengan navigasi bar kiri (#FFD36D Warm Yellow)
             =================================================================== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-              Bank Soal Kontekstual
-            </h1>
-            <p className="text-xs sm:text-sm text-[#756F7A] mt-1">
-              Katalog butir asesmen pilihan ganda dan esai Kurikulum Merdeka yang diselaraskan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
-            </p>
-          </div>
-
+        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-4 sm:gap-5">
           <button
             type="button"
             onClick={() => handleOpenWizard()}
-            className="self-start sm:self-auto px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
+            className="px-4 py-2.5 rounded-full bg-[#FFD36D] hover:bg-[#F5C754] text-[#51465B] border border-[#E5BE60] text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Tambah Soal</span>
           </button>
+
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              Bank Soal Kontekstual
+            </h1>
+            <p className="text-xs sm:text-sm text-[#756F7A] mt-0.5">
+              Katalog butir asesmen pilihan ganda dan esai Kurikulum Merdeka yang diselaraskan dengan kearifan lokal {activeSchool?.region_name || "wilayah"}.
+            </p>
+          </div>
         </div>
 
         {/* ===================================================================
@@ -630,188 +647,143 @@ export default function TeacherQuestionsPage() {
           ===================================================================== */}
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-[480px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-7 sm:p-9 relative my-auto max-h-[90vh] overflow-y-auto text-white flex flex-col items-center text-center">
-            
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setIsWizardOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div
+            className={`w-full ${
+              wizardStep === 3 ? "max-w-4xl lg:max-w-5xl" : "max-w-[560px]"
+            } bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300`}
+          >
+            {/* ===================================================================
+                MODAL HEADER: JUDUL DI KIRI ATAS, PROGRES STEP DI BAWAHNYA, X DI KANAN ATAS
+                =================================================================== */}
+            <div className="w-full flex items-start justify-between pb-4 border-b border-white/10 mb-5">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                  {wizardStep === 4 ? "Butir Soal Berhasil Disimpan" : "Tambah Butir Soal"}
+                </h3>
+                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi) */}
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : wizardStep > 2 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#FFD36D]">
+                    Langkah {wizardStep} dari 4: {wizardStep === 1 ? "Cara Input" : wizardStep === 2 ? "Identitas" : wizardStep === 3 ? "Konten Soal" : "Selesai"}
+                  </span>
+                </div>
+              </div>
 
-            {/* Top Icon Badge */}
-            <div className="w-12 h-12 rounded-2xl bg-white/10 text-[#FFD36D] flex items-center justify-center shadow-xs">
-              <FileQuestion className="w-6 h-6 stroke-[2.2]" />
+              {/* Close / Batal Button di pojok kanan atas */}
+              <button
+                type="button"
+                onClick={() => setIsWizardOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                title="Batal / Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Step Dots Indicator */}
-            <div className="flex items-center justify-center gap-1.5 mt-3 mb-4">
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/50"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-            </div>
-
-            {/* STEP 1: PILIH METODE (seperti memilih cara login) */}
+            {/* ===================================================================
+                STEP 1: PILIH CARA INPUT (BENTUK CARD KOTAK BERISI IKON & NAMA FITUR)
+                =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="text-center mb-1">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Pilih Metode Soal
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-1">
-                    Pilih cara menyiapkan butir asesmen kontekstual
-                  </p>
-                </div>
-
-                <div className="space-y-2.5 pt-1">
-                  {/* Ketik Manual */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+                  {/* Card Kotak 1: Ketik Manual */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("manual")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <PenTool className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <PenTool className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Ketik Manual
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Tulis naskah butir soal secara mandiri
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Ketik Manual
+                    </span>
                   </button>
 
-                  {/* Motret Naskah */}
+                  {/* Card Kotak 2: Motret Naskah */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("camera")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Camera className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Camera className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Motret Naskah
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Pindai lembar naskah soal fisik
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Motret Naskah
+                    </span>
                   </button>
 
-                  {/* Upload PDF */}
+                  {/* Card Kotak 3: Upload PDF */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("pdf")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Upload className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Upload className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Upload PDF
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Unggah dokumen naskah soal dari perangkat
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Upload PDF
+                    </span>
                   </button>
 
-                  {/* Generate AI */}
+                  {/* Card Kotak 4: Generate AI */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("ai")}
-                    className="w-full p-4 rounded-2xl bg-gradient-to-r from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 sm:p-3 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-                      <Sparkles className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
+                      <Sparkles className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-[#FFD36D]">
-                        Generate AI
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Ramu butir soal dengan kearifan lokal {region}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-[#FFD36D] transition-colors leading-tight">
+                      Generate AI
+                    </span>
                   </button>
 
-                  {/* Dari Materi Tersimpan */}
+                  {/* Card Kotak 5: Dari Materi */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("from_material")}
-                    className="w-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 hover:border-[#FFD36D] flex items-center gap-3.5 transition-all cursor-pointer group text-left"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square col-span-2 sm:col-span-1"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 text-[#FFD36D] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Link2 className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Link2 className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-black text-sm text-white group-hover:text-[#FFD36D] transition-colors">
-                        Dari Materi Tersimpan
-                      </div>
-                      <div className="text-[11px] text-gray-300 font-medium">
-                        Turunkan butir soal dari modul materi yang ada
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#FFD36D] group-hover:translate-x-0.5 transition-all" />
+                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
+                      Dari Materi
+                    </span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: LENGKAPI DATA & NASKAH SOAL */}
+            {/* ===================================================================
+                STEP 2: IDENTITAS SOAL & ID PATEN DARI SISTEM
+                =================================================================== */}
             {wizardStep === 2 && (
-              <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
-                <div className="text-center mb-2">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Lengkapi Soal
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-0.5">
-                    Metode: {selectedMethod === "manual" ? "Ketik Manual" : selectedMethod === "camera" ? "Motret Naskah" : selectedMethod === "pdf" ? "Upload PDF" : selectedMethod === "ai" ? "Generate AI" : "Dari Materi Tersimpan"}
-                  </p>
+              <form onSubmit={handleStep2Submit} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {/* ID Paten Sistem (Non-editable, tidak bisa diacak atau dibuat manual) */}
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-gray-300 block">ID Butir Soal (Paten Sistem)</span>
+                    <span className="text-[10px] text-gray-400">Ditetapkan permanen oleh sistem, tidak dapat diacak</span>
+                  </div>
+                  <span className="font-mono text-xs font-black text-[#FFD36D] bg-[#251E2B] px-3.5 py-1.5 rounded-xl border border-[#FFD36D]/30 select-none">
+                    {patentQuestionId}
+                  </span>
                 </div>
 
-                {selectedMethod === "from_material" && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Modul Materi
-                    </label>
-                    <select
-                      value={topic}
-                      onChange={(e) => {
-                        const selectedMat = materials.find((m) => m.title === e.target.value);
-                        if (selectedMat) {
-                          setTopic(selectedMat.title);
-                          setSubject(selectedMat.subject);
-                          setGrade(selectedMat.grade);
-                          setManualQuestionDraft(`Berdasarkan materi "${selectedMat.title}", buatkan butir pertanyaan kontekstual untuk siswa.`);
-                        }
-                      }}
-                      className="w-full px-3.5 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
-                    >
-                      {materials.map((m) => (
-                        <option key={m.id} value={m.title}>
-                          [{m.id}] {m.title} ({m.subject})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
+                {/* Judul / Topik Soal */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Judul / Topik Soal
+                    Topik / Judul Soal
                   </label>
                   <input
                     type="text"
@@ -823,6 +795,7 @@ export default function TeacherQuestionsPage() {
                   />
                 </div>
 
+                {/* Mapel & Kelas */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
@@ -837,7 +810,7 @@ export default function TeacherQuestionsPage() {
                       <option value="IPAS (Ilmu Pengetahuan Alam & Sosial)">IPAS</option>
                       <option value="Bahasa Indonesia">Bahasa Indonesia</option>
                       <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
-                      <option value="Seni Budaya & Prakarya">Seni Budaya & Prakarya</option>
+                      <option value="Seni Budaya & Prakarya">Seni Budaya</option>
                     </select>
                   </div>
 
@@ -859,7 +832,7 @@ export default function TeacherQuestionsPage() {
                   </div>
                 </div>
 
-                {/* Tipe Soal */}
+                {/* Bentuk Soal */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
                     Bentuk Soal
@@ -892,266 +865,302 @@ export default function TeacherQuestionsPage() {
                   </div>
                 </div>
 
-                {/* Content according to method */}
-                {(selectedMethod === "manual" || selectedMethod === "from_material") && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Draf Soal / Konsep
-                    </label>
-                    <textarea
-                      rows={4}
-                      required
-                      value={manualQuestionDraft}
-                      onChange={(e) => setManualQuestionDraft(e.target.value)}
-                      placeholder="Tulis naskah soal atau konsep evaluasi..."
-                      className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed"
-                    />
-                  </div>
-                )}
-
-                {selectedMethod === "camera" && (
-                  <div className="p-5 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
-                    <Camera className="w-7 h-7 text-[#FFD36D] mx-auto" />
-                    <p className="text-xs font-bold text-gray-200">Foto lembar naskah soal fisik</p>
-                    <button
-                      type="button"
-                      onClick={() => setCapturedPhotoName("foto_lembar_soal.jpg")}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
-                    >
-                      {capturedPhotoName ? "Foto Terpindai: foto_lembar_soal.jpg" : "Ambil Foto Sekarang"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "pdf" && (
-                  <div className="p-5 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
-                    <Upload className="w-7 h-7 text-[#FFD36D] mx-auto" />
-                    <p className="text-xs font-bold text-gray-200">Unggah berkas naskah soal PDF</p>
-                    <button
-                      type="button"
-                      onClick={() => setUploadedFileName("naskah_soal_ujian.pdf")}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
-                    >
-                      {uploadedFileName ? "Berkas Terunggah: naskah_soal_ujian.pdf" : "Pilih Berkas PDF"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "ai" && (
-                  <div className="p-3.5 rounded-2xl bg-white/10 border border-white/20 text-xs text-gray-200 space-y-1">
-                    <span className="font-bold text-[#FFD36D] block">Konteks Wilayah: {region}</span>
-                    <p className="text-gray-300 text-[11px] leading-relaxed">
-                      Sistem AI akan merumuskan butir asesmen {questionType === "multiple_choice" ? "pilihan ganda" : "esai"} dengan kearifan lokal {region}.
-                    </p>
-                  </div>
-                )}
-
-                <div className="pt-2 flex items-center justify-between border-t border-white/15">
+                {/* Footer Navigasi Identitas */}
+                <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(1)}
-                    className="py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                    className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
                     Kembali
                   </button>
-
                   <button
-                    type="button"
-                    disabled={isAiGenerating}
-                    onClick={handleTriggerAiContextTransformation}
-                    className="py-3 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    type="submit"
+                    disabled={!topic.trim()}
+                    className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>{isAiGenerating ? "Memproses..." : "Sesuaikan dengan AI"}</span>
+                    <span>Lanjut ke Input Soal</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
-            {/* STEP 3: REVIEW HASIL */}
+            {/* ===================================================================
+                STEP 3: FORM INPUT KONTEN SOAL (OVERLAY LEBAR & BESAR AGAR NYAMAN)
+                =================================================================== */}
             {wizardStep === 3 && (
-              <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
-                <div className="text-center mb-1">
-                  <h3 className="text-xl font-black text-white tracking-tight">
-                    Review Butir Soal
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-0.5">
-                    Periksa draf dan kunci sebelum disimpan
-                  </p>
+              <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {/* Ringkasan Konteks Singkat */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-bold text-[#FFD36D] bg-[#251E2B] px-2.5 py-0.5 rounded-lg border border-[#FFD36D]/30">
+                      {patentQuestionId}
+                    </span>
+                    <span className="font-bold text-white">{topic}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-gray-300">
+                    <span>{subject} &bull; Kelas {grade} SD</span>
+                    <span className="px-2 py-0.5 rounded-md bg-white/10 text-[#FFD36D] font-bold text-[10px]">
+                      {questionType === "multiple_choice" ? "Pilihan Ganda" : "Soal Esai"}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Teks Pertanyaan */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Teks Pertanyaan Kontekstual
+                {/* Pemilihan Modul Rujukan jika dari materi */}
+                {selectedMethod === "from_material" && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-200 mb-1">
+                      Pilih Modul Materi Rujukan
+                    </label>
+                    <select
+                      value={topic}
+                      onChange={(e) => {
+                        const selectedMat = materials.find((m) => m.title === e.target.value);
+                        if (selectedMat) {
+                          setTopic(selectedMat.title);
+                          setSubject(selectedMat.subject);
+                          setGrade(selectedMat.grade);
+                          setPreviewPrompt(`Berdasarkan modul materi "${selectedMat.title}", tentukan penyelesaian masalah kontekstual berikut:`);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                    >
+                      {materials.map((m) => (
+                        <option key={m.id} value={m.title}>
+                          [{m.id}] {m.title} ({m.subject} - Kelas {m.grade} SD)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* AI Generator Helper Bar di Step 3 jika metode AI */}
+                {selectedMethod === "ai" && (
+                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="text-xs">
+                      <span className="font-bold text-[#FFD36D] block">Kearifan Lokal: {region}</span>
+                      <span className="text-[11px] text-gray-300">
+                        AI merumuskan butir asesmen otomatis dengan data rill {region}.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{isAiGenerating ? "Merumuskan Soal..." : previewPrompt ? "Generate Ulang Soal" : "Mulai Generate AI"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Teks Pertanyaan Kontekstual yang Lapang */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-gray-200">
+                    Teks Pertanyaan / Stimulus Kontekstual
                   </label>
                   <textarea
-                    rows={3}
+                    rows={4}
+                    required
                     value={previewPrompt}
                     onChange={(e) => setPreviewPrompt(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs text-white focus:outline-none leading-relaxed"
+                    placeholder="Tuliskan teks pertanyaan atau stimulus asesmen kontekstual secara lengkap di sini..."
+                    className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[110px]"
                   />
                 </div>
 
-                {/* Opsi Pilihan Ganda / Rubrik Esai */}
+                {/* Opsi Pilihan Ganda (Grid 2 Kolom Luas) / Rubrik Esai */}
                 {questionType === "multiple_choice" ? (
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-gray-200">
-                      Opsi Jawaban & Kunci:
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-gray-200">
+                        Opsi Pilihan Jawaban
+                      </label>
+                      <span className="text-[11px] text-gray-400">
+                        Tentukan teks tiap opsi dan tandai kunci jawaban yang benar
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Opsi A */}
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#251E2B]/80 border-2 border-white/15 focus-within:border-[#FFD36D]">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           A
                         </span>
                         <input
                           type="text"
+                          required
                           value={previewOptionA}
                           onChange={(e) => setPreviewOptionA(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
+                          placeholder="Pilihan jawaban A"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
                         />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+
+                      {/* Opsi B */}
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#251E2B]/80 border-2 border-white/15 focus-within:border-[#FFD36D]">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           B
                         </span>
                         <input
                           type="text"
+                          required
                           value={previewOptionB}
                           onChange={(e) => setPreviewOptionB(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
+                          placeholder="Pilihan jawaban B"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
                         />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+
+                      {/* Opsi C */}
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#251E2B]/80 border-2 border-white/15 focus-within:border-[#FFD36D]">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           C
                         </span>
                         <input
                           type="text"
+                          required
                           value={previewOptionC}
                           onChange={(e) => setPreviewOptionC(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
+                          placeholder="Pilihan jawaban C"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
                         />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+
+                      {/* Opsi D */}
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#251E2B]/80 border-2 border-white/15 focus-within:border-[#FFD36D]">
+                        <span className="w-7 h-7 rounded-xl bg-white/10 text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
                           D
                         </span>
                         <input
                           type="text"
+                          required
                           value={previewOptionD}
                           onChange={(e) => setPreviewOptionD(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:outline-none"
+                          placeholder="Pilihan jawaban D"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
                         />
                       </div>
                     </div>
 
-                    <div className="pt-1 flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-200">Kunci Jawaban:</span>
-                      <select
-                        value={previewCorrect}
-                        onChange={(e) => setPreviewCorrect(e.target.value)}
-                        className="px-3 py-1 rounded-xl border border-white/20 bg-[#251E2B] text-xs font-black text-[#FFD36D] focus:outline-none"
-                      >
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                      </select>
+                    {/* Kunci Jawaban Selector */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-white/5 border border-white/10">
+                      <span className="text-xs font-bold text-gray-200">
+                        Kunci Jawaban Benar:
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {["A", "B", "C", "D"].map((key) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setPreviewCorrect(key)}
+                            className={`w-9 h-9 rounded-xl font-black text-xs transition-all cursor-pointer ${
+                              previewCorrect === key
+                                ? "bg-[#FFD36D] text-[#251E2B] shadow-md scale-105"
+                                : "bg-white/10 text-white hover:bg-white/20"
+                            }`}
+                          >
+                            {key}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Rubrik Penilaian Esai
+                  /* Rubrik Penilaian Soal Esai */
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-gray-200">
+                      Rubrik Penilaian & Panduan Penskoran Esai
                     </label>
                     <textarea
-                      rows={3}
+                      rows={5}
                       value={previewRubric}
                       onChange={(e) => setPreviewRubric(e.target.value)}
-                      className="w-full p-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 text-xs text-white focus:outline-none leading-relaxed"
+                      placeholder="Contoh: Skor 100 bila siswa menuliskan tahapan operasi hitung dan nilai kembalian dengan tepat..."
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[120px]"
                     />
                   </div>
                 )}
 
-                {/* Pembahasan */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Pembahasan Soal
+                {/* Pembahasan Kontekstual */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-gray-200">
+                    Pembahasan & Penjelasan Asesmen
                   </label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={previewExplanation}
                     onChange={(e) => setPreviewExplanation(e.target.value)}
-                    className="w-full p-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 text-xs text-white focus:outline-none leading-relaxed"
+                    placeholder="Uraikan langkah penyelesaian masalah kontekstual agar siswa memahami konsepnya..."
+                    className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed"
                   />
                 </div>
 
-                <div className="pt-2 flex items-center justify-between border-t border-white/15">
+                {/* Footer Buttons Step 3 */}
+                <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
-                    className="py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                    className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
-                    Ubah Draf
+                    Kembali ke Identitas
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleFinalSave}
-                    className="py-3 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+                    onClick={handleStep3Save}
+                    disabled={!previewPrompt.trim() && !manualQuestionDraft.trim()}
+                    className="py-2.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    Simpan Soal
+                    <span>Simpan Butir Soal</span>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 4: SUKSES */}
+            {/* ===================================================================
+                STEP 4: SUKSES / BERHASIL DISIMPAN DENGAN ID PATEN
+                =================================================================== */}
             {wizardStep === 4 && (
               <div className="w-full text-center py-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
                 <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h4 className="text-lg sm:text-xl font-black text-white">
-                  Butir Soal Berhasil Disimpan!
-                </h4>
-                <p className="text-xs text-gray-300 max-w-sm mx-auto">
-                  Butir soal telah tersimpan di katalog dan siap dibagikan melalui room akses.
-                </p>
-
-                {createdQuestionId && (
-                  <div className="p-3 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-between max-w-xs mx-auto">
-                    <span className="text-xs font-mono font-bold text-[#FFD36D]">
-                      {createdQuestionId}
+                <div>
+                  <h4 className="text-lg sm:text-xl font-black text-white">
+                    Butir Soal Berhasil Disimpan!
+                  </h4>
+                  <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-xl bg-white/10 border border-white/15">
+                    <span className="text-[11px] text-gray-300">ID Paten:</span>
+                    <span className="font-mono text-xs font-bold text-[#FFD36D]">
+                      {createdQuestionId || patentQuestionId}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(createdQuestionId)}
-                      className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      {copiedCode === createdQuestionId ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-400" />
-                          <span>Tersalin</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Salin ID</span>
-                        </>
-                      )}
-                    </button>
                   </div>
-                )}
+                </div>
 
-                <div className="pt-2">
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWizardOpen(false);
+                      const q = questions.find((item) => item.id === createdQuestionId) || questions[0];
+                      if (q) handleOpenPublishRoom(q);
+                    }}
+                    className="w-full sm:w-auto py-3 px-6 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold border border-[#645770]/40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <DoorOpen className="w-4 h-4" />
+                    <span>Terbitkan Room Soal</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setIsWizardOpen(false)}
-                    className="w-full py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    className="w-full sm:w-auto py-3 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-extrabold shadow-md cursor-pointer"
                   >
-                    Selesai & Tutup
+                    Selesai & Lihat Soal
                   </button>
                 </div>
               </div>
