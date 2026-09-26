@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Shield,
   LayoutDashboard,
   Users,
   Building2,
@@ -24,18 +23,20 @@ import {
   ExternalLink,
   Menu,
   X,
-  Sparkles,
+  ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
+import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
 interface AdminWorkspaceShellProps {
   children: React.ReactNode;
   activeGroupId?: string;
 }
 
-export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
+export function AdminWorkspaceShell({ children, activeGroupId }: AdminWorkspaceShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+
   const [adminUser, setAdminUser] = useState<{
     id: string;
     username: string;
@@ -44,29 +45,39 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
     permissions: string[];
   } | null>(null);
 
-  const [aiMenuOpen, setAiMenuOpen] = useState(true);
-  const [kbMenuOpen, setKbMenuOpen] = useState(true);
-  const [sysMenuOpen, setSysMenuOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [aiMenuOpen, setAiMenuOpen] = useState(() => pathname.startsWith("/admin/ai"));
+  const [kbMenuOpen, setKbMenuOpen] = useState(() => pathname.startsWith("/admin/knowledge-base"));
+  const [sysMenuOpen, setSysMenuOpen] = useState(() =>
+    pathname.startsWith("/admin/system") || pathname.startsWith("/admin/security")
+  );
 
   useEffect(() => {
-    // Check authenticated admin session
+    let isMounted = true;
+
     fetch("/api/admin/auth/me")
       .then((res) => {
         if (!res.ok) {
-          router.push("/admin/login");
+          if (res.status === 401 && isMounted) {
+            router.push("/admin/login");
+          }
           return null;
         }
         return res.json();
       })
       .then((data) => {
-        if (data?.authenticated) {
+        if (data?.authenticated && isMounted) {
           setAdminUser(data.admin);
         }
       })
-      .catch(() => {
-        router.push("/admin/login");
+      .catch((err) => {
+        // Log softly without kicking user on transient network aborts
+        console.warn("Session check notice:", err?.message || err);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   // Close mobile drawer on route change
@@ -75,7 +86,11 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
   }, [pathname]);
 
   const handleLogout = async () => {
-    await fetch("/api/admin/auth/logout", { method: "POST" });
+    try {
+      await fetch("/api/admin/auth/logout", { method: "POST" });
+    } catch {
+      // Fallback
+    }
     router.push("/admin/login");
   };
 
@@ -83,20 +98,20 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
     <div className="flex flex-col h-full justify-between">
       <div>
         {/* Brand Header */}
-        <div className="flex items-center justify-between pb-6 border-b border-white/10">
+        <div className="flex items-center justify-between pb-5 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center font-black text-xl shadow-[0_4px_12px_rgba(255,211,109,0.35)] shrink-0">
               D
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-lg tracking-tight text-white">DEPASKAN</span>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-[#F47D83] text-white px-2 py-0.5 rounded-full shadow-xs">
-                  Control
+                <span className="font-black text-base tracking-tight text-white">DEPASKAN</span>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-[#FFD36D] text-[#3E3547] px-2 py-0.5 rounded-full shadow-xs">
+                  Admin
                 </span>
               </div>
               <span className="text-[11px] text-[#DFAEB3] block font-medium">
-                Admin & AI Control Center
+                Pusat Kendali Pengembang
               </span>
             </div>
           </div>
@@ -104,7 +119,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden p-2 rounded-xl bg-white/10 text-white/80 hover:text-white"
+              className="lg:hidden p-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -112,18 +127,18 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
         </div>
 
         {/* Navigation Menu */}
-        <nav className="mt-6 space-y-1.5 text-xs font-bold">
+        <nav className="mt-5 space-y-1 text-xs font-bold overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
           {/* 1. Dashboard */}
           <Link
             href="/admin/dashboard"
             className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl transition-all ${
               pathname === "/admin/dashboard"
-                ? "bg-white/20 text-[#FFD36D] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]"
+                ? "bg-[#FFD36D] text-[#3E3547] font-black shadow-md"
                 : "text-white/80 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Dashboard Ringkasan</span>
+            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            <span>Dashboard</span>
           </Link>
 
           {/* 2. Pengguna & Sekolah */}
@@ -131,32 +146,32 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             href="/admin/users"
             className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl transition-all ${
               pathname.startsWith("/admin/users")
-                ? "bg-white/20 text-[#FFD36D] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]"
+                ? "bg-[#FFD36D] text-[#3E3547] font-black shadow-md"
                 : "text-white/80 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Manajemen Pengguna</span>
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Pengguna</span>
           </Link>
 
           <Link
             href="/admin/schools"
             className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl transition-all ${
               pathname.startsWith("/admin/schools")
-                ? "bg-white/20 text-[#FFD36D] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]"
+                ? "bg-[#FFD36D] text-[#3E3547] font-black shadow-md"
                 : "text-white/80 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <Building2 className="w-4 h-4" />
-            <span>Manajemen Sekolah</span>
+            <Building2 className="w-4 h-4 shrink-0" />
+            <span>Sekolah</span>
           </Link>
 
-          {/* 3. AI Management Group */}
+          {/* 3. AI Provider Group */}
           <div className="pt-2">
             <button
               type="button"
               onClick={() => setAiMenuOpen(!aiMenuOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-[10px] uppercase tracking-wider text-[#DFAEB3] font-black hover:text-white transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-[11px] uppercase tracking-wider text-[#DFAEB3] font-black hover:text-white transition-colors"
             >
               <span>Multi-Provider AI</span>
               {aiMenuOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -167,51 +182,51 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
                 <Link
                   href="/admin/ai"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname === "/admin/ai" ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname === "/admin/ai" ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span>Overview Provider</span>
+                  <Cpu className="w-3.5 h-3.5 shrink-0" />
+                  <span>Overview</span>
                 </Link>
 
                 <Link
                   href="/admin/ai/credentials"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/ai/credentials") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/ai/credentials") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <Key className="w-3.5 h-3.5" />
-                  <span>Kredensial API Key</span>
+                  <Key className="w-3.5 h-3.5 shrink-0" />
+                  <span>Kredensial API</span>
                 </Link>
 
                 <Link
                   href="/admin/ai/models"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/ai/models") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/ai/models") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <Sliders className="w-3.5 h-3.5" />
+                  <Sliders className="w-3.5 h-3.5 shrink-0" />
                   <span>Model & Routing</span>
                 </Link>
 
                 <Link
                   href="/admin/ai/usage"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/ai/usage") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/ai/usage") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  <span>Penggunaan & Token</span>
+                  <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Penggunaan Token</span>
                 </Link>
 
                 <Link
                   href="/admin/ai/failover"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/ai/failover") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/ai/failover") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Failover & Circuit</span>
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Failover Circuit</span>
                 </Link>
               </div>
             )}
@@ -222,7 +237,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             <button
               type="button"
               onClick={() => setKbMenuOpen(!kbMenuOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-[10px] uppercase tracking-wider text-[#DFAEB3] font-black hover:text-white transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-[11px] uppercase tracking-wider text-[#DFAEB3] font-black hover:text-white transition-colors"
             >
               <span>Knowledge Base</span>
               {kbMenuOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -233,20 +248,20 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
                 <Link
                   href="/admin/knowledge-base"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname === "/admin/knowledge-base" ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname === "/admin/knowledge-base" ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <Database className="w-3.5 h-3.5" />
-                  <span>Dataset & Entitas</span>
+                  <Database className="w-3.5 h-3.5 shrink-0" />
+                  <span>Entitas Wilayah</span>
                 </Link>
 
                 <Link
                   href="/admin/knowledge-base/media"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/knowledge-base/media") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/knowledge-base/media") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <ImageIcon className="w-3.5 h-3.5" />
+                  <ImageIcon className="w-3.5 h-3.5 shrink-0" />
                   <span>Media Aset CC</span>
                 </Link>
               </div>
@@ -258,9 +273,9 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             <button
               type="button"
               onClick={() => setSysMenuOpen(!sysMenuOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-[10px] uppercase tracking-wider text-[#DFAEB3] font-black hover:text-white transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-[11px] uppercase tracking-wider text-[#DFAEB3] font-black hover:text-white transition-colors"
             >
-              <span>Sistem & Keamanan</span>
+              <span>Sistem & Log</span>
               {sysMenuOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             </button>
 
@@ -269,31 +284,31 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
                 <Link
                   href="/admin/system/health"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/system/health") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/system/health") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <Activity className="w-3.5 h-3.5" />
+                  <Activity className="w-3.5 h-3.5 shrink-0" />
                   <span>Kesehatan Sistem</span>
                 </Link>
 
                 <Link
                   href="/admin/system/settings"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/system/settings") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/system/settings") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Pengaturan & Mode</span>
+                  <Settings className="w-3.5 h-3.5 shrink-0" />
+                  <span>Pengaturan</span>
                 </Link>
 
                 <Link
                   href="/admin/security/audit-logs"
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                    pathname.startsWith("/admin/security") ? "bg-white/20 text-[#FFD36D]" : "text-white/70 hover:text-white"
+                    pathname.startsWith("/admin/security") ? "bg-[#FFD36D] text-[#3E3547] font-black" : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Audit Log Keamanan</span>
+                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                  <span>Audit Log</span>
                 </Link>
               </div>
             )}
@@ -302,7 +317,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
       </div>
 
       {/* Bottom Admin User Box */}
-      <div className="pt-6 border-t border-white/10 mt-6">
+      <div className="pt-4 border-t border-white/10 mt-4">
         <div className="flex items-center justify-between">
           <Link
             href="/admin/profile"
@@ -314,7 +329,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             </div>
             <div>
               <span className="font-extrabold text-xs text-white block line-clamp-1">
-                {adminUser?.full_name || "Admin Developer"}
+                {adminUser?.full_name || "Administrator"}
               </span>
               <span className="text-[10px] text-[#FFD36D] font-mono block">
                 {adminUser?.role || "SUPER_ADMIN"}
@@ -326,7 +341,7 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
             type="button"
             onClick={handleLogout}
             className="p-2 rounded-xl bg-white/10 hover:bg-[#F47D83] hover:text-white text-white/80 transition-colors shadow-xs"
-            title="Logout Sesi Admin"
+            title="Keluar dari Admin"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -336,95 +351,79 @@ export function AdminWorkspaceShell({ children }: AdminWorkspaceShellProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[#FAF7F3] text-[#23212A] flex flex-col font-sans relative overflow-x-hidden selection:bg-[#FFD36D] selection:text-[#23212A]">
-      {/* Ambient background glows */}
-      <div className="fixed -top-40 -left-40 w-96 h-96 bg-[#51465B]/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed top-1/3 -right-40 w-96 h-96 bg-[#F47D83]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed -bottom-40 -right-40 w-96 h-96 bg-[#FFD36D]/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="h-screen max-h-screen w-full bg-[#51465B] flex flex-row relative overflow-hidden text-[#23212A] antialiased">
+      {/* 1. Left Vertical Navigation Sidebar (Desktop) */}
+      <aside className="hidden lg:flex w-64 bg-[#51465B] text-white p-5 flex-col justify-between shrink-0 h-screen max-h-screen overflow-hidden border-r border-white/5">
+        {navContent}
+      </aside>
 
-      {/* Outer Application Container with Layered Soft UI */}
-      <div className="flex-1 w-full max-w-[1600px] mx-auto p-2 sm:p-4 md:p-6 lg:p-8 flex flex-col">
-        <div className="flex-1 bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_50px_rgba(81,70,91,0.08)] border border-[#E9E5E8] flex flex-col lg:flex-row overflow-hidden relative">
-          
-          {/* ================================================================= */}
-          {/* SIDEBAR: Desktop Dark Mauve Layer (#51465B)                       */}
-          {/* ================================================================= */}
-          <aside className="hidden lg:flex w-72 bg-[#51465B] text-white p-6 flex-col justify-between shrink-0 rounded-l-[32px] sm:rounded-l-[40px]">
+      {/* Mobile Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex animate-in fade-in duration-150">
+          <div className="w-72 bg-[#51465B] text-white p-5 flex flex-col justify-between h-full shadow-2xl animate-in slide-in-from-left duration-200">
             {navContent}
-          </aside>
-
-          {/* ================================================================= */}
-          {/* MOBILE SIDEBAR DRAWER OVERLAY                                     */}
-          {/* ================================================================= */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex">
-              <div className="w-72 bg-[#51465B] text-white p-6 flex flex-col justify-between h-full shadow-2xl animate-in slide-in-from-left duration-200">
-                {navContent}
-              </div>
-              <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
-            </div>
-          )}
-
-          {/* ================================================================= */}
-          {/* MAIN CONTENT AREA: Off-White / White Layer                        */}
-          {/* ================================================================= */}
-          <div className="flex-1 flex flex-col min-w-0 bg-[#FAF7F3]">
-            {/* Floating Top Bar with Glassmorphic Accent */}
-            <header className="mx-4 sm:mx-6 md:mx-8 mt-4 sm:mt-6 bg-white/85 backdrop-blur-md border border-[#E9E5E8] rounded-2xl sm:rounded-3xl px-5 py-3.5 shadow-[0_4px_16px_rgba(81,70,91,0.04)] flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(true)}
-                  className="lg:hidden p-2 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-[#51465B] hover:bg-slate-100"
-                  aria-label="Buka Menu Admin"
-                >
-                  <Menu className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#51465B]" />
-                  <span className="text-xs font-black text-[#51465B] tracking-tight uppercase">
-                    DEPASKAN Control Center
-                  </span>
-                  <span className="hidden sm:inline text-xs text-[#756F7A] font-semibold">
-                    &bull; Developer Management
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                  <span className="text-[11px]">Sistem Normal</span>
-                </div>
-
-                <Link
-                  href="/teacher/dashboard"
-                  target="_blank"
-                  className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#E9E5E8] bg-white text-xs font-bold text-[#51465B] hover:bg-[#FAF7F3] hover:border-[#51465B]/30 transition-all shadow-xs"
-                >
-                  <span>App Utama</span>
-                  <ExternalLink className="w-3 h-3 text-[#F47D83]" />
-                </Link>
-
-                <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-[#E9E5E8]">
-                  <div className="w-7 h-7 rounded-xl bg-[#51465B] text-[#FFD36D] font-black text-[10px] flex items-center justify-center shadow-xs">
-                    {adminUser?.username?.substring(0, 2).toUpperCase() || "AD"}
-                  </div>
-                  <span className="text-xs font-bold text-[#23212A]">
-                    {adminUser?.username || "admin"}
-                  </span>
-                </div>
-              </div>
-            </header>
-
-            {/* Page Content */}
-            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
-              {children}
-            </main>
           </div>
+          <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
         </div>
+      )}
+
+      {/* 2. Floating Top-Right Controls Pill matching Teacher Workspace Shell */}
+      <div className="fixed top-4 right-4 sm:right-6 z-40 select-none flex items-center gap-2 justify-end">
+        <div className="flex items-center gap-2 p-1.5 pl-3 rounded-full bg-[#51465B]/90 backdrop-blur-md text-white border border-white/15 shadow-xl">
+          {/* Mobile Menu Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+            aria-label="Buka Menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+
+          {/* Status Indicator */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Aktif</span>
+          </div>
+
+          {/* Link to App Utama */}
+          <Link
+            href="/teacher/dashboard"
+            target="_blank"
+            className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <span>App Guru</span>
+            <ExternalLink className="w-3 h-3 text-[#FFD36D]" />
+          </Link>
+
+          {/* Admin Avatar & Role */}
+          <div className="flex items-center gap-2 pl-2 border-l border-white/15 pr-1">
+            <div className="w-7 h-7 rounded-full bg-[#FFD36D] text-[#51465B] font-black text-xs flex items-center justify-center shadow-xs">
+              {adminUser?.username?.substring(0, 2).toUpperCase() || "AD"}
+            </div>
+            <span className="text-xs font-bold text-white hidden sm:inline">
+              {adminUser?.username || "Admin"}
+            </span>
+          </div>
+
+          {/* Quick Logout */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-[#F47D83] transition-colors"
+            title="Keluar Sesi"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Main Content Section (Layered Stacking Card with rounded corners matching TeacherWorkspaceShell) */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#51465B] h-screen max-h-screen overflow-hidden">
+        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[24px] sm:rounded-tl-[42px] rounded-bl-[24px] sm:rounded-bl-[42px] shadow-2xl p-4 sm:p-7 lg:p-9 h-screen max-h-screen overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );
 }
-

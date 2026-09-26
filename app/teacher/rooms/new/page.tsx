@@ -33,9 +33,9 @@ export default function CreateRoomPage() {
   const [grade, setGrade] = useState<number>(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generate random 6-character room code without hyphen in lowercase
+  // Generate random 7-character room code without hyphen in lowercase
   const generateRandomCode = (type: "material" | "question" | "both") => {
-    const prefix = type === "material" ? "mtr" : type === "question" ? "sol" : "rom";
+    const prefix = type === "material" ? "mat" : type === "question" ? "sol" : "rom";
     const num = Math.floor(1000 + Math.random() * 9000);
     return `${prefix}${num}`;
   };

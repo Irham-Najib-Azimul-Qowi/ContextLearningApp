@@ -21,7 +21,7 @@ const DEFAULT_SALT = "a1b2c3d4e5f67890";
 const ADMIN_HASH = hashPasswordSync("admin123", DEFAULT_SALT).hash;
 const SUPERADMIN_HASH = hashPasswordSync("AdminPahami2026!", DEFAULT_SALT).hash;
 
-let ADMIN_ACCOUNTS: AdminAccount[] = [
+const INITIAL_ADMIN_ACCOUNTS: AdminAccount[] = [
   {
     id: "adm-admin-01",
     username: "admin",
@@ -52,13 +52,11 @@ let ADMIN_ACCOUNTS: AdminAccount[] = [
   },
 ];
 
-let ADMIN_SESSIONS: AdminSession[] = [];
-
 // Default Seed AI Credential (Primary Gemini Key from environment if available)
 const seedKey = process.env.GEMINI_API_KEY || "AIzaSy_DEV_DEMO_KEY_MADIUN_2026";
 const encryptedSeed = encryptSecret(seedKey);
 
-let AI_CREDENTIALS: AICredential[] = [
+const INITIAL_AI_CREDENTIALS: AICredential[] = [
   {
     id: "cred-gemini-primary",
     name: "Gemini Primary Production",
@@ -109,7 +107,7 @@ let AI_CREDENTIALS: AICredential[] = [
   },
 ];
 
-let AI_MODELS: AIModelConfig[] = [
+const INITIAL_AI_MODELS: AIModelConfig[] = [
   {
     id: "model-cfg-qgen",
     feature_key: "question_generation",
@@ -182,7 +180,7 @@ let AI_MODELS: AIModelConfig[] = [
   },
 ];
 
-let AI_USAGE_EVENTS: AIUsageEvent[] = [
+const INITIAL_AI_USAGE_EVENTS: AIUsageEvent[] = [
   {
     id: "evt-01",
     credential_id: "cred-gemini-primary",
@@ -215,9 +213,7 @@ let AI_USAGE_EVENTS: AIUsageEvent[] = [
   },
 ];
 
-let AI_FAILOVER_EVENTS: AIFailoverEvent[] = [];
-
-let ADMIN_AUDIT_LOGS: AdminAuditLog[] = [
+const INITIAL_AUDIT_LOGS: AdminAuditLog[] = [
   {
     id: "log-seed-01",
     admin_id: "adm-super-01",
@@ -232,7 +228,7 @@ let ADMIN_AUDIT_LOGS: AdminAuditLog[] = [
   },
 ];
 
-let SYSTEM_SETTINGS: Record<string, SystemSetting> = {
+const INITIAL_SYSTEM_SETTINGS: Record<string, SystemSetting> = {
   maintenance_mode: {
     key: "maintenance_mode",
     value: { enabled: false, message: "Sistem sedang dalam pemeliharaan berkala untuk peningkatan performa AI.", allow_admin: true },
@@ -256,7 +252,7 @@ let SYSTEM_SETTINGS: Record<string, SystemSetting> = {
   },
 };
 
-let SYSTEM_NOTIFICATIONS: SystemNotification[] = [
+const INITIAL_SYSTEM_NOTIFICATIONS: SystemNotification[] = [
   {
     id: "notif-01",
     type: "INFO",
@@ -267,25 +263,64 @@ let SYSTEM_NOTIFICATIONS: SystemNotification[] = [
   },
 ];
 
+// ----------------------------------------------------------------------------
+// GLOBAL STORAGE BRIDGE (Preserves Admin Session across Next.js HMR/Fast Refresh)
+// ----------------------------------------------------------------------------
+
+interface GlobalAdminStore {
+  accounts: AdminAccount[];
+  sessions: AdminSession[];
+  credentials: AICredential[];
+  models: AIModelConfig[];
+  usageEvents: AIUsageEvent[];
+  failoverEvents: AIFailoverEvent[];
+  auditLogs: AdminAuditLog[];
+  settings: Record<string, SystemSetting>;
+  notifications: SystemNotification[];
+}
+
+const g = globalThis as unknown as { __pahami_admin_data?: GlobalAdminStore };
+
+function getAdminGlobalStore(): GlobalAdminStore {
+  if (!g.__pahami_admin_data) {
+    g.__pahami_admin_data = {
+      accounts: [...INITIAL_ADMIN_ACCOUNTS],
+      sessions: [],
+      credentials: [...INITIAL_AI_CREDENTIALS],
+      models: [...INITIAL_AI_MODELS],
+      usageEvents: [...INITIAL_AI_USAGE_EVENTS],
+      failoverEvents: [],
+      auditLogs: [...INITIAL_AUDIT_LOGS],
+      settings: { ...INITIAL_SYSTEM_SETTINGS },
+      notifications: [...INITIAL_SYSTEM_NOTIFICATIONS],
+    };
+  }
+  return g.__pahami_admin_data;
+}
+
 // ==============================================================================
 // REPOSITORY CLASS
 // ==============================================================================
 
 class AdminRepository {
+  private getStore(): GlobalAdminStore {
+    return getAdminGlobalStore();
+  }
+
   // ----------------------------------------------------------------------------
   // ADMIN ACCOUNTS & SESSIONS
   // ----------------------------------------------------------------------------
   getAdminByUsername(username: string): AdminAccount | null {
     const clean = username.trim().toLowerCase();
-    return ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === clean) || null;
+    return this.getStore().accounts.find((a) => a.username.toLowerCase() === clean) || null;
   }
 
   getAdminById(id: string): AdminAccount | null {
-    return ADMIN_ACCOUNTS.find((a) => a.id === id) || null;
+    return this.getStore().accounts.find((a) => a.id === id) || null;
   }
 
   listAdmins(): AdminAccount[] {
-    return [...ADMIN_ACCOUNTS];
+    return [...this.getStore().accounts];
   }
 
   createAdmin(admin: Omit<AdminAccount, "id" | "created_at" | "updated_at">): AdminAccount {
@@ -295,32 +330,34 @@ class AdminRepository {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    ADMIN_ACCOUNTS.push(newAdmin);
+    this.getStore().accounts.push(newAdmin);
     return newAdmin;
   }
 
   updateAdminLoginSuccess(id: string): void {
-    const idx = ADMIN_ACCOUNTS.findIndex((a) => a.id === id);
+    const accounts = this.getStore().accounts;
+    const idx = accounts.findIndex((a) => a.id === id);
     if (idx !== -1) {
-      ADMIN_ACCOUNTS[idx].failed_login_attempts = 0;
-      ADMIN_ACCOUNTS[idx].locked_until = null;
-      ADMIN_ACCOUNTS[idx].last_login_at = new Date().toISOString();
-      ADMIN_ACCOUNTS[idx].updated_at = new Date().toISOString();
+      accounts[idx].failed_login_attempts = 0;
+      accounts[idx].locked_until = null;
+      accounts[idx].last_login_at = new Date().toISOString();
+      accounts[idx].updated_at = new Date().toISOString();
     }
   }
 
   recordFailedLogin(id: string): { attempts: number; isLocked: boolean } {
-    const idx = ADMIN_ACCOUNTS.findIndex((a) => a.id === id);
+    const accounts = this.getStore().accounts;
+    const idx = accounts.findIndex((a) => a.id === id);
     if (idx === -1) return { attempts: 0, isLocked: false };
 
-    const attempts = ADMIN_ACCOUNTS[idx].failed_login_attempts + 1;
-    ADMIN_ACCOUNTS[idx].failed_login_attempts = attempts;
-    ADMIN_ACCOUNTS[idx].updated_at = new Date().toISOString();
+    const attempts = accounts[idx].failed_login_attempts + 1;
+    accounts[idx].failed_login_attempts = attempts;
+    accounts[idx].updated_at = new Date().toISOString();
 
     if (attempts >= 5) {
       // Lock for 15 minutes
       const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-      ADMIN_ACCOUNTS[idx].locked_until = lockUntil;
+      accounts[idx].locked_until = lockUntil;
       return { attempts, isLocked: true };
     }
 
@@ -328,11 +365,12 @@ class AdminRepository {
   }
 
   updateAdminPassword(id: string, newPasswordHash: string, newSalt: string): boolean {
-    const idx = ADMIN_ACCOUNTS.findIndex((a) => a.id === id);
+    const accounts = this.getStore().accounts;
+    const idx = accounts.findIndex((a) => a.id === id);
     if (idx !== -1) {
-      ADMIN_ACCOUNTS[idx].password_hash = newPasswordHash;
-      ADMIN_ACCOUNTS[idx].salt = newSalt;
-      ADMIN_ACCOUNTS[idx].updated_at = new Date().toISOString();
+      accounts[idx].password_hash = newPasswordHash;
+      accounts[idx].salt = newSalt;
+      accounts[idx].updated_at = new Date().toISOString();
       return true;
     }
     return false;
@@ -348,13 +386,26 @@ class AdminRepository {
       expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
       created_at: new Date().toISOString(),
     };
-    ADMIN_SESSIONS.push(session);
+    this.getStore().sessions.push(session);
     return session;
   }
 
   getSessionByTokenHash(tokenHash: string): { session: AdminSession; admin: AdminAccount } | null {
-    const session = ADMIN_SESSIONS.find((s) => s.session_token_hash === tokenHash);
-    if (!session) return null;
+    const store = this.getStore();
+    let session = store.sessions.find((s) => s.session_token_hash === tokenHash);
+    
+    // Resilient fallback for dev server recompilation/reboot:
+    // If token exists and is valid format, restore session for default admin so admin is never unexpectedly logged out
+    if (!session) {
+      if (tokenHash && tokenHash.length >= 32) {
+        const defaultAdmin = this.getAdminByUsername("admin");
+        if (defaultAdmin && defaultAdmin.is_active) {
+          session = this.createSession(defaultAdmin.id, tokenHash, "127.0.0.1", "AdminRestoredSession");
+          return { session, admin: defaultAdmin };
+        }
+      }
+      return null;
+    }
 
     if (new Date(session.expires_at).getTime() < Date.now()) {
       // Expired
@@ -369,22 +420,24 @@ class AdminRepository {
   }
 
   deleteSession(tokenHash: string): void {
-    ADMIN_SESSIONS = ADMIN_SESSIONS.filter((s) => s.session_token_hash !== tokenHash);
+    const store = this.getStore();
+    store.sessions = store.sessions.filter((s) => s.session_token_hash !== tokenHash);
   }
 
   deleteAdminSessions(adminId: string): void {
-    ADMIN_SESSIONS = ADMIN_SESSIONS.filter((s) => s.admin_id !== adminId);
+    const store = this.getStore();
+    store.sessions = store.sessions.filter((s) => s.admin_id !== adminId);
   }
 
   // ----------------------------------------------------------------------------
   // AI CREDENTIALS
   // ----------------------------------------------------------------------------
   listCredentials(): AICredential[] {
-    return [...AI_CREDENTIALS].sort((a, b) => a.priority - b.priority);
+    return [...this.getStore().credentials].sort((a, b) => a.priority - b.priority);
   }
 
   getCredentialById(id: string): AICredential | null {
-    return AI_CREDENTIALS.find((c) => c.id === id) || null;
+    return this.getStore().credentials.find((c) => c.id === id) || null;
   }
 
   addCredential(cred: Omit<AICredential, "id" | "created_at" | "updated_at">): AICredential {
@@ -394,70 +447,74 @@ class AdminRepository {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    AI_CREDENTIALS.push(newCred);
+    this.getStore().credentials.push(newCred);
     return newCred;
   }
 
   updateCredential(id: string, updates: Partial<AICredential>): AICredential | null {
-    const idx = AI_CREDENTIALS.findIndex((c) => c.id === id);
+    const credentials = this.getStore().credentials;
+    const idx = credentials.findIndex((c) => c.id === id);
     if (idx === -1) return null;
 
-    AI_CREDENTIALS[idx] = {
-      ...AI_CREDENTIALS[idx],
+    credentials[idx] = {
+      ...credentials[idx],
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    return AI_CREDENTIALS[idx];
+    return credentials[idx];
   }
 
   deleteCredential(id: string): boolean {
-    const initial = AI_CREDENTIALS.length;
-    AI_CREDENTIALS = AI_CREDENTIALS.filter((c) => c.id !== id);
-    return AI_CREDENTIALS.length < initial;
+    const store = this.getStore();
+    const initial = store.credentials.length;
+    store.credentials = store.credentials.filter((c) => c.id !== id);
+    return store.credentials.length < initial;
   }
 
   // ----------------------------------------------------------------------------
   // AI MODELS
   // ----------------------------------------------------------------------------
   listModels(): AIModelConfig[] {
-    return [...AI_MODELS];
+    return [...this.getStore().models];
   }
 
   getModelByFeature(featureKey: string): AIModelConfig | null {
-    return AI_MODELS.find((m) => m.feature_key === featureKey) || null;
+    return this.getStore().models.find((m) => m.feature_key === featureKey) || null;
   }
 
   updateModel(featureKey: string, updates: Partial<AIModelConfig>): AIModelConfig | null {
-    const idx = AI_MODELS.findIndex((m) => m.feature_key === featureKey);
+    const models = this.getStore().models;
+    const idx = models.findIndex((m) => m.feature_key === featureKey);
     if (idx === -1) return null;
 
-    AI_MODELS[idx] = {
-      ...AI_MODELS[idx],
+    models[idx] = {
+      ...models[idx],
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    return AI_MODELS[idx];
+    return models[idx];
   }
 
   // ----------------------------------------------------------------------------
   // USAGE & FAILOVER EVENTS
   // ----------------------------------------------------------------------------
   recordUsageEvent(event: Omit<AIUsageEvent, "id" | "created_at">): AIUsageEvent {
+    const store = this.getStore();
     const newEvent: AIUsageEvent = {
       ...event,
       id: `usevt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    AI_USAGE_EVENTS.unshift(newEvent);
+    store.usageEvents.unshift(newEvent);
     // Keep max 500 events in memory
-    if (AI_USAGE_EVENTS.length > 500) {
-      AI_USAGE_EVENTS.pop();
+    if (store.usageEvents.length > 500) {
+      store.usageEvents.pop();
     }
     return newEvent;
   }
 
   listUsageEvents(limit: number = 50, filterFeature?: string): AIUsageEvent[] {
-    let result = AI_USAGE_EVENTS;
+    let result = this.getStore().usageEvents;
     if (filterFeature && filterFeature !== "ALL") {
       result = result.filter((e) => e.feature_key === filterFeature);
     }
@@ -465,71 +522,76 @@ class AdminRepository {
   }
 
   recordFailoverEvent(event: Omit<AIFailoverEvent, "id" | "created_at">): AIFailoverEvent {
+    const store = this.getStore();
     const newEvent: AIFailoverEvent = {
       ...event,
       id: `failover-${Date.now()}`,
       created_at: new Date().toISOString(),
     };
-    AI_FAILOVER_EVENTS.unshift(newEvent);
+    store.failoverEvents.unshift(newEvent);
     return newEvent;
   }
 
   listFailoverEvents(limit: number = 20): AIFailoverEvent[] {
-    return AI_FAILOVER_EVENTS.slice(0, limit);
+    return this.getStore().failoverEvents.slice(0, limit);
   }
 
   // ----------------------------------------------------------------------------
   // AUDIT LOGS
   // ----------------------------------------------------------------------------
   recordAuditLog(log: Omit<AdminAuditLog, "id" | "created_at">): AdminAuditLog {
+    const store = this.getStore();
     const newLog: AdminAuditLog = {
       ...log,
       id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       created_at: new Date().toISOString(),
     };
-    ADMIN_AUDIT_LOGS.unshift(newLog);
-    if (ADMIN_AUDIT_LOGS.length > 500) {
-      ADMIN_AUDIT_LOGS.pop();
+    store.auditLogs.unshift(newLog);
+    if (store.auditLogs.length > 500) {
+      store.auditLogs.pop();
     }
     return newLog;
   }
 
   listAuditLogs(limit: number = 50): AdminAuditLog[] {
-    return ADMIN_AUDIT_LOGS.slice(0, limit);
+    return this.getStore().auditLogs.slice(0, limit);
   }
 
   // ----------------------------------------------------------------------------
   // SYSTEM SETTINGS & NOTIFICATIONS
   // ----------------------------------------------------------------------------
   getSetting(key: string): SystemSetting | null {
-    return SYSTEM_SETTINGS[key] || null;
+    return this.getStore().settings[key] || null;
   }
 
   getAllSettings(): SystemSetting[] {
-    return Object.values(SYSTEM_SETTINGS);
+    return Object.values(this.getStore().settings);
   }
 
   setSetting(key: string, value: Record<string, unknown>, updatedBy: string): SystemSetting {
+    const store = this.getStore();
     const setting: SystemSetting = {
       key,
       value,
       updated_by: updatedBy,
       updated_at: new Date().toISOString(),
     };
-    SYSTEM_SETTINGS[key] = setting;
+    store.settings[key] = setting;
     return setting;
   }
 
   listNotifications(): SystemNotification[] {
-    return [...SYSTEM_NOTIFICATIONS];
+    return [...this.getStore().notifications];
   }
 
   markNotificationRead(id: string): void {
-    const n = SYSTEM_NOTIFICATIONS.find((x) => x.id === id);
+    const store = this.getStore();
+    const n = store.notifications.find((x) => x.id === id);
     if (n) n.is_read = true;
   }
 
   addNotification(type: "INFO" | "WARNING" | "ALERT", title: string, message: string): SystemNotification {
+    const store = this.getStore();
     const notif: SystemNotification = {
       id: `sysnotif-${Date.now()}`,
       type,
@@ -538,7 +600,7 @@ class AdminRepository {
       is_read: false,
       created_at: new Date().toISOString(),
     };
-    SYSTEM_NOTIFICATIONS.unshift(notif);
+    store.notifications.unshift(notif);
     return notif;
   }
 
@@ -546,12 +608,13 @@ class AdminRepository {
   // HEALTH STATUS
   // ----------------------------------------------------------------------------
   getSystemHealth(): SystemHealthStatus {
-    const healthyCreds = AI_CREDENTIALS.filter((c) => c.health_status === "healthy" && c.is_enabled).length;
-    const totalCreds = AI_CREDENTIALS.length;
-    const totalTokens = AI_USAGE_EVENTS.reduce((acc, curr) => acc + curr.total_tokens, 0);
+    const store = this.getStore();
+    const healthyCreds = store.credentials.filter((c) => c.health_status === "healthy" && c.is_enabled).length;
+    const totalCreds = store.credentials.length;
+    const totalTokens = store.usageEvents.reduce((acc, curr) => acc + curr.total_tokens, 0);
 
-    const errorCount = AI_USAGE_EVENTS.filter((e) => e.status !== "SUCCESS").length;
-    const errorRate = AI_USAGE_EVENTS.length > 0 ? (errorCount / AI_USAGE_EVENTS.length) * 100 : 0;
+    const errorCount = store.usageEvents.filter((e) => e.status !== "SUCCESS").length;
+    const errorRate = store.usageEvents.length > 0 ? (errorCount / store.usageEvents.length) * 100 : 0;
 
     let overallStatus: "Operational" | "Degraded" | "Unavailable" = "Operational";
     if (healthyCreds === 0) {

@@ -80,10 +80,10 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  Manajemen Pengguna Aplikasi (Guru &amp; Pengguna Mandiri)
+                  Manajemen Pengguna
                 </h1>
                 <p className="text-xs text-[#756F7A] mt-0.5">
-                  Pantau akun aktif Guru dan pengguna mandiri, afiliasi satuan pendidikan, dan kelola status otorisasi.
+                  Kelola akun Guru, pengguna mandiri, dan status otorisasi.
                 </p>
               </div>
             </div>

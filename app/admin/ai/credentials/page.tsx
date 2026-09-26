@@ -120,10 +120,10 @@ export default function AdminAICredentialsPage() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  Kredensial API Key Multi-Provider AI
+                  Kredensial API Key AI
                 </h1>
                 <p className="text-xs text-[#756F7A] mt-0.5">
-                  Seluruh API key disimpan terenkripsi menggunakan AES-256-GCM. Plaintext secret tidak pernah dikirim ke browser.
+                  Kelola API key terenkripsi AES-256-GCM untuk failover Gemini.
                 </p>
               </div>
             </div>

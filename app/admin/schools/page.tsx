@@ -51,10 +51,10 @@ export default function AdminSchoolsPage() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  Manajemen Satuan Pendidikan &amp; Sekolah
+                  Manajemen Sekolah
                 </h1>
                 <p className="text-xs text-[#756F7A] mt-0.5">
-                  Daftar sekolah terdaftar, verifikasi wilayah administratif, serta rekapitulasi kelas dan pendidik.
+                  Daftar sekolah dan wilayah administratif terdaftar.
                 </p>
               </div>
             </div>

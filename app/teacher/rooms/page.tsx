@@ -47,7 +47,7 @@ export default function TeacherRoomsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const generateRandomCode = (type: "material" | "question" | "both") => {
-    const prefix = type === "material" ? "mtr" : type === "question" ? "sol" : "rom";
+    const prefix = type === "material" ? "mat" : type === "question" ? "sol" : "rom";
     const num = Math.floor(1000 + Math.random() * 9000);
     return `${prefix}${num}`;
   };

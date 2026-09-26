@@ -31,9 +31,11 @@ export function IconNavigationRail({
   const railBg = isQuestion ? "bg-[#FFD36D]" : "bg-[#51465B]";
   const railBorder = isQuestion ? "border-r border-[#E5BE60]" : "border-r border-[#645770]/40";
 
-  const handleMobileNavClick = () => {
+  const handleCloseMobileDrawer = () => {
     if (typeof window !== "undefined" && window.innerWidth < 768) {
-      toggleCollapse();
+      if (!isCollapsed) {
+        toggleCollapse();
+      }
     }
   };
 
@@ -52,8 +54,8 @@ export function IconNavigationRail({
       <aside
         className={`${
           isCollapsed
-            ? `w-14 sm:w-20 ${railBg} ${railBorder} flex flex-col justify-start py-5 px-1 sm:px-2 shrink-0 z-30 select-none h-screen max-h-screen overflow-hidden transition-all duration-300`
-            : `w-72 ${railBg} ${railBorder} flex flex-col justify-start py-6 px-4 shrink-0 z-40 select-none h-screen max-h-screen overflow-hidden transition-all duration-300 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:shadow-2xl md:relative md:w-64 lg:md:w-72`
+            ? `w-14 sm:w-20 ${railBg} ${railBorder} flex flex-col justify-start py-5 px-1 sm:px-2 shrink-0 z-30 select-none h-screen max-h-screen overflow-hidden`
+            : `w-72 ${railBg} ${railBorder} flex flex-col justify-start py-6 px-4 shrink-0 z-40 select-none h-screen max-h-screen overflow-hidden max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:shadow-2xl md:relative md:w-64 lg:md:w-72`
         }`}
         aria-label="Navigasi Menu DEPASKAN"
       >
@@ -95,7 +97,6 @@ export function IconNavigationRail({
                   <div key={group.id} className="relative group/tooltip flex items-center justify-center">
                     <Link
                       href={group.href}
-                      onClick={handleMobileNavClick}
                       className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
                         isQuestion
                           ? isGroupActive
@@ -158,7 +159,7 @@ export function IconNavigationRail({
                   <Link
                     key={group.id}
                     href={group.href}
-                    onClick={handleMobileNavClick}
+                    onClick={handleCloseMobileDrawer}
                     className={`w-full py-3 px-3.5 rounded-2xl flex items-center gap-3 transition-all duration-200 cursor-pointer text-left ${
                       isQuestion
                         ? isGroupActive

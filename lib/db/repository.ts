@@ -698,8 +698,12 @@ class PahamiRepository {
       }
     }
     const current = this.getCurrentUser();
+    const cleanQuestionId = (data.id || `sol${Math.floor(1000 + Math.random() * 9000)}`)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
     const newQuestion: Question = {
-      id: data.id || `q-${Date.now()}`,
+      id: cleanQuestionId,
       school_id: data.school_id,
       teacher_id: data.teacher_id || current?.id || "usr-teacher-01",
       subject: data.subject,
@@ -759,8 +763,12 @@ class PahamiRepository {
       }
     }
     const current = this.getCurrentUser();
+    const cleanMaterialId = (data.id || `mat${Math.floor(1000 + Math.random() * 9000)}`)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
     const newMat: LearningMaterial = {
-      id: data.id || `mat-${Date.now()}`,
+      id: cleanMaterialId,
       title: data.title,
       subject: data.subject,
       grade: data.grade,
@@ -948,9 +956,10 @@ class PahamiRepository {
   ): LearningRoom {
     const rooms = this.getRooms();
     const cleanCode = data.code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cleanRoomId = `rom${Math.floor(1000 + Math.random() * 9000)}`;
     const newRoom: LearningRoom = {
       ...data,
-      id: `room${Date.now()}`,
+      id: cleanRoomId,
       code: cleanCode,
       access_count: 0,
       created_at: new Date().toISOString(),

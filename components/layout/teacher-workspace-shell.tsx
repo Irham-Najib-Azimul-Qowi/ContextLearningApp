@@ -35,12 +35,18 @@ export function TeacherWorkspaceShell({
   };
 
   const [contextMode, setContextMode] = useState<"material" | "question">(getInitialMode());
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  
+  // Initialize collapsed by default on mobile to prevent transition glitches during page navigation
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 768;
+    }
+    return true;
+  });
 
-  // Default to collapsed rail on mobile devices so screen is not squished
   useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
-      setIsCollapsed(true);
+    if (typeof window !== "undefined") {
+      setIsCollapsed(window.innerWidth < 768);
     }
   }, []);
 
