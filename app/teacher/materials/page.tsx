@@ -117,20 +117,8 @@ export default function TeacherMaterialsPage() {
 
   const handleSelectMethod = (method: "manual" | "camera" | "pdf" | "ai") => {
     setSelectedMethod(method);
-    if (!title) {
-      setTitle(
-        method === "ai"
-          ? "Numerasi Pasar Tradisional & Sentra UMKM"
-          : method === "camera"
-          ? "Modul Hasil Pindai Naskah Fisik"
-          : method === "pdf"
-          ? "Modul Kurikulum Merdeka Fase C"
-          : "Penerapan Konsep Belajar Kontekstual"
-      );
-    }
-    if (!manualDraft) {
-      setManualDraft("Siswa diajak mengamati kegiatan transaksi pasar dan menghitung modal serta laba penjualan.");
-    }
+    setTitle("");
+    setManualDraft("");
     setWizardStep(2);
   };
 
@@ -256,24 +244,24 @@ export default function TeacherMaterialsPage() {
             2. SEARCH BAR & FILTER: LANGSUNG TANPA DIBUNGKUS CARD
             =================================================================== */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Search Bar */}
+          {/* Search Bar: Kontras & Berpadu dengan Desain Web */}
           <div className="relative flex-1 max-w-md w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#51465B]" />
             <input
               type="text"
               placeholder="Cari judul materi atau ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-medium text-[#23212A] placeholder:text-[#756F7A]/70 focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A] focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
             />
           </div>
 
-          {/* Instant Filter Dropdown */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Instant Filter Dropdown: Rata Kanan, Ukuran Mengikuti Isi */}
+          <div className="flex items-center justify-end gap-2 ml-auto shrink-0">
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
-              className="px-4 py-2.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-semibold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
+              className="w-auto px-4 py-2 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
             >
               {SUBJECT_OPTIONS.map((subj) => (
                 <option key={subj} value={subj}>
@@ -285,16 +273,16 @@ export default function TeacherMaterialsPage() {
         </div>
 
         {/* ===================================================================
-            3. DAFTAR MATERI: CARD PUTIH DENGAN STROKE, PROPORSIONAL & BERSIH
+            3. DAFTAR MATERI: MINI DASHBOARD CARD (DARK MAUVE #51465B & BORDER #FFD36D)
             =================================================================== */}
         <div>
           {filteredMaterials.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
-              <div className="w-14 h-14 rounded-full bg-[#FAF7F3] text-slate-400 mx-auto flex items-center justify-center">
+            <div className="p-12 text-center bg-white rounded-3xl border-2 border-[#51465B]/20 space-y-3 shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-[#51465B]/10 text-[#51465B] mx-auto flex items-center justify-center">
                 <BookOpen className="w-7 h-7" />
               </div>
-              <h3 className="text-base font-bold text-slate-800">Belum ada modul ajar</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-base font-black text-[#23212A]">Belum ada modul ajar</h3>
+              <p className="text-xs text-[#756F7A] max-w-sm mx-auto font-medium">
                 Mulai buat modul ajar baru menggunakan tombol Tambah Materi di atas.
               </p>
             </div>
@@ -304,66 +292,74 @@ export default function TeacherMaterialsPage() {
                 return (
                   <div
                     key={mat.id}
-                    className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9E5E8] shadow-[0_2px_8px_rgba(81,70,91,0.03)] hover:shadow-md hover:border-[#51465B]/30 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden min-h-[190px]"
+                    className="relative p-5 rounded-[26px] bg-[#51465B] text-white border-2 border-[#FFD36D] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[220px]"
                   >
-                    {/* Top: Judul & ID di samping kanan, Kategori di bawahnya */}
-                    <div>
-                      <div className="flex items-start justify-between gap-2.5">
-                        <h3 className="text-sm sm:text-base font-bold text-[#23212A] leading-snug line-clamp-2">
-                          {mat.title}
-                        </h3>
+                    {/* Ambient Glow khas Dashboard */}
+                    <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
 
-                        {/* ID di samping kanan judul: proporsional, kecil */}
+                    {/* Top: Judul, Ikon & ID di samping kanan */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-11 h-11 rounded-2xl bg-[#FFD36D] text-[#51465B] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:rotate-1 transition-transform shrink-0">
+                            <BookOpen className="w-5 h-5 text-[#51465B] stroke-[2.4]" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1">
+                              {mat.title}
+                            </h3>
+                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white/90 border border-white/20">
+                                {mat.subject} &bull; Kelas {mat.grade} SD
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ID di samping kanan: mini kapsul rapi */}
                         <button
                           type="button"
                           onClick={() => handleCopy(mat.id)}
-                          className="shrink-0 py-0.5 px-2 rounded-md bg-[#FAF7F3] hover:bg-slate-100 border border-[#E9E5E8] font-mono text-[10px] font-medium text-[#756F7A] flex items-center gap-1 cursor-pointer transition-colors"
+                          className="shrink-0 py-1 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 font-mono text-[10px] font-bold text-[#FFD36D] flex items-center gap-1 cursor-pointer transition-colors"
                           title="Klik untuk menyalin ID materi"
                         >
                           {copiedCode === mat.id ? (
                             <>
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span className="text-emerald-700 font-sans text-[9px]">Tersalin</span>
+                              <Check className="w-3 h-3 text-[#FFD36D]" />
+                              <span className="font-sans text-[9px]">Tersalin</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3 text-[#756F7A]" />
+                              <Copy className="w-3 h-3 text-[#FFD36D]" />
                               <span>{mat.id}</span>
                             </>
                           )}
                         </button>
                       </div>
-
-                      {/* Di bawah judul: Kategori kecil tidak bold dibungkus kapsul */}
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#51465B]/10 text-[#51465B] border border-[#51465B]/15">
-                          {mat.subject} &bull; Kelas {mat.grade} SD
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Di antara di tengah secara vertikal: sedikit deskripsi */}
+                    {/* Tengah: Cuplikan Konten */}
                     <div className="my-auto py-2.5">
-                      <p className="text-xs text-[#756F7A] font-normal leading-relaxed line-clamp-2">
+                      <p className="text-xs text-white/85 font-normal leading-relaxed line-clamp-2">
                         {mat.content ? mat.content.replace(/\n+/g, " ") : "Bahan ajar tematik Kurikulum Merdeka berbasis kearifan lokal."}
                       </p>
                     </div>
 
-                    {/* Bottom: Button Lihat Materi + Button Hapus di samping kanannya */}
-                    <div className="pt-3 border-t border-[#E9E5E8] flex items-center gap-2">
+                    {/* Bottom: Button Lihat Materi (Warm Yellow) + Button Hapus */}
+                    <div className="pt-3 border-t border-white/20 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setSelectedMaterialForPreview(mat)}
-                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#FAF7F3] hover:bg-[#51465B] text-[#51465B] hover:text-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#FFD36D] hover:bg-[#F5C75A] text-[#23212A] text-xs font-black flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer group/btn"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <Eye className="w-3.5 h-3.5 text-[#23212A] stroke-[2.4]" />
                         <span>Lihat Materi</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteMaterial(mat.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-[#E9E5E8] hover:border-rose-200 transition-all cursor-pointer shrink-0"
+                        className="p-2 rounded-xl bg-white/10 hover:bg-rose-500/25 text-white/70 hover:text-rose-300 border border-white/15 hover:border-rose-400/40 transition-all cursor-pointer shrink-0"
                         title="Hapus Materi"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -379,9 +375,9 @@ export default function TeacherMaterialsPage() {
 
       {/* =====================================================================
           CREATION WIZARD MODAL (LOGIN & ROOM ENTRY INSPIRED CLEAN STEP FORM)
-          Step 1: Pilih Metode (Ketik Manual, Motret, Upload, AI)
-          Step 2: Lengkapi Data (Judul, Mapel, Kelas, Konten)
-          Step 3: Review Hasil AI (jika AI)
+          Step 1: Pilih Metode (Ketik Manual, Ambil Foto, Upload PDF, AI)
+          Step 2: Identitas Materi
+          Step 3: Konten Materi
           Step 4: Berhasil / Selesai
           ===================================================================== */}
       {isWizardOpen && (
@@ -397,9 +393,9 @@ export default function TeacherMaterialsPage() {
             <div className="w-full flex items-start justify-between pb-4 border-b border-white/10 mb-5">
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                  {wizardStep === 4 ? "Modul Materi Berhasil Disimpan" : "Tambah Modul Materi"}
+                  {wizardStep === 4 ? "Materi Tersimpan" : "Tambah Materi"}
                 </h3>
-                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi) */}
+                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi 'Langkah 1...') */}
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center gap-1.5">
                     <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
@@ -407,8 +403,8 @@ export default function TeacherMaterialsPage() {
                     <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
                     <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#FFD36D]">
-                    Langkah {wizardStep} dari 4: {wizardStep === 1 ? "Cara Input" : wizardStep === 2 ? "Identitas" : wizardStep === 3 ? "Konten Materi" : "Selesai"}
+                  <span className="text-[11px] font-bold text-[#FFD36D]">
+                    {wizardStep === 1 ? "Metode Input" : wizardStep === 2 ? "Identitas" : wizardStep === 3 ? "Konten Materi" : "Selesai"}
                   </span>
                 </div>
               </div>
@@ -425,7 +421,7 @@ export default function TeacherMaterialsPage() {
             </div>
 
             {/* ===================================================================
-                STEP 1: PILIH CARA INPUT (BENTUK CARD KOTAK BERISI IKON & NAMA FITUR)
+                STEP 1: PILIH METODE (UKURAN CARD PEMBUNGKUS KONSISTEN & NAMA FITUR TEPAT)
                 =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -434,7 +430,7 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("manual")}
-                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <PenTool className="w-6 h-6 stroke-[2.2]" />
@@ -444,17 +440,17 @@ export default function TeacherMaterialsPage() {
                     </span>
                   </button>
 
-                  {/* Card Kotak 2: Motret Naskah */}
+                  {/* Card Kotak 2: Ambil Foto */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("camera")}
-                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <Camera className="w-6 h-6 stroke-[2.2]" />
                     </div>
                     <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
-                      Motret Naskah
+                      Ambil Foto
                     </span>
                   </button>
 
@@ -462,7 +458,7 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("pdf")}
-                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <Upload className="w-6 h-6 stroke-[2.2]" />
@@ -476,7 +472,7 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("ai")}
-                    className="p-5 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-5 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-12 h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
                       <Sparkles className="w-6 h-6 stroke-[2.2]" />
@@ -490,22 +486,19 @@ export default function TeacherMaterialsPage() {
             )}
 
             {/* ===================================================================
-                STEP 2: IDENTITAS MATERI & ID PATEN DARI SISTEM
+                STEP 2: IDENTITAS MATERI
                 =================================================================== */}
             {wizardStep === 2 && (
               <form onSubmit={handleStep2Submit} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                {/* ID Paten Sistem (Non-editable, tidak bisa diacak atau dibuat manual) */}
+                {/* ID Materi: Kiri 'ID Materi', Kanan ID-nya (Tanpa strip, 4 angka) */}
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-[11px] font-bold text-gray-300 block">ID Modul Materi (Paten Sistem)</span>
-                    <span className="text-[10px] text-gray-400">Ditetapkan permanen oleh sistem, tidak dapat diacak</span>
-                  </div>
-                  <span className="font-mono text-xs font-black text-[#FFD36D] bg-[#251E2B] px-3 py-1.5 rounded-xl border border-[#FFD36D]/30 select-none">
+                  <span className="text-xs font-bold text-gray-200">ID Materi</span>
+                  <span className="font-mono text-xs font-black text-[#FFD36D] bg-[#251E2B] px-3.5 py-1.5 rounded-xl border border-[#FFD36D]/30 select-none">
                     {patentMaterialId}
                   </span>
                 </div>
 
-                {/* Judul Materi */}
+                {/* Judul Materi: Kosong default, placeholder transparan tanpa kata 'Contoh' */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
                     Judul Materi
@@ -515,12 +508,12 @@ export default function TeacherMaterialsPage() {
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Contoh: Operasi Hitung Belanja Pasar Tradisional"
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner"
+                    placeholder="Operasi Hitung Belanja Pasar Tradisional"
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner"
                   />
                 </div>
 
-                {/* Mapel & Kelas */}
+                {/* Mapel & Kelas: Proporsi rapi, nama maksimal 2 kata */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
@@ -529,7 +522,7 @@ export default function TeacherMaterialsPage() {
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       <option value="Matematika">Matematika</option>
                       <option value="IPAS (Ilmu Pengetahuan Alam & Sosial)">IPAS</option>
@@ -541,12 +534,12 @@ export default function TeacherMaterialsPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Jenjang Kelas
+                      Kelas
                     </label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(Number(e.target.value))}
-                      className="w-full px-3 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       {[1, 2, 3, 4, 5, 6].map((g) => (
                         <option key={g} value={g}>
@@ -557,7 +550,7 @@ export default function TeacherMaterialsPage() {
                   </div>
                 </div>
 
-                {/* Footer Navigasi Identitas */}
+                {/* Footer Navigasi Identitas: Button 'Lanjut' Satu Kata */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
@@ -571,7 +564,7 @@ export default function TeacherMaterialsPage() {
                     disabled={!title.trim()}
                     className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Lanjut ke Konten</span>
+                    <span>Lanjut</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -579,30 +572,16 @@ export default function TeacherMaterialsPage() {
             )}
 
             {/* ===================================================================
-                STEP 3: FORM INPUT KONTEN MATERI (OVERLAY LEBAR & LUAS AGAR NYAMAN)
+                STEP 3: FORM INPUT KONTEN MATERI (REVIEW LANGSUNG SAAT INPUT MANUAL)
                 =================================================================== */}
             {wizardStep === 3 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                {/* Ringkasan Konteks Singkat */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-bold text-[#FFD36D] bg-[#251E2B] px-2.5 py-0.5 rounded-lg border border-[#FFD36D]/30">
-                      {patentMaterialId}
-                    </span>
-                    <span className="font-bold text-white">{title}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-300">
-                    <span>{subject} &bull; Kelas {grade} SD</span>
-                    <span className="text-[#FFD36D]">&bull; {region}</span>
-                  </div>
-                </div>
-
                 {/* Input Manual Konten: Naskah Lebar & Lapang */}
                 {selectedMethod === "manual" && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-gray-200">
-                        Naskah Modul Pembelajaran Kontekstual
+                        Naskah Materi
                       </label>
                       <span className="text-[11px] text-gray-400 font-mono">
                         {manualDraft.length} karakter
@@ -614,7 +593,7 @@ export default function TeacherMaterialsPage() {
                       value={manualDraft}
                       onChange={(e) => setManualDraft(e.target.value)}
                       placeholder="Ketik materi pembelajaran secara lengkap di sini. Masukkan stimulus cerita lokal, data rill komoditas, atau aktivitas eksplorasi siswa..."
-                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[280px]"
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[280px]"
                     />
                   </div>
                 )}
@@ -632,20 +611,20 @@ export default function TeacherMaterialsPage() {
                         onClick={() => setCapturedPhotoName("foto_lembar_materi.jpg")}
                         className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
                       >
-                        {capturedPhotoName ? "Ambil Foto Ulang" : "Pindai / Ambil Foto Sekarang"}
+                        {capturedPhotoName ? "Foto Ulang" : "Ambil Foto"}
                       </button>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-200">
-                        Hasil Transkripsi & Tambahan Catatan Materi
+                        Catatan Materi
                       </label>
                       <textarea
                         rows={8}
                         value={manualDraft}
                         onChange={(e) => setManualDraft(e.target.value)}
                         placeholder="Periksa atau tambahkan penjelasan untuk hasil pindaian..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
                       />
                     </div>
                   </div>
@@ -657,27 +636,27 @@ export default function TeacherMaterialsPage() {
                     <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
                       <Upload className="w-8 h-8 text-[#FFD36D] mx-auto" />
                       <p className="text-xs font-bold text-gray-200">
-                        {uploadedFileName ? `Dokumen terunggah: ${uploadedFileName}` : "Unggah berkas modul ajar format PDF"}
+                        {uploadedFileName ? `Dokumen: ${uploadedFileName}` : "Unggah berkas modul ajar format PDF"}
                       </p>
                       <button
                         type="button"
                         onClick={() => setUploadedFileName("modul_ajar_kontekstual.pdf")}
                         className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
                       >
-                        {uploadedFileName ? "Ganti Berkas PDF" : "Pilih Berkas PDF dari Perangkat"}
+                        {uploadedFileName ? "Ganti PDF" : "Upload PDF"}
                       </button>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-200">
-                        Catatan Pokok Pembelajaran Dokumen
+                        Catatan Materi
                       </label>
                       <textarea
                         rows={8}
                         value={manualDraft}
                         onChange={(e) => setManualDraft(e.target.value)}
                         placeholder="Ketik intisari atau panduan belajar dari modul PDF ini..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
                       />
                     </div>
                   </div>
@@ -700,13 +679,13 @@ export default function TeacherMaterialsPage() {
                         className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>{isAiGenerating ? "Merumuskan Materi..." : previewNarrative ? "Generate Ulang Narasi" : "Mulai Generate AI"}</span>
+                        <span>{isAiGenerating ? "Merumuskan..." : previewNarrative ? "Generate Ulang" : "Generate AI"}</span>
                       </button>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-200">
-                        Narasi Materi Kontekstual (Dapat Diedit Langsung)
+                        Narasi Materi
                       </label>
                       <textarea
                         rows={11}
@@ -715,21 +694,21 @@ export default function TeacherMaterialsPage() {
                           setPreviewNarrative(e.target.value);
                           setManualDraft(e.target.value);
                         }}
-                        placeholder="Klik Mulai Generate AI di atas atau ketik langsung draf narasi tematik di sini..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[260px]"
+                        placeholder="Klik Generate AI di atas atau ketik langsung draf narasi tematik di sini..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[260px]"
                       />
                     </div>
                   </div>
                 )}
 
-                {/* Footer Buttons Step 3 */}
+                {/* Footer Buttons Step 3: Button 'Simpan' Satu Kata */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
                     className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
-                    Kembali ke Identitas
+                    Kembali
                   </button>
 
                   <button
@@ -738,7 +717,7 @@ export default function TeacherMaterialsPage() {
                     disabled={isAiGenerating || (!manualDraft.trim() && !previewNarrative.trim() && !capturedPhotoName && !uploadedFileName)}
                     className="py-2.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Simpan Modul Materi</span>
+                    <span>Simpan</span>
                     <Check className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>

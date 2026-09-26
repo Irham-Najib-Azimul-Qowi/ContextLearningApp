@@ -124,29 +124,28 @@ export default function TeacherQuestionsPage() {
     setPatentQuestionId(repository.getNextQuestionId());
     setUploadedFileName(null);
     setCapturedPhotoName(null);
+    setTopic("");
+    setManualQuestionDraft("");
     setPreviewPrompt("");
-    setPreviewOptionA("Rp3.000");
-    setPreviewOptionB("Rp4.500");
-    setPreviewOptionC("Rp5.000");
-    setPreviewOptionD("Rp2.500");
+    setPreviewOptionA("");
+    setPreviewOptionB("");
+    setPreviewOptionC("");
+    setPreviewOptionD("");
     setPreviewCorrect("A");
-    setPreviewExplanation("Perhitungan harga total dan pengembalian belanja kontekstual.");
-    setPreviewRubric("Skor 100: Langkah perhitungan runut dan jawaban benar sesuai konteks.");
+    setPreviewExplanation("");
+    setPreviewRubric("");
 
     if (linkedMaterial) {
       setSelectedMethod("from_material");
       setTopic(linkedMaterial.title);
       setSubject(linkedMaterial.subject);
       setGrade(linkedMaterial.grade);
-      setManualQuestionDraft(`Berdasarkan materi "${linkedMaterial.title}", tentukan penyelesaian masalah kontekstual berikut:`);
       setWizardStep(2);
     } else if (method) {
       setSelectedMethod(method);
       setWizardStep(2);
     } else {
       setSelectedMethod("manual");
-      setTopic("Kalkulasi Belanja Oleh-Oleh Khas Daerah");
-      setManualQuestionDraft("Seorang pedagang membeli 4 kotak kue khas seharga Rp18.000 per kotak dan membayar dengan Rp100.000. Berapa uang kembaliannya?");
       setWizardStep(1);
     }
 
@@ -155,21 +154,20 @@ export default function TeacherQuestionsPage() {
 
   const handleSelectMethod = (method: "manual" | "camera" | "pdf" | "ai" | "from_material") => {
     setSelectedMethod(method);
-    if (method === "ai") {
-      setTopic("Penghitungan Transaksi Pasar Tradisional");
-      setManualQuestionDraft("Kalkulasi jual beli di pasar tradisional daerah setempat");
-    } else if (method === "camera") {
-      setTopic("Soal Evaluasi Pindai OCR");
-    } else if (method === "pdf") {
-      setTopic("Soal Asesmen Standar Dokumen PDF");
-    } else if (method === "from_material" && materials.length > 0) {
+    setTopic("");
+    setManualQuestionDraft("");
+    setPreviewPrompt("");
+    setPreviewOptionA("");
+    setPreviewOptionB("");
+    setPreviewOptionC("");
+    setPreviewOptionD("");
+    setPreviewExplanation("");
+    setPreviewRubric("");
+
+    if (method === "from_material" && materials.length > 0) {
       setTopic(materials[0].title);
       setSubject(materials[0].subject);
       setGrade(materials[0].grade);
-      setManualQuestionDraft(`Berdasarkan materi "${materials[0].title}", buatkan butir pertanyaan kontekstual untuk siswa.`);
-    } else {
-      setTopic("Kalkulasi Belanja Oleh-Oleh Khas Daerah");
-      setManualQuestionDraft("Seorang pedagang membeli 4 kotak kue khas seharga Rp18.000 per kotak dan membayar dengan Rp100.000. Berapa uang kembaliannya?");
     }
     setWizardStep(2);
   };
@@ -357,27 +355,27 @@ export default function TeacherQuestionsPage() {
             2. SEARCH BAR & FILTER: LANGSUNG TANPA DIBUNGKUS CARD
             =================================================================== */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Search Bar */}
+          {/* Search Bar: Kontras & Berpadu dengan Desain Web */}
           <div className="relative flex-1 max-w-md w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#51465B]" />
             <input
               type="text"
               placeholder="Cari butir soal, topik, atau ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-medium text-[#23212A] placeholder:text-[#756F7A]/70 focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A] focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
             />
           </div>
 
-          {/* Instant Filter Pills & Dropdown */}
-          <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
+          {/* Instant Filter Pills & Dropdown: Rata Kanan, Ukuran Sesuai Isi */}
+          <div className="flex items-center justify-end gap-1.5 overflow-x-auto ml-auto shrink-0 flex-wrap sm:flex-nowrap">
             <button
               type="button"
               onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 filterType === "all"
-                  ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  ? "bg-[#51465B] text-[#FFD36D] shadow-sm border border-[#51465B]"
+                  : "bg-white text-[#51465B] hover:bg-[#51465B]/10 border-2 border-[#51465B]/25 shadow-xs"
               }`}
             >
               Semua
@@ -385,10 +383,10 @@ export default function TeacherQuestionsPage() {
             <button
               type="button"
               onClick={() => setFilterType("multiple_choice")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 filterType === "multiple_choice"
-                  ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  ? "bg-[#51465B] text-[#FFD36D] shadow-sm border border-[#51465B]"
+                  : "bg-white text-[#51465B] hover:bg-[#51465B]/10 border-2 border-[#51465B]/25 shadow-xs"
               }`}
             >
               Pilihan Ganda
@@ -396,10 +394,10 @@ export default function TeacherQuestionsPage() {
             <button
               type="button"
               onClick={() => setFilterType("essay")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 filterType === "essay"
-                  ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  ? "bg-[#51465B] text-[#FFD36D] shadow-sm border border-[#51465B]"
+                  : "bg-white text-[#51465B] hover:bg-[#51465B]/10 border-2 border-[#51465B]/25 shadow-xs"
               }`}
             >
               Esai
@@ -408,7 +406,7 @@ export default function TeacherQuestionsPage() {
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
-              className="px-3.5 py-1.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-semibold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
+              className="w-auto px-3.5 py-1.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
             >
               {SUBJECT_OPTIONS.map((subj) => (
                 <option key={subj} value={subj}>
@@ -420,16 +418,16 @@ export default function TeacherQuestionsPage() {
         </div>
 
         {/* ===================================================================
-            3. DAFTAR SOAL: CARD PUTIH DENGAN STROKE, PROPORSIONAL & BERSIH
+            3. DAFTAR SOAL: MINI DASHBOARD CARD (WARM YELLOW #FFD36D & BORDER #51465B)
             =================================================================== */}
         <div>
           {filteredQuestions.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
-              <div className="w-14 h-14 rounded-full bg-[#FAF7F3] text-slate-400 mx-auto flex items-center justify-center">
+            <div className="p-12 text-center bg-white rounded-3xl border-2 border-[#51465B]/20 space-y-3 shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-[#FFD36D]/20 text-[#51465B] mx-auto flex items-center justify-center">
                 <FileQuestion className="w-7 h-7" />
               </div>
-              <h3 className="text-base font-bold text-slate-800">Belum ada butir soal</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-base font-black text-[#23212A]">Belum ada butir soal</h3>
+              <p className="text-xs text-[#756F7A] max-w-sm mx-auto font-medium">
                 Mulai buat butir soal baru menggunakan tombol Tambah Soal di atas.
               </p>
             </div>
@@ -441,66 +439,74 @@ export default function TeacherQuestionsPage() {
                 return (
                   <div
                     key={q.id}
-                    className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9E5E8] shadow-[0_2px_8px_rgba(81,70,91,0.03)] hover:shadow-md hover:border-[#51465B]/30 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden min-h-[190px]"
+                    className="relative p-5 rounded-[26px] bg-[#FFD36D] text-[#23212A] border-2 border-[#51465B] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[220px]"
                   >
-                    {/* Top: Judul & ID di samping kanan, Kategori di bawahnya */}
-                    <div>
-                      <div className="flex items-start justify-between gap-2.5">
-                        <h3 className="text-sm sm:text-base font-bold text-[#23212A] leading-snug line-clamp-2">
-                          {q.topic || q.question_text}
-                        </h3>
+                    {/* Ambient Glow khas Dashboard */}
+                    <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-white/40 blur-xl pointer-events-none" />
 
-                        {/* ID di samping kanan judul: proporsional, kecil */}
+                    {/* Top: Judul, Ikon & ID di samping kanan */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-11 h-11 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shadow-md group-hover:scale-105 group-hover:-rotate-1 transition-transform shrink-0">
+                            <FileQuestion className="w-5 h-5 text-[#FFD36D] stroke-[2.4]" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-sm sm:text-base font-black text-[#23212A] leading-snug line-clamp-1">
+                              {q.topic || q.question_text}
+                            </h3>
+                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-[#51465B]/15 text-[#51465B] border border-[#51465B]/25">
+                                {isEssay ? "Esai" : "Pilihan Ganda"} &bull; {q.subject} &bull; Kelas {q.grade} SD
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ID di samping kanan: mini kapsul rapi */}
                         <button
                           type="button"
                           onClick={() => handleCopy(q.id)}
-                          className="shrink-0 py-0.5 px-2 rounded-md bg-[#FAF7F3] hover:bg-slate-100 border border-[#E9E5E8] font-mono text-[10px] font-medium text-[#756F7A] flex items-center gap-1 cursor-pointer transition-colors"
+                          className="shrink-0 py-1 px-2.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-[#FFD36D] font-mono text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                           title="Klik untuk menyalin ID soal"
                         >
                           {copiedCode === q.id ? (
                             <>
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span className="text-emerald-700 font-sans text-[9px]">Tersalin</span>
+                              <Check className="w-3 h-3 text-[#FFD36D]" />
+                              <span className="font-sans text-[9px]">Tersalin</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3 text-[#756F7A]" />
+                              <Copy className="w-3 h-3 text-[#FFD36D]" />
                               <span>{q.id}</span>
                             </>
                           )}
                         </button>
                       </div>
-
-                      {/* Di bawah judul: Kategori kecil tidak bold dibungkus kapsul */}
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/60">
-                          {isEssay ? "Esai" : "Pilihan Ganda"} &bull; {q.subject} &bull; Kelas {q.grade} SD
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Di antara di tengah secara vertikal: sedikit deskripsi */}
+                    {/* Tengah: Cuplikan Konten */}
                     <div className="my-auto py-2.5">
-                      <p className="text-xs text-[#756F7A] font-normal leading-relaxed line-clamp-2">
+                      <p className="text-xs text-[#23212A]/85 font-medium leading-relaxed line-clamp-2">
                         {q.question_text ? q.question_text.replace(/\n+/g, " ") : "Butir soal asesmen kontekstual Kurikulum Merdeka."}
                       </p>
                     </div>
 
-                    {/* Bottom: Button Lihat Soal + Button Hapus di samping kanannya */}
-                    <div className="pt-3 border-t border-[#E9E5E8] flex items-center gap-2">
+                    {/* Bottom: Button Lihat Soal (Dark Mauve) + Button Hapus */}
+                    <div className="pt-3 border-t border-[#51465B]/20 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setSelectedQuestionForPreview(q)}
-                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#FAF7F3] hover:bg-[#51465B] text-[#51465B] hover:text-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer group/btn"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <Eye className="w-3.5 h-3.5 text-[#FFD36D] stroke-[2.4]" />
                         <span>Lihat Soal</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(q.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-[#E9E5E8] hover:border-rose-200 transition-all cursor-pointer shrink-0"
+                        className="p-2 rounded-xl bg-[#51465B]/10 hover:bg-rose-500/25 text-[#51465B] hover:text-rose-700 border border-[#51465B]/20 hover:border-rose-400/40 transition-all cursor-pointer shrink-0"
                         title="Hapus Soal"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -658,9 +664,9 @@ export default function TeacherQuestionsPage() {
             <div className="w-full flex items-start justify-between pb-4 border-b border-white/10 mb-5">
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                  {wizardStep === 4 ? "Butir Soal Berhasil Disimpan" : "Tambah Butir Soal"}
+                  {wizardStep === 4 ? "Soal Tersimpan" : "Tambah Soal"}
                 </h3>
-                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi) */}
+                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi 'Langkah 1...') */}
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center gap-1.5">
                     <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
@@ -668,8 +674,8 @@ export default function TeacherQuestionsPage() {
                     <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
                     <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#FFD36D]">
-                    Langkah {wizardStep} dari 4: {wizardStep === 1 ? "Cara Input" : wizardStep === 2 ? "Identitas" : wizardStep === 3 ? "Konten Soal" : "Selesai"}
+                  <span className="text-[11px] font-bold text-[#FFD36D]">
+                    {wizardStep === 1 ? "Metode Input" : wizardStep === 2 ? "Identitas" : wizardStep === 3 ? "Konten Soal" : "Selesai"}
                   </span>
                 </div>
               </div>
@@ -686,7 +692,7 @@ export default function TeacherQuestionsPage() {
             </div>
 
             {/* ===================================================================
-                STEP 1: PILIH CARA INPUT (BENTUK CARD KOTAK BERISI IKON & NAMA FITUR)
+                STEP 1: PILIH METODE (UKURAN CARD PEMBUNGKUS KONSISTEN & NAMA FITUR TEPAT)
                 =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -695,7 +701,7 @@ export default function TeacherQuestionsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("manual")}
-                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <PenTool className="w-5 h-5 stroke-[2.2]" />
@@ -705,17 +711,17 @@ export default function TeacherQuestionsPage() {
                     </span>
                   </button>
 
-                  {/* Card Kotak 2: Motret Naskah */}
+                  {/* Card Kotak 2: Ambil Foto */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("camera")}
-                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <Camera className="w-5 h-5 stroke-[2.2]" />
                     </div>
                     <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
-                      Motret Naskah
+                      Ambil Foto
                     </span>
                   </button>
 
@@ -723,7 +729,7 @@ export default function TeacherQuestionsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("pdf")}
-                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <Upload className="w-5 h-5 stroke-[2.2]" />
@@ -737,7 +743,7 @@ export default function TeacherQuestionsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("ai")}
-                    className="p-4 sm:p-3 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="p-4 sm:p-3 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
                       <Sparkles className="w-5 h-5 stroke-[2.2]" />
@@ -751,7 +757,7 @@ export default function TeacherQuestionsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("from_material")}
-                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square col-span-2 sm:col-span-1"
+                    className="p-4 sm:p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square col-span-2 sm:col-span-1 h-full"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <Link2 className="w-5 h-5 stroke-[2.2]" />
@@ -765,37 +771,34 @@ export default function TeacherQuestionsPage() {
             )}
 
             {/* ===================================================================
-                STEP 2: IDENTITAS SOAL & ID PATEN DARI SISTEM
+                STEP 2: IDENTITAS SOAL
                 =================================================================== */}
             {wizardStep === 2 && (
               <form onSubmit={handleStep2Submit} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                {/* ID Paten Sistem (Non-editable, tidak bisa diacak atau dibuat manual) */}
+                {/* ID Soal: Kiri 'ID Soal', Kanan ID-nya (Tanpa strip, 4 angka) */}
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-[11px] font-bold text-gray-300 block">ID Butir Soal (Paten Sistem)</span>
-                    <span className="text-[10px] text-gray-400">Ditetapkan permanen oleh sistem, tidak dapat diacak</span>
-                  </div>
+                  <span className="text-xs font-bold text-gray-200">ID Soal</span>
                   <span className="font-mono text-xs font-black text-[#FFD36D] bg-[#251E2B] px-3.5 py-1.5 rounded-xl border border-[#FFD36D]/30 select-none">
                     {patentQuestionId}
                   </span>
                 </div>
 
-                {/* Judul / Topik Soal */}
+                {/* Topik Soal: Kosong default, placeholder transparan tanpa 'Contoh' */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Topik / Judul Soal
+                    Topik Soal
                   </label>
                   <input
                     type="text"
                     required
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Contoh: Operasi Hitung Belanja Pasar Tradisional"
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner"
+                    placeholder="Operasi Hitung Belanja Pasar Tradisional"
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner"
                   />
                 </div>
 
-                {/* Mapel & Kelas */}
+                {/* Mapel & Kelas: Proporsi rapi, nama maksimal 2 kata */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
@@ -804,7 +807,7 @@ export default function TeacherQuestionsPage() {
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       <option value="Matematika">Matematika</option>
                       <option value="IPAS (Ilmu Pengetahuan Alam & Sosial)">IPAS</option>
@@ -816,12 +819,12 @@ export default function TeacherQuestionsPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Jenjang Kelas
+                      Kelas
                     </label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(Number(e.target.value))}
-                      className="w-full px-3 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       {[1, 2, 3, 4, 5, 6].map((g) => (
                         <option key={g} value={g}>
@@ -832,10 +835,10 @@ export default function TeacherQuestionsPage() {
                   </div>
                 </div>
 
-                {/* Bentuk Soal */}
+                {/* Tipe Soal */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Bentuk Soal
+                    Tipe Soal
                   </label>
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
@@ -865,7 +868,7 @@ export default function TeacherQuestionsPage() {
                   </div>
                 </div>
 
-                {/* Footer Navigasi Identitas */}
+                {/* Footer Navigasi Identitas: Button 'Lanjut' Satu Kata */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
@@ -879,7 +882,7 @@ export default function TeacherQuestionsPage() {
                     disabled={!topic.trim()}
                     className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Lanjut ke Input Soal</span>
+                    <span>Lanjut</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -887,23 +890,36 @@ export default function TeacherQuestionsPage() {
             )}
 
             {/* ===================================================================
-                STEP 3: FORM INPUT KONTEN SOAL (OVERLAY LEBAR & BESAR AGAR NYAMAN)
+                STEP 3: FORM INPUT KONTEN SOAL (TINJAU & EDIT LANGSUNG)
                 =================================================================== */}
             {wizardStep === 3 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                {/* Ringkasan Konteks Singkat */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-bold text-[#FFD36D] bg-[#251E2B] px-2.5 py-0.5 rounded-lg border border-[#FFD36D]/30">
-                      {patentQuestionId}
-                    </span>
-                    <span className="font-bold text-white">{topic}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-300">
-                    <span>{subject} &bull; Kelas {grade} SD</span>
-                    <span className="px-2 py-0.5 rounded-md bg-white/10 text-[#FFD36D] font-bold text-[10px]">
-                      {questionType === "multiple_choice" ? "Pilihan Ganda" : "Soal Esai"}
-                    </span>
+                {/* Switcher Tipe Soal (Pilgan / Esai) Langsung di Step 3 */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-xs font-bold text-gray-200">Tipe Soal</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setQuestionType("multiple_choice")}
+                      className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                        questionType === "multiple_choice"
+                          ? "bg-[#FFD36D] text-[#251E2B] shadow-xs font-black"
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      Pilihan Ganda
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuestionType("essay")}
+                      className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                        questionType === "essay"
+                          ? "bg-[#FFD36D] text-[#251E2B] shadow-xs font-black"
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      Soal Esai
+                    </button>
                   </div>
                 </div>
 
@@ -911,7 +927,7 @@ export default function TeacherQuestionsPage() {
                 {selectedMethod === "from_material" && (
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Modul Materi Rujukan
+                      Modul Rujukan
                     </label>
                     <select
                       value={topic}
@@ -921,14 +937,13 @@ export default function TeacherQuestionsPage() {
                           setTopic(selectedMat.title);
                           setSubject(selectedMat.subject);
                           setGrade(selectedMat.grade);
-                          setPreviewPrompt(`Berdasarkan modul materi "${selectedMat.title}", tentukan penyelesaian masalah kontekstual berikut:`);
                         }
                       }}
                       className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
                     >
                       {materials.map((m) => (
                         <option key={m.id} value={m.title}>
-                          [{m.id}] {m.title} ({m.subject} - Kelas {m.grade} SD)
+                          [{m.id}] {m.title} ({m.subject})
                         </option>
                       ))}
                     </select>
@@ -951,35 +966,35 @@ export default function TeacherQuestionsPage() {
                       className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>{isAiGenerating ? "Merumuskan Soal..." : previewPrompt ? "Generate Ulang Soal" : "Mulai Generate AI"}</span>
+                      <span>{isAiGenerating ? "Merumuskan..." : previewPrompt ? "Generate Ulang" : "Generate AI"}</span>
                     </button>
                   </div>
                 )}
 
-                {/* Teks Pertanyaan Kontekstual yang Lapang */}
+                {/* Teks Pertanyaan Kontekstual */}
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-200">
-                    Teks Pertanyaan / Stimulus Kontekstual
+                    Pertanyaan Soal
                   </label>
                   <textarea
                     rows={4}
                     required
                     value={previewPrompt}
                     onChange={(e) => setPreviewPrompt(e.target.value)}
-                    placeholder="Tuliskan teks pertanyaan atau stimulus asesmen kontekstual secara lengkap di sini..."
-                    className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[110px]"
+                    placeholder="Tuliskan teks stimulus atau pertanyaan asesmen kontekstual secara lengkap di sini..."
+                    className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[110px]"
                   />
                 </div>
 
-                {/* Opsi Pilihan Ganda (Grid 2 Kolom Luas) / Rubrik Esai */}
+                {/* Opsi Pilihan Ganda / Rubrik Esai */}
                 {questionType === "multiple_choice" ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-gray-200">
-                        Opsi Pilihan Jawaban
+                        Opsi Jawaban
                       </label>
                       <span className="text-[11px] text-gray-400">
-                        Tentukan teks tiap opsi dan tandai kunci jawaban yang benar
+                        Isi opsi dan pilih kunci jawaban
                       </span>
                     </div>
 
@@ -995,7 +1010,7 @@ export default function TeacherQuestionsPage() {
                           value={previewOptionA}
                           onChange={(e) => setPreviewOptionA(e.target.value)}
                           placeholder="Pilihan jawaban A"
-                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none font-medium"
                         />
                       </div>
 
@@ -1010,7 +1025,7 @@ export default function TeacherQuestionsPage() {
                           value={previewOptionB}
                           onChange={(e) => setPreviewOptionB(e.target.value)}
                           placeholder="Pilihan jawaban B"
-                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none font-medium"
                         />
                       </div>
 
@@ -1025,7 +1040,7 @@ export default function TeacherQuestionsPage() {
                           value={previewOptionC}
                           onChange={(e) => setPreviewOptionC(e.target.value)}
                           placeholder="Pilihan jawaban C"
-                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none font-medium"
                         />
                       </div>
 
@@ -1040,7 +1055,7 @@ export default function TeacherQuestionsPage() {
                           value={previewOptionD}
                           onChange={(e) => setPreviewOptionD(e.target.value)}
                           placeholder="Pilihan jawaban D"
-                          className="flex-1 bg-transparent text-xs sm:text-sm text-white focus:outline-none font-medium"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none font-medium"
                         />
                       </div>
                     </div>
@@ -1072,14 +1087,14 @@ export default function TeacherQuestionsPage() {
                   /* Rubrik Penilaian Soal Esai */
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-gray-200">
-                      Rubrik Penilaian & Panduan Penskoran Esai
+                      Rubrik Penskoran
                     </label>
                     <textarea
                       rows={5}
                       value={previewRubric}
                       onChange={(e) => setPreviewRubric(e.target.value)}
-                      placeholder="Contoh: Skor 100 bila siswa menuliskan tahapan operasi hitung dan nilai kembalian dengan tepat..."
-                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[120px]"
+                      placeholder="Uraikan kriteria penilaian jawaban esai secara bertahap..."
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[120px]"
                     />
                   </div>
                 )}
@@ -1087,25 +1102,25 @@ export default function TeacherQuestionsPage() {
                 {/* Pembahasan Kontekstual */}
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-200">
-                    Pembahasan & Penjelasan Asesmen
+                    Pembahasan Soal
                   </label>
                   <textarea
                     rows={3}
                     value={previewExplanation}
                     onChange={(e) => setPreviewExplanation(e.target.value)}
-                    placeholder="Uraikan langkah penyelesaian masalah kontekstual agar siswa memahami konsepnya..."
-                    className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed"
+                    placeholder="Uraikan pembahasan dan cara penyelesaian soal di sini..."
+                    className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
                   />
                 </div>
 
-                {/* Footer Buttons Step 3 */}
+                {/* Footer Buttons Step 3: Button 'Simpan' Satu Kata */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
                     onClick={() => setWizardStep(2)}
                     className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
-                    Kembali ke Identitas
+                    Kembali
                   </button>
 
                   <button
@@ -1114,7 +1129,7 @@ export default function TeacherQuestionsPage() {
                     disabled={!previewPrompt.trim() && !manualQuestionDraft.trim()}
                     className="py-2.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Simpan Butir Soal</span>
+                    <span>Simpan</span>
                     <Check className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>

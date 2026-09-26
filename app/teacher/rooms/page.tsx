@@ -84,17 +84,13 @@ export default function TeacherRoomsPage() {
     setRoomCode(patentCode);
     if (materials.length > 0) {
       setSelectedResourceId(materials[0].id);
-      setCustomTitle(materials[0].title);
-      setSubject(materials[0].subject || "Matematika");
-      setGrade(materials[0].grade || 5);
-    } else {
-      setCustomTitle("Modul Pembelajaran Tematik");
-      setSubject("Matematika");
-      setGrade(5);
     }
     if (questions.length > 0) {
       setSecondaryResourceId(questions[0].id);
     }
+    setCustomTitle("");
+    setSubject("Matematika");
+    setGrade(5);
     setCreatedRoom(null);
     setIsWizardOpen(true);
   };
@@ -102,22 +98,14 @@ export default function TeacherRoomsPage() {
   // Step 1: Select Type
   const handleSelectType = (type: "material" | "question" | "both") => {
     setRoomType(type);
+    setCustomTitle("");
     if (type === "material" && materials.length > 0) {
       setSelectedResourceId(materials[0].id);
-      setCustomTitle(materials[0].title);
-      setSubject(materials[0].subject || "Matematika");
-      setGrade(materials[0].grade || 5);
     } else if (type === "question" && questions.length > 0) {
       setSelectedResourceId(questions[0].id);
-      setCustomTitle(`Latihan: ${questions[0].topic || "Kontekstual"}`);
-      setSubject(questions[0].subject || "Matematika");
-      setGrade(questions[0].grade || 5);
     } else if (type === "both") {
       if (materials.length > 0) {
         setSelectedResourceId(materials[0].id);
-        setCustomTitle(`Paket: ${materials[0].title}`);
-        setSubject(materials[0].subject || "Matematika");
-        setGrade(materials[0].grade || 5);
       }
       if (questions.length > 0) {
         setSecondaryResourceId(questions[0].id);
@@ -139,7 +127,7 @@ export default function TeacherRoomsPage() {
     if (!roomCode || !customTitle || isSubmitting) return;
 
     setIsSubmitting(true);
-    const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
     const newRoom = repository.createRoom({
       code: cleanCode,
       title: customTitle.trim(),
@@ -197,28 +185,28 @@ export default function TeacherRoomsPage() {
         {/* ===================================================================
             2. SEARCH BAR & FILTER ROOM: LANGSUNG TANPA DIBUNGKUS CARD
             =================================================================== */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#756F7A]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#51465B]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari kode room, judul, atau mapel..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border border-[#E9E5E8] text-xs font-medium text-[#23212A] placeholder:text-[#756F7A]/70 focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-semibold text-[#23212A] placeholder:text-[#756F7A]/70 focus:outline-none focus:border-[#51465B] shadow-xs transition-colors"
             />
           </div>
 
-          {/* Filter Room Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
+          {/* Filter Room Pills - Rata kanan & ukuran pas nama */}
+          <div className="flex items-center gap-1.5 overflow-x-auto shrink-0 sm:ml-auto justify-end">
             <button
               type="button"
               onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 filterType === "all"
                   ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
               }`}
             >
               Semua ({rooms.length})
@@ -226,10 +214,10 @@ export default function TeacherRoomsPage() {
             <button
               type="button"
               onClick={() => setFilterType("material")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 filterType === "material"
                   ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
               }`}
             >
               Materi
@@ -237,10 +225,10 @@ export default function TeacherRoomsPage() {
             <button
               type="button"
               onClick={() => setFilterType("question")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 filterType === "question"
                   ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
               }`}
             >
               Soal
@@ -248,10 +236,10 @@ export default function TeacherRoomsPage() {
             <button
               type="button"
               onClick={() => setFilterType("both")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 filterType === "both"
                   ? "bg-[#51465B] text-white shadow-xs"
-                  : "bg-white text-[#756F7A] hover:bg-slate-100 border border-[#E9E5E8]"
+                  : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
               }`}
             >
               Materi & Soal
@@ -260,11 +248,11 @@ export default function TeacherRoomsPage() {
         </div>
 
         {/* ===================================================================
-            3. DAFTAR ROOM: CARD PUTIH DENGAN STROKE, PROPORSIONAL & BERSIH
+            3. DAFTAR ROOM: SESUAI 2 CARD DASBOR (MINI VERSION) & GRADASI UNTUK KEDUANYA
             =================================================================== */}
         <div>
           {filteredRooms.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-[#E9E5E8] space-y-3">
+            <div className="p-12 text-center bg-white rounded-3xl border-2 border-[#51465B]/20 space-y-3">
               <div className="w-14 h-14 rounded-full bg-[#FAF7F3] text-[#756F7A] mx-auto flex items-center justify-center">
                 <DoorOpen className="w-7 h-7" />
               </div>
@@ -274,7 +262,7 @@ export default function TeacherRoomsPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredRooms.map((room) => {
                 const isMaterial = room.type === "material";
                 const isBoth = room.type === "both";
@@ -285,69 +273,218 @@ export default function TeacherRoomsPage() {
                   ? `Ruang eksplorasi bahan ajar tematik Kurikulum Merdeka untuk wilayah ${room.region_name || "lokal"}.`
                   : `Ruang asesmen interaktif pengerjaan butir latihan soal kontekstual untuk wilayah ${room.region_name || "lokal"}.`;
 
+                if (isBoth) {
+                  // Gradasi antara warna materi (#51465B) dan soal (#FFD36D)
+                  return (
+                    <div
+                      key={room.id}
+                      className="relative p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#51465B] via-[#43374D] to-[#B38A2D] border-2 border-[#FFD36D] shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[220px] text-white"
+                    >
+                      <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#FFD36D]/20 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform" />
+
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#FFD36D] text-[#23212A] flex items-center justify-center shrink-0 shadow-xs">
+                            <Layers className="w-5 h-5 stroke-[2.2]" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCode(room.code)}
+                            className="shrink-0 py-1 px-2.5 rounded-xl bg-[#23212A]/50 hover:bg-[#23212A]/70 border border-[#FFD36D]/40 font-mono text-xs font-black text-[#FFD36D] flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title="Klik untuk menyalin kode room"
+                          >
+                            {copiedCode === room.code ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-emerald-300 font-sans text-[10px]">Tersalin</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-[#FFD36D]" />
+                                <span>{room.code}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        <div className="mt-3">
+                          <h3 className="text-base font-extrabold text-white leading-snug line-clamp-2">
+                            {room.title}
+                          </h3>
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/90 border border-white/15">
+                              Materi & Soal &bull; {room.subject} &bull; Kelas {room.grade} SD
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="my-auto py-3">
+                        <p className="text-xs text-white/85 font-medium leading-relaxed line-clamp-2">
+                          {roomDescription}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/15 flex items-center gap-2">
+                        <Link
+                          href={`/room/${room.code}`}
+                          target="_blank"
+                          className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#23212A] font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Buka Room</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRoom(room.id)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white/70 hover:text-rose-300 border border-white/20 hover:border-rose-400 transition-all cursor-pointer shrink-0"
+                          title="Hapus Room"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (isMaterial) {
+                  // Style Materi: Gelap Mauve (#51465B) dengan aksen kuning (#FFD36D)
+                  return (
+                    <div
+                      key={room.id}
+                      className="relative p-5 sm:p-6 rounded-3xl bg-[#51465B] border-2 border-[#FFD36D] shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[220px] text-white"
+                    >
+                      <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#FFD36D]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform" />
+
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#FFD36D]/20 text-[#FFD36D] flex items-center justify-center shrink-0 border border-[#FFD36D]/30">
+                            <BookOpen className="w-5 h-5 stroke-[2.2]" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCode(room.code)}
+                            className="shrink-0 py-1 px-2.5 rounded-xl bg-[#23212A]/40 hover:bg-[#23212A]/60 border border-[#FFD36D]/30 font-mono text-xs font-black text-[#FFD36D] flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title="Klik untuk menyalin kode room"
+                          >
+                            {copiedCode === room.code ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-emerald-300 font-sans text-[10px]">Tersalin</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-[#FFD36D]/80" />
+                                <span>{room.code}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        <div className="mt-3">
+                          <h3 className="text-base font-extrabold text-white leading-snug line-clamp-2">
+                            {room.title}
+                          </h3>
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/90 border border-white/15">
+                              Materi &bull; {room.subject} &bull; Kelas {room.grade} SD
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="my-auto py-3">
+                        <p className="text-xs text-white/80 font-medium leading-relaxed line-clamp-2">
+                          {roomDescription}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                        <Link
+                          href={`/room/${room.code}`}
+                          target="_blank"
+                          className="flex-1 py-2.5 px-4 rounded-xl bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Buka Room</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRoom(room.id)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white/70 hover:text-rose-300 border border-white/20 hover:border-rose-400 transition-all cursor-pointer shrink-0"
+                          title="Hapus Room"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Style Soal: Kuning Cerah (#FFD36D) dengan border & teks mauve (#51465B)
                 return (
                   <div
                     key={room.id}
-                    className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9E5E8] shadow-[0_2px_8px_rgba(81,70,91,0.03)] hover:shadow-md hover:border-[#51465B]/30 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden min-h-[190px]"
+                    className="relative p-5 sm:p-6 rounded-3xl bg-[#FFD36D] border-2 border-[#51465B] shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[220px] text-[#23212A]"
                   >
-                    {/* Top: Judul & ID di samping kanan, Kategori di bawahnya */}
-                    <div>
-                      <div className="flex items-start justify-between gap-2.5">
-                        <h3 className="text-sm sm:text-base font-bold text-[#23212A] leading-snug line-clamp-2">
-                          {room.title}
-                        </h3>
+                    <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#51465B]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform" />
 
-                        {/* ID (Kode Room) di samping kanan judul: proporsional, kecil */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-[#51465B]/15 text-[#51465B] flex items-center justify-center shrink-0 border border-[#51465B]/20">
+                          <FileQuestion className="w-5 h-5 stroke-[2.2]" />
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleCopyCode(room.code)}
-                          className="shrink-0 py-0.5 px-2 rounded-md bg-[#FAF7F3] hover:bg-slate-100 border border-[#E9E5E8] font-mono text-[10px] font-medium text-[#756F7A] flex items-center gap-1 cursor-pointer transition-colors"
+                          className="shrink-0 py-1 px-2.5 rounded-xl bg-white/60 hover:bg-white border border-[#51465B]/30 font-mono text-xs font-black text-[#51465B] flex items-center gap-1.5 cursor-pointer transition-colors"
                           title="Klik untuk menyalin kode room"
                         >
                           {copiedCode === room.code ? (
                             <>
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span className="text-emerald-700 font-sans text-[9px]">Tersalin</span>
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="text-emerald-700 font-sans text-[10px]">Tersalin</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3 text-[#756F7A]" />
+                              <Copy className="w-3.5 h-3.5 text-[#51465B]/80" />
                               <span>{room.code}</span>
                             </>
                           )}
                         </button>
                       </div>
 
-                      {/* Di bawah judul: Kategori kecil tidak bold dibungkus kapsul */}
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-[#51465B] border border-purple-200/60">
-                          {isBoth ? "Materi & Soal" : isMaterial ? "Materi" : "Soal"} &bull; {room.subject} &bull; Kelas {room.grade} SD
-                        </span>
+                      <div className="mt-3">
+                        <h3 className="text-base font-extrabold text-[#23212A] leading-snug line-clamp-2">
+                          {room.title}
+                        </h3>
+                        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/60 text-[#51465B] border border-[#51465B]/20">
+                            Soal &bull; {room.subject} &bull; Kelas {room.grade} SD
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Di antara di tengah secara vertikal: sedikit deskripsi */}
-                    <div className="my-auto py-2.5">
-                      <p className="text-xs text-[#756F7A] font-normal leading-relaxed line-clamp-2">
+                    <div className="my-auto py-3">
+                      <p className="text-xs text-[#51465B]/80 font-medium leading-relaxed line-clamp-2">
                         {roomDescription}
                       </p>
                     </div>
 
-                    {/* Bottom: Button Lihat Room + Button Hapus di samping kanannya */}
-                    <div className="pt-3 border-t border-[#E9E5E8] flex items-center gap-2">
+                    <div className="pt-3 border-t border-[#51465B]/20 flex items-center gap-2">
                       <Link
                         href={`/room/${room.code}`}
                         target="_blank"
-                        className="flex-1 py-2 px-3.5 rounded-xl bg-[#FAF7F3] hover:bg-[#51465B] text-[#51465B] hover:text-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all text-center shadow-2xs"
+                        className="flex-1 py-2.5 px-4 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>Lihat Room</span>
+                        <span>Buka Room</span>
                       </Link>
-
                       <button
                         type="button"
                         onClick={() => handleDeleteRoom(room.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-[#E9E5E8] hover:border-rose-200 transition-all cursor-pointer shrink-0"
+                        className="p-2.5 rounded-xl bg-black/10 hover:bg-rose-500/20 text-[#23212A]/70 hover:text-rose-700 border border-[#51465B]/20 hover:border-rose-400 transition-all cursor-pointer shrink-0"
                         title="Hapus Room"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -359,12 +496,9 @@ export default function TeacherRoomsPage() {
             </div>
           )}
         </div>
+
       {/* =====================================================================
           CREATION WIZARD MODAL (LOGIN & ROOM ENTRY INSPIRED CLEAN STEP FORM)
-          Step 1: Pilih Tipe Ruang (Card Kotak Berisi Ikon & Nama Fitur)
-          Step 2: Identitas Ruang Belajar (Kode Paten Sistem)
-          Step 3: Pilih Konten (Modul Materi / Butir Soal)
-          Step 4: Berhasil / Salin Link & Buka Room
           ===================================================================== */}
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
@@ -375,19 +509,20 @@ export default function TeacherRoomsPage() {
             <div className="w-full flex items-start justify-between pb-4 border-b border-white/10 mb-5">
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                  {wizardStep === 4 ? "Ruang Belajar Siap Diakses" : "Tambah Ruang Belajar"}
+                  {wizardStep === 1
+                    ? "Tipe Room"
+                    : wizardStep === 2
+                    ? "Identitas Room"
+                    : wizardStep === 3
+                    ? "Pilih Konten"
+                    : "Room Siap"}
                 </h3>
-                {/* Progress Step langsung di bawah judul (tanpa teks deskripsi) */}
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
-                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : wizardStep > 2 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
-                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
-                    <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
-                  </div>
-                  <span className="text-[11px] font-semibold text-[#FFD36D]">
-                    Langkah {wizardStep} dari 4: {wizardStep === 1 ? "Tipe Room" : wizardStep === 2 ? "Identitas Room" : wizardStep === 3 ? "Pilih Konten" : "Selesai"}
-                  </span>
+                {/* Progress Step dots */}
+                <div className="flex items-center gap-1.5 mt-2">
+                  <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 1 ? "w-6 bg-[#FFD36D]" : "w-2 bg-[#FFD36D]/60"}`} />
+                  <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 2 ? "w-6 bg-[#FFD36D]" : wizardStep > 2 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                  <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 3 ? "w-6 bg-[#FFD36D]" : wizardStep > 3 ? "w-2 bg-[#FFD36D]/60" : "w-2 bg-white/20"}`} />
+                  <div className={`h-1.5 rounded-full transition-all duration-300 ${wizardStep === 4 ? "w-6 bg-[#FFD36D]" : "w-2 bg-white/20"}`} />
                 </div>
               </div>
 
@@ -403,7 +538,7 @@ export default function TeacherRoomsPage() {
             </div>
 
             {/* ===================================================================
-                STEP 1: PILIH TIPE ROOM (BENTUK CARD KOTAK BERISI IKON & NAMA FITUR)
+                STEP 1: PILIH TIPE ROOM (BENTUK CARD KOTAK KONSISTEN)
                 =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -412,7 +547,7 @@ export default function TeacherRoomsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectType("material")}
-                    className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="aspect-square h-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <BookOpen className="w-5 h-5 stroke-[2.2]" />
@@ -426,7 +561,7 @@ export default function TeacherRoomsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectType("question")}
-                    className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="aspect-square h-full p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
                       <FileQuestion className="w-5 h-5 stroke-[2.2]" />
@@ -440,7 +575,7 @@ export default function TeacherRoomsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectType("both")}
-                    className="p-4 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95 aspect-square"
+                    className="aspect-square h-full p-4 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2.5 transition-all cursor-pointer group active:scale-95"
                   >
                     <div className="w-11 h-11 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
                       <Layers className="w-5 h-5 stroke-[2.2]" />
@@ -454,35 +589,30 @@ export default function TeacherRoomsPage() {
             )}
 
             {/* ===================================================================
-                STEP 2: IDENTITAS RUANG BELAJAR (KODE PATEN SISTEM & FORM IDENTITAS)
+                STEP 2: IDENTITAS RUANG BELAJAR
                 =================================================================== */}
             {wizardStep === 2 && (
               <form onSubmit={handleStep2Next} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                {/* Badge ID Paten Sistem */}
-                <div className="p-3 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-300">Kode Room Paten:</span>
-                    <span className="font-mono text-sm font-black text-[#FFD36D] tracking-wider px-2.5 py-0.5 rounded-lg bg-black/30 border border-[#FFD36D]/30">
-                      {roomCode}
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-gray-400">
-                    Tipe: {roomType === "material" ? "Materi" : roomType === "question" ? "Soal" : "Materi & Soal"}
+                {/* Kode Room */}
+                <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-300">Kode Room</span>
+                  <span className="font-mono text-sm font-black text-[#FFD36D] tracking-wider px-2.5 py-0.5 rounded-lg bg-black/30 border border-[#FFD36D]/30">
+                    {roomCode}
                   </span>
                 </div>
 
                 {/* Judul Room */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
-                    Nama / Judul Ruang Belajar
+                    Judul Room
                   </label>
                   <input
                     type="text"
                     required
                     value={customTitle}
                     onChange={(e) => setCustomTitle(e.target.value)}
-                    placeholder="Contoh: Belajar Pecahan Pasar Tradisional"
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-gray-400 focus:outline-none transition-all shadow-inner"
+                    placeholder="Judul ruang belajar..."
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-bold text-white placeholder:text-gray-400/60 focus:outline-none transition-all shadow-inner"
                   />
                 </div>
 
@@ -495,7 +625,7 @@ export default function TeacherRoomsPage() {
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none select-dark"
                     >
                       <option value="Matematika">Matematika</option>
                       <option value="IPAS">IPAS</option>
@@ -507,12 +637,12 @@ export default function TeacherRoomsPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Kelas (SD)
+                      Kelas SD
                     </label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none select-dark"
                     >
                       {[1, 2, 3, 4, 5, 6].map((g) => (
                         <option key={g} value={g}>
@@ -536,9 +666,9 @@ export default function TeacherRoomsPage() {
                   <button
                     type="submit"
                     disabled={!customTitle.trim()}
-                    className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+                    className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Lanjut: Pilih Konten</span>
+                    <span>Lanjut</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -546,34 +676,25 @@ export default function TeacherRoomsPage() {
             )}
 
             {/* ===================================================================
-                STEP 3: PILIH KONTEN SUMBER DAYA
+                STEP 3: PILIH KONTEN
                 =================================================================== */}
             {wizardStep === 3 && (
               <form onSubmit={handleSaveRoom} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                  <div className="text-xs text-gray-300">
-                    Ruang Belajar: <span className="font-bold text-white">{customTitle}</span>
-                  </div>
-                  <div className="text-[11px] text-gray-400">
-                    {subject} &bull; Kelas {grade} SD &bull; Kode: <span className="font-mono text-[#FFD36D]">{roomCode}</span>
-                  </div>
-                </div>
-
                 {/* Resource Picker Materi */}
                 {(roomType === "material" || roomType === "both") && (
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Modul Materi
+                      Pilih Materi
                     </label>
                     {materials.length === 0 ? (
                       <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
-                        Belum ada modul materi tersimpan di sekolah ini.
+                        Belum ada modul materi tersimpan.
                       </div>
                     ) : (
                       <select
                         value={selectedResourceId}
                         onChange={(e) => setSelectedResourceId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none select-dark"
                       >
                         {materials.map((m) => (
                           <option key={m.id} value={m.id}>
@@ -589,11 +710,11 @@ export default function TeacherRoomsPage() {
                 {(roomType === "question" || roomType === "both") && (
                   <div>
                     <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Butir / Paket Soal
+                      Pilih Soal
                     </label>
                     {questions.length === 0 ? (
                       <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
-                        Belum ada butir soal tersimpan di sekolah ini.
+                        Belum ada butir soal tersimpan.
                       </div>
                     ) : (
                       <select
@@ -605,7 +726,7 @@ export default function TeacherRoomsPage() {
                             setSelectedResourceId(e.target.value);
                           }
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none select-dark"
                       >
                         {questions.map((q) => (
                           <option key={q.id} value={q.id}>
@@ -624,16 +745,16 @@ export default function TeacherRoomsPage() {
                     onClick={() => setWizardStep(2)}
                     className="py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
                   >
-                    Kembali ke Identitas
+                    Kembali
                   </button>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    <DoorOpen className="w-4 h-4 stroke-[2.2]" />
-                    <span>{isSubmitting ? "Menerbitkan..." : "Terbitkan Room"}</span>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>{isSubmitting ? "Menyimpan..." : "Simpan"}</span>
                   </button>
                 </div>
               </form>
@@ -652,7 +773,7 @@ export default function TeacherRoomsPage() {
                     Ruang Belajar Berhasil Diterbitkan!
                   </h4>
                   <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-xl bg-white/10 border border-white/15">
-                    <span className="text-[11px] text-gray-300">Kode Paten:</span>
+                    <span className="text-[11px] text-gray-300">Kode Room:</span>
                     <span className="font-mono text-sm font-bold text-[#FFD36D]">
                       {createdRoom.code}
                     </span>
