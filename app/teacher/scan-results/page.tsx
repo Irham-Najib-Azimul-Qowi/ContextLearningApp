@@ -188,68 +188,47 @@ export default function ScanResultsPage() {
           </p>
         </div>
 
-        {/* 2. Fitur Center di Tengah: Pilihan Kamera & Unggah Berkas */}
-        <div className="max-w-2xl mx-auto w-full bg-white rounded-[28px] sm:rounded-[36px] border-2 border-[#51465B]/20 p-6 sm:p-8 shadow-xs space-y-5 text-center">
-          <div className="space-y-1">
-            <span className="text-xs font-black uppercase tracking-wider text-[#51465B] block">
-              Pilih Cara Pemindaian Lembar
-            </span>
-            <p className="text-xs text-[#756F7A]">
-              Dukungan kamera langsung (kamera laptop &amp; HP) serta upload file foto.
-            </p>
-          </div>
+        {/* 2. Fitur Pindai: Full Width, Layout Horizontal */}
+        <div className="w-full bg-white rounded-[28px] sm:rounded-[36px] border-2 border-[#51465B]/20 p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Kiri: Judul + Petunjuk */}
+            <div className="space-y-1.5 text-left">
+              <span className="text-sm sm:text-base font-black text-[#23212A] block">
+                Pilih cara pindai
+              </span>
+              <p className="text-[11px] sm:text-xs text-[#756F7A] leading-relaxed max-w-md">
+                Pastikan pojok kanan atas lembar kerja (area QR Code Token dan ID Dokumen) tampak jelas dan terang untuk keberhasilan verifikasi.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-            {/* Tombol Kamera Langsung */}
-            <button
-              type="button"
-              onClick={() => setIsCameraModalOpen(true)}
-              className="p-5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white flex flex-col items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all cursor-pointer group active:scale-95 border border-[#51465B]"
-            >
-              <div className="w-13 h-13 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
-                <Camera className="w-6 h-6 text-[#FFD36D]" />
-              </div>
-              <div>
-                <span className="text-sm font-extrabold text-[#FFD36D] block">
-                  Buka Kamera Langsung
-                </span>
-                <span className="text-[11px] text-gray-300">
-                  Support Laptop Webcam &amp; Kamera HP
-                </span>
-              </div>
-            </button>
+            {/* Kanan: Tombol Kamera & Upload */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsCameraModalOpen(true)}
+                className="px-4 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white flex items-center gap-2.5 shadow-sm hover:shadow transition-all cursor-pointer active:scale-95"
+              >
+                <Camera className="w-5 h-5 text-[#FFD36D]" />
+                <span className="text-xs sm:text-sm font-extrabold text-[#FFD36D]">Buka Kamera</span>
+              </button>
 
-            {/* Tombol Unggah File */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-5 rounded-2xl border-2 border-dashed border-[#51465B]/30 hover:border-[#51465B] bg-[#FAF7F3] hover:bg-[#FAF7F3]/80 text-[#23212A] flex flex-col items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer group active:scale-95"
-            >
-              <div className="w-13 h-13 rounded-2xl bg-white border border-[#E9E5E8] flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
-                <Upload className="w-6 h-6 text-[#51465B]" />
-              </div>
-              <div>
-                <span className="text-sm font-extrabold text-[#23212A] block">
-                  Unggah Berkas Foto
-                </span>
-                <span className="text-[11px] text-[#756F7A]">
-                  Pilih file JPG, PNG, atau WebP
-                </span>
-              </div>
-            </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-3 rounded-2xl border-2 border-dashed border-[#51465B]/30 hover:border-[#51465B] bg-[#FAF7F3] hover:bg-[#FAF7F3]/80 text-[#23212A] flex items-center gap-2.5 shadow-xs transition-all cursor-pointer active:scale-95"
+              >
+                <Upload className="w-5 h-5 text-[#51465B]" />
+                <span className="text-xs sm:text-sm font-extrabold text-[#23212A]">Upload Gambar</span>
+              </button>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-
-          <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 text-[11px] text-amber-900 font-medium text-left flex items-start gap-2">
-            <span className="font-bold shrink-0">Petunjuk:</span>
-            <span>Pastikan pojok kanan atas lembar kerja (area QR Code Token dan ID Dokumen) tampak jelas dan terang untuk keberhasilan verifikasi keaslian dokumen.</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
           </div>
         </div>
 
