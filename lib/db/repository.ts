@@ -368,10 +368,14 @@ class PahamiRepository {
     }
   }
 
-  // --- CLOUD SYNCHRONIZATION (Cross-Device Data Sync via Supabase Table & Auth) ---
+  // --- CLOUD SYNCHRONIZATION (Cross-Device 2-Way Sync via Supabase & Route Handler) ---
   private syncDebounceTimer: any = null;
+  private isSyncing: boolean = false;
 
-  async syncToCloud(): Promise<void> {
+  async syncToCloud(options?: {
+    forceOverwrite?: boolean;
+    deletedItem?: { type: "material" | "question" | "room"; id: string };
+  }): Promise<void> {
     if (!this.isBrowser()) return;
     if (this.syncDebounceTimer) {
       clearTimeout(this.syncDebounceTimer);
@@ -382,7 +386,9 @@ class PahamiRepository {
         try {
           const { createClient } = await import("@/lib/supabase/client");
           const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user;
+          if (!user) return resolve();
 
           const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
           const profile = profileRaw ? JSON.parse(profileRaw) : null;
@@ -392,56 +398,15 @@ class PahamiRepository {
           const schools = this.getItem<School[]>("schools", SEED_SCHOOLS);
           const activeSchoolId = this.getActiveSchoolId();
 
-          if (user) {
-            // 1. Direct HTTPS upsert to Supabase PostgreSQL table user_synced_data
-            const { error: upsertError } = await supabase
-              .from("user_synced_data")
-              .upsert(
-                {
-                  user_id: user.id,
-                  user_email: user.email,
-                  profile,
-                  materials,
-                  questions,
-                  rooms,
-                  schools,
-                  active_school_id: activeSchoolId,
-                  onboarding_completed: true,
-                  updated_at: new Date().toISOString(),
-                },
-                { onConflict: "user_id" }
-              );
-
-            if (upsertError) {
-              console.warn("Direct Supabase cloud sync warning:", upsertError.message);
-            } else {
-              console.log("Direct Supabase cloud sync succeeded for user:", user.email);
-            }
-
-            // 2. Extra backup: update Supabase Auth user_metadata
-            await supabase.auth.updateUser({
-              data: {
-                onboarding_completed: true,
-                profile_completed: true,
-                teacher_profile: profile,
-                role: "TEACHER",
-              },
-            }).catch(() => {});
-          }
-
-          // 3. Fallback to API sync endpoint with Bearer token
-          const { data: { session } } = await supabase.auth.getSession();
           const headers: Record<string, string> = { "Content-Type": "application/json" };
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
 
-          await fetch("/api/sync/user-data", {
+          const res = await fetch("/api/sync/user-data", {
             method: "POST",
             headers,
             body: JSON.stringify({
-              userId: user?.id,
-              userEmail: user?.email,
               materials,
               questions,
               rooms,
@@ -449,8 +414,17 @@ class PahamiRepository {
               activeSchool: activeSchoolId,
               profile,
               onboardingCompleted: true,
+              forceOverwrite: options?.forceOverwrite,
+              deletedItem: options?.deletedItem,
             }),
-          }).catch(() => {});
+          });
+
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.data) {
+              this.applyAuthoritativeCloudData(json.data);
+            }
+          }
         } catch (err) {
           console.warn("Cross-device sync to cloud error:", err);
         } finally {
@@ -460,151 +434,112 @@ class PahamiRepository {
     });
   }
 
-  async syncFromCloud(): Promise<boolean> {
-    if (!this.isBrowser()) return false;
+  async syncWithCloud(): Promise<boolean> {
+    if (!this.isBrowser() || this.isSyncing) return false;
+    this.isSyncing = true;
     try {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      let activeUser: any = null;
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
 
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user) {
-        activeUser = userData.user;
-      } else {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.user) {
-          activeUser = sessionData.session.user;
+      if (!user) {
+        this.isSyncing = false;
+        return false;
+      }
+
+      const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
+      const profile = profileRaw ? JSON.parse(profileRaw) : null;
+      const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+      const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+      const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+      const schools = this.getItem<School[]>("schools", SEED_SCHOOLS);
+      const activeSchoolId = this.getActiveSchoolId();
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      // Safe two-way sync: sends local state, server reconciles conflict-free union and returns unified state
+      const res = await fetch("/api/sync/user-data", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          materials,
+          questions,
+          rooms,
+          schools,
+          activeSchool: activeSchoolId,
+          profile,
+          onboardingCompleted: true,
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          this.applyAuthoritativeCloudData(json.data);
+          return true;
         }
-      }
-
-      let cloudData: any = null;
-
-      // 1. Direct query to Supabase PostgreSQL table user_synced_data
-      if (activeUser) {
-        const filterOr = `user_id.eq.${activeUser.id},user_email.eq.${activeUser.email}`;
-        const { data: row, error: tableError } = await supabase
-          .from("user_synced_data")
-          .select("*")
-          .or(filterOr)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (row && !tableError) {
-          cloudData = {
-            materials: row.materials,
-            questions: row.questions,
-            rooms: row.rooms,
-            schools: row.schools,
-            activeSchool: row.active_school_id,
-            profile: row.profile,
-            onboardingCompleted: row.onboarding_completed,
-          };
-        }
-
-        // 2. Backup check in user_metadata
-        if (!cloudData && activeUser.user_metadata) {
-          const meta = activeUser.user_metadata;
-          if (meta.synced_materials || meta.teacher_profile || meta.onboarding_completed) {
-            cloudData = {
-              materials: meta.synced_materials,
-              questions: meta.synced_questions,
-              rooms: meta.synced_rooms,
-              schools: meta.synced_schools,
-              activeSchool: meta.synced_active_school,
-              profile: meta.teacher_profile,
-              onboardingCompleted: meta.onboarding_completed,
-            };
-          }
-        }
-      }
-
-      // 3. Fallback to API route
-      if (!cloudData) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers: Record<string, string> = {};
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-        const queryParams = activeUser
-          ? `?email=${encodeURIComponent(activeUser.email)}&userId=${encodeURIComponent(activeUser.id)}`
-          : "";
-        const res = await fetch(`/api/sync/user-data${queryParams}`, { headers });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            cloudData = json.data;
-          }
-        }
-      }
-
-      if (!cloudData) return false;
-
-      const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted } = cloudData;
-      let hasChanges = false;
-
-      if (onboardingCompleted) {
-        localStorage.setItem("pahami_v2_onboarding_completed", "true");
-      }
-
-      if (profile && typeof profile === "object") {
-        const existingRaw = localStorage.getItem("pahami_v2_teacher_profile");
-        const existing = existingRaw ? JSON.parse(existingRaw) : {};
-        const mergedProfile = { ...existing, ...profile };
-        localStorage.setItem("pahami_v2_teacher_profile", JSON.stringify(mergedProfile));
-        hasChanges = true;
-      }
-
-      if (Array.isArray(schools) && schools.length > 0) {
-        const localSchools = this.getSchools();
-        const map = new Map<string, School>();
-        localSchools.forEach((s) => map.set(s.id, s));
-        schools.forEach((s) => map.set(s.id, s));
-        this.setItem<School[]>("schools", Array.from(map.values()));
-        hasChanges = true;
-      }
-
-      if (activeSchool) {
-        this.setActiveSchoolId(activeSchool);
-        hasChanges = true;
-      }
-
-      if (Array.isArray(materials) && materials.length > 0) {
-        const localMaterials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
-        const map = new Map<string, LearningMaterial>();
-        localMaterials.forEach((m) => map.set(m.id, m));
-        materials.forEach((m) => map.set(m.id, m));
-        this.setItem<LearningMaterial[]>("materials", Array.from(map.values()));
-        hasChanges = true;
-      }
-
-      if (Array.isArray(questions) && questions.length > 0) {
-        const localQuestions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
-        const map = new Map<string, Question>();
-        localQuestions.forEach((q) => map.set(q.id, q));
-        questions.forEach((q) => map.set(q.id, q));
-        this.setItem<Question[]>("questions", Array.from(map.values()));
-        hasChanges = true;
-      }
-
-      if (Array.isArray(rooms) && rooms.length > 0) {
-        const localRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
-        const map = new Map<string, LearningRoom>();
-        localRooms.forEach((r) => map.set(r.id || r.code, r));
-        rooms.forEach((r) => map.set(r.id || r.code, r));
-        this.setItem<LearningRoom[]>("rooms", Array.from(map.values()));
-        hasChanges = true;
-      }
-
-      if (hasChanges) {
-        console.log("Cross-device cloud sync hydrated successfully.");
-        window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
-        return true;
       }
       return false;
     } catch (err) {
-      console.warn("Cross-device sync from cloud error:", err);
+      console.warn("Cross-device syncWithCloud error:", err);
       return false;
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  async syncFromCloud(): Promise<boolean> {
+    return this.syncWithCloud();
+  }
+
+  private applyAuthoritativeCloudData(cloudData: any): void {
+    if (!this.isBrowser() || !cloudData) return;
+    const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted } = cloudData;
+    let hasChanges = false;
+
+    if (onboardingCompleted) {
+      localStorage.setItem("pahami_v2_onboarding_completed", "true");
+    }
+
+    if (profile && typeof profile === "object") {
+      const existingRaw = localStorage.getItem("pahami_v2_teacher_profile");
+      const existing = existingRaw ? JSON.parse(existingRaw) : {};
+      const mergedProfile = { ...existing, ...profile };
+      localStorage.setItem("pahami_v2_teacher_profile", JSON.stringify(mergedProfile));
+      hasChanges = true;
+    }
+
+    if (Array.isArray(schools) && schools.length > 0) {
+      this.setItem<School[]>("schools", schools);
+      hasChanges = true;
+    }
+
+    if (activeSchool) {
+      this.setActiveSchoolId(activeSchool);
+      hasChanges = true;
+    }
+
+    if (Array.isArray(materials)) {
+      this.setItem<LearningMaterial[]>("materials", materials);
+      hasChanges = true;
+    }
+
+    if (Array.isArray(questions)) {
+      this.setItem<Question[]>("questions", questions);
+      hasChanges = true;
+    }
+
+    if (Array.isArray(rooms)) {
+      this.setItem<LearningRoom[]>("rooms", rooms);
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
   }
 
@@ -911,7 +846,7 @@ class PahamiRepository {
           (q) =>
             q.school_id === filter.schoolId ||
             q.school_id === "school-individual" ||
-            (currentUser?.id && q.teacher_id === currentUser.id)
+            (filter.schoolId === "school-active" && currentUser?.id && q.teacher_id === currentUser.id)
         );
       }
       if (filter.subject) questions = questions.filter((q) => q.subject.toLowerCase() === filter.subject?.toLowerCase());
@@ -993,7 +928,7 @@ class PahamiRepository {
     const filtered = questions.filter((q) => q.id !== id);
     if (filtered.length !== questions.length) {
       this.setItem<Question[]>("questions", filtered);
-      this.syncToCloud();
+      this.syncToCloud({ deletedItem: { type: "question", id } });
       return true;
     }
     return false;
@@ -1008,7 +943,7 @@ class PahamiRepository {
       (m) =>
         m.school_id === schoolId ||
         m.school_id === "school-individual" ||
-        (currentUser?.id && m.teacher_id === currentUser.id)
+        (schoolId === "school-active" && currentUser?.id && m.teacher_id === currentUser.id)
     );
   }
 
@@ -1089,7 +1024,7 @@ class PahamiRepository {
     const filtered = materials.filter((m) => m.id !== id);
     if (filtered.length !== materials.length) {
       this.setItem<LearningMaterial[]>("materials", filtered);
-      this.syncToCloud();
+      this.syncToCloud({ deletedItem: { type: "material", id } });
       return true;
     }
     return false;
@@ -1333,7 +1268,7 @@ class PahamiRepository {
     rooms = rooms.filter((r) => r.id !== id);
     if (rooms.length !== initialLength) {
       this.setItem<LearningRoom[]>("rooms", rooms);
-      this.syncToCloud();
+      this.syncToCloud({ deletedItem: { type: "room", id } });
       return true;
     }
     return false;

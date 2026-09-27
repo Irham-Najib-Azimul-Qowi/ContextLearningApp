@@ -132,6 +132,29 @@ export default function RoomViewerPage() {
     }
   }, [roomCode]);
 
+  const postRoomSubmission = async (payload: {
+    action: "visit" | "submit_mc" | "submit_essay" | "submit_material";
+    mc_answer?: string;
+    is_mc_correct?: boolean;
+    mc_score?: number;
+    essay_answer?: string;
+  }) => {
+    try {
+      await fetch("/api/room/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room_code: roomCode,
+          student_name: studentName,
+          source: "Online",
+          ...payload,
+        }),
+      });
+    } catch (e) {
+      console.warn("Failed to sync room submission to backend:", e);
+    }
+  };
+
   const handleSaveName = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputName.trim()) return;
@@ -148,6 +171,7 @@ export default function RoomViewerPage() {
     }
 
     repository.recordRoomVisit(roomCode, cleanName);
+    postRoomSubmission({ action: "visit" });
   };
 
   const handleCopyLink = () => {
@@ -166,6 +190,12 @@ export default function RoomViewerPage() {
     const score = isCorrect ? 100 : 0;
     if (studentName) {
       repository.recordRoomVisit(roomCode, studentName, score);
+      postRoomSubmission({
+        action: "submit_mc",
+        mc_answer: selectedMcAnswer,
+        is_mc_correct: isCorrect,
+        mc_score: score,
+      });
     }
   };
 
@@ -175,7 +205,12 @@ export default function RoomViewerPage() {
     setIsEssaySubmitted(true);
 
     if (studentName) {
-      repository.recordRoomVisit(roomCode, studentName, 95);
+      // Record visit without fake automatic score; status is awaiting teacher grading
+      repository.recordRoomVisit(roomCode, studentName, undefined);
+      postRoomSubmission({
+        action: "submit_essay",
+        essay_answer: essayAnswer.trim(),
+      });
     }
   };
 
@@ -183,6 +218,9 @@ export default function RoomViewerPage() {
     setIsMaterialCompleted(true);
     if (studentName) {
       repository.recordRoomVisit(roomCode, studentName, 100);
+      postRoomSubmission({
+        action: "submit_material",
+      });
     }
     // Auto-advance to questions if available
     if (mcQuestion) {
@@ -628,7 +666,7 @@ export default function RoomViewerPage() {
                       <span>Jawaban Esai Berhasil Terkirim ke Pengajar!</span>
                     </div>
                     <p className="leading-relaxed text-slate-800">
-                      <strong>Kunci/Pedoman Jawaban:</strong> {essayQuestion.explanation || essayQuestion.rubric || "Pengajar akan meninjau jawaban dan memberikan umpan balik kontekstual."}
+                      <strong>Status:</strong> Menunggu Penilaian Guru. Guru akan membaca uraian jawabanmu dan memberikan skor serta catatan pembelajaran.
                     </p>
                   </div>
 

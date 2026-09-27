@@ -3,6 +3,7 @@ import {
   BookOpen,
   Brain,
   DoorOpen,
+  ScanLine,
   LucideIcon,
 } from "lucide-react";
 
@@ -37,5 +38,11 @@ export const TEACHER_NAV_GROUPS: NavGroup[] = [
     label: "Room",
     icon: DoorOpen,
     href: "/teacher/rooms",
+  },
+  {
+    id: "scan-results",
+    label: "Scan Hasil Cetak",
+    icon: ScanLine,
+    href: "/teacher/scan-results",
   },
 ];

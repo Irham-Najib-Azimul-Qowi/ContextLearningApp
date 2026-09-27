@@ -21,10 +21,15 @@ import {
   Shuffle,
   ExternalLink,
   Pencil,
+  BarChart3,
+  Printer,
+  Sparkles,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
 import { LearningRoom, LearningMaterial, Question, School, UserProfile } from "@/lib/db/types";
+import { RoomDashboardView } from "@/components/room/room-dashboard-view";
+import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 
 function TeacherRoomsContent() {
   const searchParams = useSearchParams();
@@ -60,6 +65,8 @@ function TeacherRoomsContent() {
   const [editRoomGrade, setEditRoomGrade] = useState(5);
   const [editRoomResourceId, setEditRoomResourceId] = useState("");
   const [editRoomSecondaryId, setEditRoomSecondaryId] = useState("");
+  const [previewTab, setPreviewTab] = useState<"dashboard" | "content">("dashboard");
+  const [isPrintingRoom, setIsPrintingRoom] = useState(false);
 
   const handleStartEditRoom = () => {
     if (!previewRoom) return;
@@ -100,6 +107,25 @@ function TeacherRoomsContent() {
     setQuestions(qs);
   };
 
+  // Open Wizard
+  const handleOpenWizard = () => {
+    setWizardStep(1);
+    setRoomType("material");
+    const patentCode = repository.getNextRoomCode();
+    setRoomCode(patentCode);
+    if (materials.length > 0) {
+      setSelectedResourceId(materials[0].id);
+    }
+    if (questions.length > 0) {
+      setSecondaryResourceId(questions[0].id);
+    }
+    setCustomTitle("");
+    setSubject("Matematika");
+    setGrade(5);
+    setCreatedRoom(null);
+    setIsWizardOpen(true);
+  };
+
   useEffect(() => {
     loadData();
     const handleSync = () => loadData();
@@ -127,25 +153,6 @@ function TeacherRoomsContent() {
       repository.deleteRoom(id);
       loadData();
     }
-  };
-
-  // Open Wizard
-  const handleOpenWizard = () => {
-    setWizardStep(1);
-    setRoomType("material");
-    const patentCode = repository.getNextRoomCode();
-    setRoomCode(patentCode);
-    if (materials.length > 0) {
-      setSelectedResourceId(materials[0].id);
-    }
-    if (questions.length > 0) {
-      setSecondaryResourceId(questions[0].id);
-    }
-    setCustomTitle("");
-    setSubject("Matematika");
-    setGrade(5);
-    setCreatedRoom(null);
-    setIsWizardOpen(true);
   };
 
   // Step 1: Select Type
@@ -272,9 +279,17 @@ function TeacherRoomsContent() {
               </div>
 
               {/* Action Buttons Top Right: Bulat */}
-              <div className="flex items-center gap-2 self-end sm:self-auto">
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
                 {!isEditingPreview ? (
                   <>
+                    <button
+                      type="button"
+                      onClick={() => setIsPrintingRoom(true)}
+                      className="px-4 py-2 rounded-full bg-white hover:bg-slate-100 text-[#51465B] border border-[#51465B]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-[#51465B]" />
+                      <span>Cetak PDF</span>
+                    </button>
                     <button
                       type="button"
                       onClick={handleStartEditRoom}
@@ -353,93 +368,148 @@ function TeacherRoomsContent() {
                   </div>
                 </div>
 
-                {/* Live Content: Attached Material or Question */}
-                <div className="space-y-4">
-                  <h2 className="text-sm font-black text-[#23212A] uppercase tracking-wider">
-                    Pratinjau Konten Dalam Room
-                  </h2>
+                {/* Tab Switcher: Dashboard Room vs Pratinjau Konten */}
+                <div className="flex items-center gap-2 p-1.5 bg-[#51465B]/10 rounded-2xl w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTab("dashboard")}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
+                      previewTab === "dashboard"
+                        ? "bg-[#51465B] text-[#FFD36D] shadow-xs"
+                        : "text-[#51465B] hover:bg-white/50"
+                    }`}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Dashboard Room & Siswa</span>
+                    {previewRoom.visitors && previewRoom.visitors.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-[#FFD36D] text-[#251E2B] text-[10px] font-black">
+                        {previewRoom.visitors.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTab("content")}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
+                      previewTab === "content"
+                        ? "bg-[#51465B] text-[#FFD36D] shadow-xs"
+                        : "text-[#51465B] hover:bg-white/50"
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Pratinjau Konten & Pembahasan</span>
+                  </button>
+                </div>
 
-                  {/* Attached Material Preview */}
-                  {(previewRoom.type === "material" || previewRoom.type === "both") && (
-                    <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-6 sm:p-7 shadow-xs space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <span className="text-xs font-black text-[#51465B] uppercase tracking-wider flex items-center gap-1.5">
-                          <BookOpen className="w-4 h-4 text-[#51465B]" />
-                          Modul Materi Pembelajaran
-                        </span>
-                        {attachedMaterial && (
-                          <span className="font-mono text-[11px] font-bold text-[#756F7A]">{attachedMaterial.id}</span>
-                        )}
-                      </div>
-                      {attachedMaterial ? (
-                        <div className="space-y-2">
-                          <h3 className="text-base font-extrabold text-[#23212A]">{attachedMaterial.title}</h3>
-                          <p className="text-xs sm:text-sm text-[#23212A]/85 whitespace-pre-wrap font-medium leading-relaxed max-h-60 overflow-y-auto pr-2">
-                            {attachedMaterial.content}
-                          </p>
+                {/* TAB 1: DASHBOARD ROOM */}
+                {previewTab === "dashboard" && (
+                  <RoomDashboardView
+                    room={previewRoom}
+                    material={attachedMaterial}
+                    question={attachedQuestion}
+                    onRefresh={loadData}
+                  />
+                )}
+
+                {/* TAB 2: PRATINJAU KONTEN & PEMBAHASAN */}
+                {previewTab === "content" && (
+                  <div className="space-y-4">
+                    <h2 className="text-sm font-black text-[#23212A] uppercase tracking-wider">
+                      Pratinjau Konten Dalam Room
+                    </h2>
+
+                    {/* Attached Material Preview */}
+                    {(previewRoom.type === "material" || previewRoom.type === "both") && (
+                      <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-6 sm:p-7 shadow-xs space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <span className="text-xs font-black text-[#51465B] uppercase tracking-wider flex items-center gap-1.5">
+                            <BookOpen className="w-4 h-4 text-[#51465B]" />
+                            Modul Materi Pembelajaran
+                          </span>
+                          {attachedMaterial && (
+                            <span className="font-mono text-[11px] font-bold text-[#756F7A]">{attachedMaterial.id}</span>
+                          )}
                         </div>
-                      ) : (
-                        <p className="text-xs text-[#756F7A] italic">Materi terkait belum dihubungkan.</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Attached Question Preview */}
-                  {(previewRoom.type === "question" || previewRoom.type === "both") && (
-                    <div className="bg-white rounded-3xl border-2 border-[#FFD36D] p-6 sm:p-7 shadow-xs space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <span className="text-xs font-black text-[#23212A] uppercase tracking-wider flex items-center gap-1.5">
-                          <FileQuestion className="w-4 h-4 text-[#51465B]" />
-                          Latihan / Asesmen Soal Kontekstual
-                        </span>
-                        {attachedQuestion && (
-                          <span className="font-mono text-[11px] font-bold text-[#756F7A]">{attachedQuestion.id}</span>
+                        {attachedMaterial ? (
+                          <div className="space-y-2">
+                            <h3 className="text-base font-extrabold text-[#23212A]">{attachedMaterial.title}</h3>
+                            <p className="text-xs sm:text-sm text-[#23212A]/85 whitespace-pre-wrap font-medium leading-relaxed max-h-60 overflow-y-auto pr-2">
+                              {attachedMaterial.content}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[#756F7A] italic">Materi terkait belum dihubungkan.</p>
                         )}
                       </div>
-                      {attachedQuestion ? (
-                        <div className="space-y-3">
-                          <p className="text-xs sm:text-sm font-bold text-[#23212A] leading-relaxed">
-                            {attachedQuestion.question_text}
-                          </p>
-                          {attachedQuestion.type === "multiple_choice" && attachedQuestion.options && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                              {attachedQuestion.options.map((opt) => {
-                                const isCorrect = attachedQuestion.correct_answer === opt.key || attachedQuestion.correct_answer === opt.text;
-                                return (
-                                  <div
-                                    key={opt.key}
-                                    className={`p-3 rounded-2xl border text-xs font-semibold flex items-center gap-2.5 ${
-                                      isCorrect
-                                        ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
-                                        : "bg-slate-50 border-slate-200 text-[#23212A]"
-                                    }`}
-                                  >
-                                    <span
-                                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
-                                        isCorrect ? "bg-emerald-600 text-white" : "bg-slate-200 text-[#23212A]"
+                    )}
+
+                    {/* Attached Question Preview */}
+                    {(previewRoom.type === "question" || previewRoom.type === "both") && (
+                      <div className="bg-white rounded-3xl border-2 border-[#FFD36D] p-6 sm:p-7 shadow-xs space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <span className="text-xs font-black text-[#23212A] uppercase tracking-wider flex items-center gap-1.5">
+                            <FileQuestion className="w-4 h-4 text-[#51465B]" />
+                            Latihan / Asesmen Soal Kontekstual
+                          </span>
+                          {attachedQuestion && (
+                            <span className="font-mono text-[11px] font-bold text-[#756F7A]">{attachedQuestion.id}</span>
+                          )}
+                        </div>
+                        {attachedQuestion ? (
+                          <div className="space-y-3">
+                            <p className="text-xs sm:text-sm font-bold text-[#23212A] leading-relaxed">
+                              {attachedQuestion.question_text}
+                            </p>
+                            {attachedQuestion.type === "multiple_choice" && attachedQuestion.options && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                {attachedQuestion.options.map((opt) => {
+                                  const isCorrect = attachedQuestion.correct_answer === opt.key || attachedQuestion.correct_answer === opt.text;
+                                  return (
+                                    <div
+                                      key={opt.key}
+                                      className={`p-3 rounded-2xl border text-xs font-semibold flex items-center gap-2.5 ${
+                                        isCorrect
+                                          ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
+                                          : "bg-slate-50 border-slate-200 text-[#23212A]"
                                       }`}
                                     >
-                                      {opt.key}
-                                    </span>
-                                    <span>{opt.text}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {attachedQuestion.type === "essay" && attachedQuestion.rubric && (
-                            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-medium">
-                              <span className="font-bold block mb-1">Rubrik Penilaian:</span>
-                              {attachedQuestion.rubric}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-[#756F7A] italic">Paket soal terkait belum dihubungkan.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                                      <span
+                                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                          isCorrect ? "bg-emerald-600 text-white" : "bg-slate-200 text-[#23212A]"
+                                        }`}
+                                      >
+                                        {opt.key}
+                                      </span>
+                                      <span>{opt.text}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {/* Pembahasan Soal Khusus Guru */}
+                            {attachedQuestion.explanation && (
+                              <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-xs text-purple-950 font-medium space-y-1">
+                                <span className="font-bold flex items-center gap-1.5 text-[#51465B]">
+                                  <Sparkles className="w-3.5 h-3.5 text-[#FFD36D]" />
+                                  Pembahasan Soal (Khusus Guru):
+                                </span>
+                                <p className="leading-relaxed text-slate-800">{attachedQuestion.explanation}</p>
+                              </div>
+                            )}
+                            {attachedQuestion.type === "essay" && attachedQuestion.rubric && (
+                              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-medium">
+                                <span className="font-bold block mb-1">Rubrik Penilaian:</span>
+                                {attachedQuestion.rubric}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[#756F7A] italic">Paket soal terkait belum dihubungkan.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               /* Edit Form */
@@ -1204,6 +1274,34 @@ function TeacherRoomsContent() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Printable Document Modal */}
+      {isPrintingRoom && previewRoom && (
+        <DepaskanPrintableDocument
+          docType="room"
+          contentId={previewRoom.id}
+          title={previewRoom.title}
+          subject={previewRoom.subject}
+          grade={previewRoom.grade}
+          regionName={previewRoom.region_name}
+          content={attachedMaterial?.content || ""}
+          roomCode={previewRoom.code}
+          questions={
+            attachedQuestion
+              ? [
+                  {
+                    number: 1,
+                    type: attachedQuestion.type,
+                    question_text: attachedQuestion.question_text,
+                    options: attachedQuestion.options,
+                    correct_answer: attachedQuestion.correct_answer,
+                  },
+                ]
+              : []
+          }
+          onClose={() => setIsPrintingRoom(false)}
+        />
       )}
     </TeacherWorkspaceShell>
   );

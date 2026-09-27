@@ -25,10 +25,13 @@ import {
   ExternalLink,
   Layers,
   HelpCircle,
+  Printer,
+  Loader2,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
 import { LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
+import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -68,6 +71,12 @@ export default function TeacherMaterialsPage() {
   // Step 3: Editable AI Review / Preview
   const [previewTitle, setPreviewTitle] = useState("");
   const [previewNarrative, setPreviewNarrative] = useState("");
+  const [isPrintingMaterial, setIsPrintingMaterial] = useState(false);
+  const [isExtractingText, setIsExtractingText] = useState(false);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const pdfInputRef = React.useRef<HTMLInputElement>(null);
 
   // Step 4: Result
   const [createdMaterialId, setCreatedMaterialId] = useState<string | null>(null);
@@ -156,26 +165,84 @@ export default function TeacherMaterialsPage() {
     setSelectedMethod(method);
     setTitle("");
     setManualDraft("");
+    setPreviewNarrative("");
+    setExtractionError(null);
+    setAiPrompt("");
     setWizardStep(2);
   };
 
+  // Extract Text from File (PDF or Camera Photo)
+  const handleExtractFromFile = async (file: File) => {
+    setIsExtractingText(true);
+    setExtractionError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/ai/extract", {
+        method: "POST",
+        body: formData,
+      });
+      const json = await res.json();
+      if (json.success && json.extractedText) {
+        setManualDraft(json.extractedText);
+      } else {
+        throw new Error(json.error || "Gagal mengekstrak teks dari berkas.");
+      }
+    } catch (err: any) {
+      setExtractionError(err.message || "Gagal memindai berkas.");
+    } finally {
+      setIsExtractingText(false);
+    }
+  };
+
   // Submit Step 2: Validasi Identitas & Masuk Form Konten
-  const handleStep2Submit = (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() && selectedMethod !== "ai") return;
+    if (selectedMethod === "ai" && !aiPrompt.trim() && !title.trim()) return;
+
+    if (selectedMethod === "ai") {
+      await handleTriggerAiContextTransformation();
+    }
     setWizardStep(3);
   };
 
-  // Process AI Context Transformation
-  const handleTriggerAiContextTransformation = () => {
+  // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
+  const handleTriggerAiContextTransformation = async () => {
     setIsAiGenerating(true);
-    setTimeout(() => {
-      setPreviewTitle(title || `Modul Ajar Tematik ${subject} Berbasis Kearifan Lokal ${region}`);
-      setPreviewNarrative(
-        `Kawasan ${region} memiliki potensi komoditas pangan dan kerajinan khas yang kaya. Melalui bahan ajar kontekstual ini, peserta didik diajak menelaah aktivitas ekonomi nyata para pedagang pasar tradisional di ${region}.\n\nDalam proses pembelajaran, siswa tidak hanya menghitung angka abstrak, tetapi langsung menganalisis simulasi transaksi harga grosir, perhitungan laba-rugi warung lokal, dan pengenalan mata uang secara bijak sesuai nilai-nilai kearifan lokal.`
-      );
+    try {
+      const res = await fetch("/api/ai/contextualize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "material",
+          inputMode: selectedMethod,
+          prompt: selectedMethod === "ai" ? (aiPrompt || title) : "",
+          rawText: manualDraft,
+          title: title || aiPrompt || "Modul Ajar Tematik",
+          subject,
+          grade,
+          regionId: activeSchool?.region_id || "35.02",
+          regionName: region,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        if (json.data.title) {
+          setPreviewTitle(json.data.title);
+          setTitle(json.data.title);
+        }
+        if (json.data.content) {
+          setPreviewNarrative(json.data.content);
+          setManualDraft(json.data.content);
+        }
+      }
+    } catch (err) {
+      console.error("AI Contextualization error:", err);
+    } finally {
       setIsAiGenerating(false);
-    }, 1000);
+    }
   };
 
   // Submit Step 3: Simpan Modul Materi dari Form Konten
@@ -290,6 +357,14 @@ export default function TeacherMaterialsPage() {
                   <>
                     <button
                       type="button"
+                      onClick={() => setIsPrintingMaterial(true)}
+                      className="px-4 py-2 rounded-full bg-white hover:bg-slate-100 text-[#51465B] border border-[#51465B]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-[#51465B]" />
+                      <span>Cetak PDF</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleStartEditMaterial}
                       className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
                     >
@@ -333,13 +408,75 @@ export default function TeacherMaterialsPage() {
 
             {/* Content Area */}
             {!isEditingPreview ? (
-              <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-4">
-                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  {previewMaterial.title}
-                </h1>
-                <div className="text-xs sm:text-sm text-[#23212A] leading-relaxed whitespace-pre-wrap font-medium">
-                  {previewMaterial.content || "Belum ada konten materi."}
+              <div className="space-y-6">
+                <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-4">
+                  <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+                    {previewMaterial.title}
+                  </h1>
+                  <div className="text-xs sm:text-sm text-[#23212A] leading-relaxed whitespace-pre-wrap font-medium">
+                    {previewMaterial.content || "Belum ada konten materi."}
+                  </div>
                 </div>
+
+                {/* Aggregated Rooms using this Material */}
+                {(() => {
+                  const roomsUsingMat = rooms.filter(
+                    (r) => r.resource_id === previewMaterial.id || r.secondary_resource_id === previewMaterial.id
+                  );
+                  const totalAccesses = roomsUsingMat.reduce(
+                    (sum, r) => sum + (r.visitors?.length || r.access_count || 0),
+                    0
+                  );
+
+                  return (
+                    <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-7 shadow-xs space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                        <div>
+                          <h3 className="text-sm font-black text-[#23212A] uppercase tracking-wider flex items-center gap-1.5">
+                            <DoorOpen className="w-4 h-4 text-[#51465B]" />
+                            Room yang Menggunakan Materi Ini
+                          </h3>
+                          <p className="text-xs text-[#756F7A]">
+                            Satu materi dapat digunakan di banyak room kelas tanpa duplikasi konten.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <span className="px-3 py-1 rounded-full bg-purple-50 text-[#51465B] font-extrabold text-xs border border-purple-200">
+                            {roomsUsingMat.length} Room
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-[#FFD36D]/30 text-[#8C6D23] font-extrabold text-xs border border-[#FFD36D]/40">
+                            {totalAccesses} Total Akses Siswa
+                          </span>
+                        </div>
+                      </div>
+
+                      {roomsUsingMat.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400">
+                          Belum ada room kelas yang menggunakan materi ini. Klik &ldquo;Buat Room&rdquo; di atas untuk mulai membagikan.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {roomsUsingMat.map((r) => (
+                            <div
+                              key={r.id}
+                              className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-[#51465B] transition-all space-y-2"
+                            >
+                              <span className="font-bold text-xs text-[#23212A] block truncate">{r.title}</span>
+                              <div className="flex items-center justify-between text-[11px] text-slate-500">
+                                <span className="font-mono font-bold text-[#51465B] bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                                  {r.code}
+                                </span>
+                                <span className="font-semibold text-slate-700">
+                                  {r.visitors?.length || r.access_count || 0} Akses
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-6 sm:p-8 shadow-sm space-y-4">
@@ -679,6 +816,27 @@ export default function TeacherMaterialsPage() {
                   </span>
                 </div>
 
+                {/* AI Prompt Area jika metode Generate AI */}
+                {selectedMethod === "ai" && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#FFD36D] mb-1 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Apa yang ingin dibuat?</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      required
+                      value={aiPrompt}
+                      onChange={(e) => {
+                        setAiPrompt(e.target.value);
+                        if (!title) setTitle(e.target.value.slice(0, 45));
+                      }}
+                      placeholder="Contoh: Modul ajar IPAS ekosistem persawahan dan panen padi di Ponorogo untuk siswa SD..."
+                      className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
+                    />
+                  </div>
+                )}
+
                 {/* Judul Materi: Kosong default, placeholder transparan tanpa kata 'Contoh' */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
@@ -731,7 +889,7 @@ export default function TeacherMaterialsPage() {
                   </div>
                 </div>
 
-                {/* Footer Navigasi Identitas: Button 'Lanjut' Satu Kata */}
+                {/* Footer Navigasi Identitas: Button 'Generate' jika AI, 'Lanjut' jika method lain */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
@@ -742,11 +900,25 @@ export default function TeacherMaterialsPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!title.trim()}
+                    disabled={isAiGenerating || (selectedMethod === "ai" ? !aiPrompt.trim() && !title.trim() : !title.trim())}
                     className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Lanjut</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    {isAiGenerating ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Merumuskan AI...</span>
+                      </>
+                    ) : selectedMethod === "ai" ? (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Generate</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Lanjut</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
@@ -757,29 +929,90 @@ export default function TeacherMaterialsPage() {
                 =================================================================== */}
             {wizardStep === 3 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {/* Hidden File Inputs */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setCapturedPhotoName(f.name);
+                      handleExtractFromFile(f);
+                    }
+                  }}
+                />
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setUploadedFileName(f.name);
+                      handleExtractFromFile(f);
+                    }
+                  }}
+                />
+
                 {/* Input Manual Konten: Naskah Lebar & Lapang */}
                 {selectedMethod === "manual" && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-gray-200">
-                        Naskah Materi
+                        Naskah Materi Asli
                       </label>
                       <span className="text-[11px] text-gray-400 font-mono">
                         {manualDraft.length} karakter
                       </span>
                     </div>
                     <textarea
-                      rows={12}
+                      rows={9}
                       required
                       value={manualDraft}
                       onChange={(e) => setManualDraft(e.target.value)}
-                      placeholder="Ketik materi pembelajaran secara lengkap di sini. Masukkan stimulus cerita lokal, data rill komoditas, atau aktivitas eksplorasi siswa..."
-                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[280px]"
+                      placeholder="Ketik materi pembelajaran secara lengkap di sini. Masukkan konsep pembelajaran, data rill komoditas, atau aktivitas eksplorasi siswa..."
+                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
                     />
+
+                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="font-bold text-[#FFD36D] text-xs block">Kearifan Lokal Wilayah: {region}</span>
+                        <span className="text-[11px] text-gray-300">
+                          Kontekstualisasikan naskah manual dengan kearifan lokal {region} menggunakan Gemini AI + RAG.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleTriggerAiContextTransformation}
+                        disabled={isAiGenerating || !manualDraft.trim()}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {isAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        <span>{isAiGenerating ? "Mengontekstualisasikan..." : "Kontekstualisasikan"}</span>
+                      </button>
+                    </div>
+
+                    {previewNarrative && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider block">
+                          Hasil Kontekstualisasi (Dapat Diedit Sebelum Simpan)
+                        </label>
+                        <textarea
+                          rows={8}
+                          value={previewNarrative}
+                          onChange={(e) => setPreviewNarrative(e.target.value)}
+                          className="w-full p-4 rounded-2xl border-2 border-[#FFD36D]/40 bg-[#251E2B]/95 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[160px]"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Motret Naskah: Scan Simulator & Editor */}
+                {/* Motret Naskah: Scan Camera & Editor */}
                 {selectedMethod === "camera" && (
                   <div className="space-y-4">
                     <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
@@ -789,25 +1022,62 @@ export default function TeacherMaterialsPage() {
                       </p>
                       <button
                         type="button"
-                        onClick={() => setCapturedPhotoName("foto_lembar_materi.jpg")}
-                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+                        onClick={() => cameraInputRef.current?.click()}
+                        disabled={isExtractingText}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
                       >
-                        {capturedPhotoName ? "Foto Ulang" : "Ambil Foto"}
+                        {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Camera className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                        <span>{isExtractingText ? "Membaca Foto..." : capturedPhotoName ? "Foto Ulang" : "Ambil Foto Sekarang"}</span>
                       </button>
                     </div>
 
+                    {extractionError && (
+                      <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                        {extractionError}
+                      </div>
+                    )}
+
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-200">
-                        Catatan Materi
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
+                          HASIL EKSTRAKSI TEKS (DAPAT DIEDIT GURU)
+                        </label>
+                        <span className="text-[11px] text-gray-400 font-mono">
+                          {manualDraft.length} karakter
+                        </span>
+                      </div>
                       <textarea
-                        rows={8}
+                        rows={7}
                         value={manualDraft}
                         onChange={(e) => setManualDraft(e.target.value)}
-                        placeholder="Periksa atau tambahkan penjelasan untuk hasil pindaian..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                        placeholder="Teks hasil OCR/ekstraksi akan muncul di sini. Anda dapat mengoreksi sebelum kontekstualisasi..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[140px]"
                       />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating || !manualDraft.trim()}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      <span>{isAiGenerating ? "Mengontekstualisasikan dengan Kearifan Lokal..." : "Kontekstualisasikan dengan Kearifan Lokal"}</span>
+                    </button>
+
+                    {previewNarrative && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider block">
+                          Hasil Kontekstualisasi (Dapat Diedit Sebelum Simpan)
+                        </label>
+                        <textarea
+                          rows={8}
+                          value={previewNarrative}
+                          onChange={(e) => setPreviewNarrative(e.target.value)}
+                          className="w-full p-4 rounded-2xl border-2 border-[#FFD36D]/40 bg-[#251E2B]/95 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[160px]"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -821,25 +1091,62 @@ export default function TeacherMaterialsPage() {
                       </p>
                       <button
                         type="button"
-                        onClick={() => setUploadedFileName("modul_ajar_kontekstual.pdf")}
-                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+                        onClick={() => pdfInputRef.current?.click()}
+                        disabled={isExtractingText}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
                       >
-                        {uploadedFileName ? "Ganti PDF" : "Upload PDF"}
+                        {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                        <span>{isExtractingText ? "Mengekstrak PDF..." : uploadedFileName ? "Ganti PDF" : "Upload PDF Sekarang"}</span>
                       </button>
                     </div>
 
+                    {extractionError && (
+                      <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                        {extractionError}
+                      </div>
+                    )}
+
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-200">
-                        Catatan Materi
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
+                          HASIL EKSTRAKSI TEKS DARI DOKUMEN PDF (DAPAT DIEDIT GURU)
+                        </label>
+                        <span className="text-[11px] text-gray-400 font-mono">
+                          {manualDraft.length} karakter
+                        </span>
+                      </div>
                       <textarea
-                        rows={8}
+                        rows={7}
                         value={manualDraft}
                         onChange={(e) => setManualDraft(e.target.value)}
-                        placeholder="Ketik intisari atau panduan belajar dari modul PDF ini..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                        placeholder="Teks hasil ekstraksi PDF akan muncul di sini. Perbaiki atau tambahkan catatan..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[140px]"
                       />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating || !manualDraft.trim()}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      <span>{isAiGenerating ? "Mengontekstualisasikan dengan Kearifan Lokal..." : "Kontekstualisasikan dengan Kearifan Lokal"}</span>
+                    </button>
+
+                    {previewNarrative && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider block">
+                          Hasil Kontekstualisasi (Dapat Diedit Sebelum Simpan)
+                        </label>
+                        <textarea
+                          rows={8}
+                          value={previewNarrative}
+                          onChange={(e) => setPreviewNarrative(e.target.value)}
+                          className="w-full p-4 rounded-2xl border-2 border-[#FFD36D]/40 bg-[#251E2B]/95 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[160px]"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -866,7 +1173,7 @@ export default function TeacherMaterialsPage() {
 
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-200">
-                        Narasi Materi
+                        Hasil Generate & Narasi Kontekstual (Dapat Diedit)
                       </label>
                       <textarea
                         rows={11}
@@ -997,6 +1304,21 @@ export default function TeacherMaterialsPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Printable Document Modal */}
+      {isPrintingMaterial && previewMaterial && (
+        <DepaskanPrintableDocument
+          docType="material"
+          contentId={previewMaterial.id}
+          title={previewMaterial.title}
+          subject={previewMaterial.subject}
+          grade={previewMaterial.grade}
+          regionName={activeSchool?.region_name || "Ponorogo"}
+          content={previewMaterial.content || ""}
+          teacherName={currentUser?.full_name}
+          onClose={() => setIsPrintingMaterial(false)}
+        />
       )}
     </TeacherWorkspaceShell>
   );

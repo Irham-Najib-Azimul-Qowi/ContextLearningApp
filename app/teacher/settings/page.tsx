@@ -12,6 +12,8 @@ import {
   Camera,
   Compass,
   Building2,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -44,6 +46,9 @@ export default function TeacherSettingsPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formAvatar, setFormAvatar] = useState("");
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [usageMode, setUsageMode] = useState<"school" | "individual">("school");
   const [formSchoolName, setFormSchoolName] = useState("");
   const [formProvince, setFormProvince] = useState<string>("Jawa Timur");
@@ -115,6 +120,68 @@ export default function TeacherSettingsPage() {
       },
       { timeout: 8000 }
     );
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setAvatarUploadError("Format file harus berupa JPG, PNG, atau WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarUploadError("Ukuran file maksimal 5 MB.");
+      return;
+    }
+
+    setAvatarUploadError(null);
+    setIsUploadingAvatar(true);
+
+    try {
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Gagal mengunggah foto.");
+      }
+
+      const newAvatarUrl = json.avatar_url;
+      setFormAvatar(newAvatarUrl);
+
+      // Save to repository (which immediately syncs to cloud)
+      repository.updateUserProfile({
+        avatar_url: newAvatarUrl,
+      });
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2500);
+    } catch (err: any) {
+      console.error("Avatar upload failed:", err);
+      setAvatarUploadError(err.message || "Gagal mengunggah foto profil.");
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -192,17 +259,55 @@ export default function TeacherSettingsPage() {
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
               </div>
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                  className="py-1.5 px-3.5 rounded-xl bg-white border border-slate-200 hover:border-[#51465B] text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                >
-                  <Camera className="w-3.5 h-3.5 text-[#51465B]" />
-                  <span>{showAvatarPicker ? "Tutup Pilihan Foto" : "Ganti Gambar Profil"}</span>
-                </button>
-                <p className="text-[11px] text-[#756F7A]">Pilih avatar yang mewakili Anda</p>
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarFileChange}
+                    disabled={isUploadingAvatar}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="py-1.5 px-3.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                  >
+                    {isUploadingAvatar ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Mengunggah...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />
+                        <span>Pilih Foto dari Galeri</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                    className="py-1.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-[#51465B] text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-[#51465B]" />
+                    <span>{showAvatarPicker ? "Tutup Pilihan" : "Pilihan Avatar"}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#756F7A]">
+                  Format JPG, PNG, atau WebP (maks. 5 MB). Foto tersimpan di Supabase Storage.
+                </p>
+                {avatarUploadError && (
+                  <p className="text-xs text-rose-500 font-semibold">{avatarUploadError}</p>
+                )}
               </div>
             </div>
 

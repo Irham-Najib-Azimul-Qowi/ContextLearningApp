@@ -49,15 +49,53 @@ export function TeacherWorkspaceShell({
   useEffect(() => {
     if (typeof window !== "undefined") {
       setIsCollapsed(window.innerWidth < 768);
-      // Trigger cloud sync to fetch materials, questions, rooms across devices
-      repository.syncFromCloud();
 
+      // 1. Trigger initial 2-way cloud sync across devices
+      repository.syncWithCloud();
+
+      // 2. Sync whenever window regains focus (switching back from another window/app)
       const handleFocus = () => {
-        repository.syncFromCloud();
+        repository.syncWithCloud();
       };
+
+      // 3. Sync whenever tab visibility changes to visible
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          repository.syncWithCloud();
+        }
+      };
+
+      // 4. Background heartbeat sync every 30s to keep devices in sync while open
+      const interval = setInterval(() => {
+        if (document.visibilityState === "visible") {
+          repository.syncWithCloud();
+        }
+      }, 30000);
+
       window.addEventListener("focus", handleFocus);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      // 5. Trigger sync upon Supabase auth session initialization
+      let authUnsubscribe: (() => void) | null = null;
+      import("@/lib/supabase/client").then(({ createClient }) => {
+        try {
+          const supabase = createClient();
+          const { data } = supabase.auth.onAuthStateChange((event, session) => {
+            if (session?.user) {
+              repository.syncWithCloud();
+            }
+          });
+          authUnsubscribe = () => data.subscription.unsubscribe();
+        } catch {
+          // Fallback
+        }
+      });
+
       return () => {
         window.removeEventListener("focus", handleFocus);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        clearInterval(interval);
+        if (authUnsubscribe) authUnsubscribe();
       };
     }
   }, []);

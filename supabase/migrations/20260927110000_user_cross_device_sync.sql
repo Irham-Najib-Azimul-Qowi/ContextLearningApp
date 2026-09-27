@@ -18,11 +18,24 @@ CREATE TABLE IF NOT EXISTS public.user_synced_data (
 
 CREATE INDEX IF NOT EXISTS idx_user_synced_data_email ON public.user_synced_data(user_email);
 
--- Enable RLS and permissive policy for authenticated & anon clients to sync
+-- Enable RLS and strict security policy for authenticated clients & service_role
 ALTER TABLE public.user_synced_data ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public access user_synced_data" ON public.user_synced_data;
-CREATE POLICY "Public access user_synced_data" ON public.user_synced_data
+DROP POLICY IF EXISTS "User synced data access own" ON public.user_synced_data;
+DROP POLICY IF EXISTS "Service role full access user_synced_data" ON public.user_synced_data;
+
+CREATE POLICY "User synced data access own"
+    ON public.user_synced_data
     FOR ALL
+    TO authenticated
+    USING (auth.uid()::text = user_id)
+    WITH CHECK (auth.uid()::text = user_id);
+
+CREATE POLICY "Service role full access user_synced_data"
+    ON public.user_synced_data
+    FOR ALL
+    TO service_role
     USING (true)
     WITH CHECK (true);
+

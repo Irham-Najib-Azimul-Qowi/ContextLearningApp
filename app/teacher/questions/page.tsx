@@ -29,10 +29,13 @@ import {
   Link2,
   FileText,
   Plus,
+  Printer,
+  Loader2,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
 import { Question, LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
+import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -88,6 +91,35 @@ function TeacherQuestionsContent() {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [capturedPhotoName, setCapturedPhotoName] = useState<string | null>(null);
+  const [isPrintingQuestion, setIsPrintingQuestion] = useState(false);
+  const [isExtractingText, setIsExtractingText] = useState(false);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExtractFromFile = async (file: File) => {
+    setIsExtractingText(true);
+    setExtractionError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/ai/extract", {
+        method: "POST",
+        body: formData,
+      });
+      const json = await res.json();
+      if (json.success && json.extractedText) {
+        setManualQuestionDraft(json.extractedText);
+      } else {
+        throw new Error(json.error || "Gagal mengekstrak teks dari berkas.");
+      }
+    } catch (err: any) {
+      setExtractionError(err.message || "Gagal memindai berkas.");
+    } finally {
+      setIsExtractingText(false);
+    }
+  };
 
   // Step 3: Multi-Question List Drafts (Bisa tambah banyak soal, pilih pilgan atau esai)
   const [questionsList, setQuestionsList] = useState<QuestionDraftItem[]>([
@@ -242,29 +274,6 @@ function TeacherQuestionsContent() {
     setRooms(repository.getRooms(user.id));
   };
 
-  useEffect(() => {
-    loadData();
-    const handleSync = () => loadData();
-    window.addEventListener("repositorySyncCompleted", handleSync);
-    window.addEventListener("storage", handleSync);
-    const methodParam = searchParams?.get("method");
-    const actionParam = searchParams?.get("action");
-    if (!hasAutoOpenedRef.current && (methodParam === "manual" || actionParam === "manual" || actionParam === "new")) {
-      hasAutoOpenedRef.current = true;
-      handleOpenWizard("manual");
-    }
-    return () => {
-      window.removeEventListener("repositorySyncCompleted", handleSync);
-      window.removeEventListener("storage", handleSync);
-    };
-  }, [searchParams]);
-
-  const handleCopy = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
   // Open Wizard (Step 1: Pilih Metode)
   const handleOpenWizard = (method?: "manual" | "camera" | "pdf" | "ai" | "from_material", linkedMaterial?: LearningMaterial) => {
     setPatentQuestionId(repository.getNextQuestionId());
@@ -272,6 +281,8 @@ function TeacherQuestionsContent() {
     setCapturedPhotoName(null);
     setTopic("");
     setManualQuestionDraft("");
+    setAiPrompt("");
+    setExtractionError(null);
     setCreatedQuestionId(null);
     setCreatedQuestionIds([]);
     setQuestionsList([
@@ -308,10 +319,35 @@ function TeacherQuestionsContent() {
     setIsWizardOpen(true);
   };
 
+  useEffect(() => {
+    loadData();
+    const handleSync = () => loadData();
+    window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("storage", handleSync);
+    const methodParam = searchParams?.get("method");
+    const actionParam = searchParams?.get("action");
+    if (!hasAutoOpenedRef.current && (methodParam === "manual" || actionParam === "manual" || actionParam === "new")) {
+      hasAutoOpenedRef.current = true;
+      handleOpenWizard("manual");
+    }
+    return () => {
+      window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
+  }, [searchParams]);
+
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
   const handleSelectMethod = (method: "manual" | "camera" | "pdf" | "ai" | "from_material") => {
     setSelectedMethod(method);
     setTopic("");
     setManualQuestionDraft("");
+    setAiPrompt("");
+    setExtractionError(null);
     setCreatedQuestionId(null);
     setCreatedQuestionIds([]);
     setQuestionsList([
@@ -363,9 +399,15 @@ function TeacherQuestionsContent() {
   };
 
   // Step 2 -> Step 3: Validasi Identitas & Masuk Form Konten Soal
-  const handleStep2Submit = (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!topic.trim()) return;
+    if (!topic.trim() && selectedMethod !== "ai") return;
+    if (selectedMethod === "ai" && !aiPrompt.trim() && !topic.trim()) return;
+
+    if (selectedMethod === "ai") {
+      await handleTriggerAiContextTransformation();
+      return;
+    }
 
     setQuestionsList((prev) => {
       if (prev.length === 0) {
@@ -399,38 +441,60 @@ function TeacherQuestionsContent() {
     setWizardStep(3);
   };
 
-  // Process AI Context Transformation (Perubahan konteks otomatis oleh sistem AI kita!)
-  const handleTriggerAiContextTransformation = () => {
+  // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
+  const handleTriggerAiContextTransformation = async () => {
     setIsAiGenerating(true);
-    setTimeout(() => {
-      setQuestionsList((prev) => {
-        const next = [...prev];
-        const firstType = next[0]?.type || "multiple_choice";
-        if (firstType === "multiple_choice") {
-          next[0] = {
-            ...next[0],
-            question_text: `Di sentra oleh-oleh khas ${region}, Bu Rahayu menjual 4 kotak produk olahan lokal seharga Rp18.000 per kotak dan 2 botol sirup khas seharga Rp12.500 per botol. Jika seorang pengunjung membayar dengan 2 lembar uang Rp50.000, berapa uang kembalian yang harus diberikan Bu Rahayu?`,
-            options: [
-              { key: "A", text: "Rp3.000" },
-              { key: "B", text: "Rp4.500" },
-              { key: "C", text: "Rp5.000" },
-              { key: "D", text: "Rp2.500" },
-            ],
-            correct_answer: "A",
-            explanation: `Total belanja = (4 × Rp18.000) + (2 × Rp12.500) = Rp72.000 + Rp25.000 = Rp97.000. Uang bayar = 2 × Rp50.000 = Rp100.000. Kembalian = Rp100.000 - Rp97.000 = Rp3.000.`,
-          };
-        } else {
-          next[0] = {
-            ...next[0],
-            question_text: `Berdasarkan data perdagangan pasar lokal di wilayah ${region}, seorang pedagang sayur membeli pasokan wortel seharga Rp150.000 dan menjualnya kembali dengan keuntungan 20%. Uraikan langkah-langkah perhitungan yang dilakukan untuk menentukan total pendapatan dan jumlah keuntungan yang diperoleh pedagang tersebut!`,
-            rubric: `Rubrik Penilaian Esai:\n1. Siswa mampu menghitung nominal keuntungan 20% × Rp150.000 = Rp30.000 (Skor 50)\n2. Siswa mampu menghitung total pendapatan = Rp150.000 + Rp30.000 = Rp180.000 (Skor 30)\n3. Penjelasan runtut dan mencantumkan satuan rupiah secara tepat (Skor 20).`,
-            explanation: `Keuntungan = 20% × Rp150.000 = Rp30.000. Total pendapatan = Rp150.000 + Rp30.000 = Rp180.000.`,
-          };
-        }
-        return next;
+    try {
+      const res = await fetch("/api/ai/contextualize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "question",
+          inputMode: selectedMethod,
+          prompt: selectedMethod === "ai" ? (aiPrompt || topic) : "",
+          rawText: manualQuestionDraft,
+          topic: topic || aiPrompt || "Asesmen Tematik",
+          subject,
+          grade,
+          regionId: activeSchool?.region_id || "35.02",
+          regionName: region,
+        }),
       });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        if (json.data.topic) {
+          setTopic(json.data.topic);
+        }
+        if (json.data.questions && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
+          const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => ({
+            id: `q-draft-${Date.now()}-${idx + 1}`,
+            type: q.type === "essay" ? "essay" : "multiple_choice",
+            question_text: q.question_text || q.question || "",
+            options: q.options && Array.isArray(q.options)
+              ? q.options.map((o: any, oIdx: number) => ({
+                  key: o.key || String.fromCharCode(65 + oIdx),
+                  text: o.text || String(o),
+                }))
+              : [
+                  { key: "A", text: "" },
+                  { key: "B", text: "" },
+                  { key: "C", text: "" },
+                  { key: "D", text: "" },
+                ],
+            correct_answer: q.correct_answer || q.correctAnswer || "A",
+            explanation: q.explanation || "",
+            rubric: q.rubric || "",
+          }));
+          setQuestionsList(mapped);
+          setWizardStep(3);
+        }
+      }
+    } catch (err) {
+      console.error("AI question contextualization error:", err);
+    } finally {
       setIsAiGenerating(false);
-    }, 1000);
+    }
   };
 
   // Step 3 Save: Simpan Butir Soal dari Form Konten (Mendukung Multi-Soal Sekaligus)
@@ -572,6 +636,14 @@ function TeacherQuestionsContent() {
                   <>
                     <button
                       type="button"
+                      onClick={() => setIsPrintingQuestion(true)}
+                      className="px-4 py-2 rounded-full bg-white hover:bg-slate-100 text-[#51465B] border border-[#51465B]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-[#51465B]" />
+                      <span>Cetak PDF</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleStartEditQuestion}
                       className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
                     >
@@ -611,65 +683,127 @@ function TeacherQuestionsContent() {
 
             {/* Content Area */}
             {!isEditingPreview ? (
-              <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-5">
-                {previewQuestion.topic && (
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#FAF7F3] text-[#51465B] border border-[#51465B]/15">
-                    {previewQuestion.topic}
-                  </span>
-                )}
-                <h2 className="text-base sm:text-lg font-black text-[#23212A] leading-relaxed">
-                  {previewQuestion.question_text}
-                </h2>
+              <div className="space-y-6">
+                <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-5">
+                  {previewQuestion.topic && (
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#FAF7F3] text-[#51465B] border border-[#51465B]/15">
+                      {previewQuestion.topic}
+                    </span>
+                  )}
+                  <h2 className="text-base sm:text-lg font-black text-[#23212A] leading-relaxed">
+                    {previewQuestion.question_text}
+                  </h2>
 
-                {/* Multiple choice options */}
-                {previewQuestion.type === "multiple_choice" && previewQuestion.options && previewQuestion.options.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    {previewQuestion.options.map((opt, idx) => {
-                      const optLabel = opt.key || String.fromCharCode(65 + idx);
-                      const isCorrect = previewQuestion.correct_answer === optLabel || previewQuestion.correct_answer === opt.text;
-                      return (
-                        <div
-                          key={idx}
-                          className={`p-3.5 rounded-2xl border-2 text-xs flex items-center justify-between transition-all ${
-                            isCorrect
-                              ? "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold shadow-xs"
-                              : "bg-[#FAF7F3] border-[#E9E5E8] text-[#23212A]"
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                              isCorrect ? "bg-emerald-500 text-white" : "bg-[#51465B]/10 text-[#51465B]"
-                            }`}>
-                              {optLabel}
+                  {/* Multiple choice options */}
+                  {previewQuestion.type === "multiple_choice" && previewQuestion.options && previewQuestion.options.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      {previewQuestion.options.map((opt, idx) => {
+                        const optLabel = opt.key || String.fromCharCode(65 + idx);
+                        const isCorrect = previewQuestion.correct_answer === optLabel || previewQuestion.correct_answer === opt.text;
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-3.5 rounded-2xl border-2 text-xs flex items-center justify-between transition-all ${
+                              isCorrect
+                                ? "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold shadow-xs"
+                                : "bg-[#FAF7F3] border-[#E9E5E8] text-[#23212A]"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                                isCorrect ? "bg-emerald-500 text-white" : "bg-[#51465B]/10 text-[#51465B]"
+                              }`}>
+                                {optLabel}
+                              </span>
+                              <span>{opt.text}</span>
                             </span>
-                            <span>{opt.text}</span>
-                          </span>
-                          {isCorrect && (
-                            <span className="text-[10px] bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full">
-                              Kunci
-                            </span>
-                          )}
+                            {isCorrect && (
+                              <span className="text-[10px] bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full">
+                                Kunci
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Explanation */}
+                  {previewQuestion.explanation && (
+                    <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 space-y-1">
+                      <span className="font-extrabold text-[#51465B] block">Penjelasan / Pembahasan:</span>
+                      <p className="leading-relaxed font-medium">{previewQuestion.explanation}</p>
+                    </div>
+                  )}
+
+                  {/* Rubric if Essay */}
+                  {previewQuestion.type === "essay" && previewQuestion.rubric && (
+                    <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-xs text-purple-900 space-y-1">
+                      <span className="font-extrabold text-[#51465B] block">Rubrik Penilaian:</span>
+                      <p className="leading-relaxed font-medium">{previewQuestion.rubric}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Aggregated Rooms using this Question */}
+                {(() => {
+                  const roomsUsingQ = rooms.filter(
+                    (r) => r.resource_id === previewQuestion.id || r.secondary_resource_id === previewQuestion.id
+                  );
+                  const totalAccesses = roomsUsingQ.reduce(
+                    (sum, r) => sum + (r.visitors?.length || r.access_count || 0),
+                    0
+                  );
+
+                  return (
+                    <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-7 shadow-xs space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                        <div>
+                          <h3 className="text-sm font-black text-[#23212A] uppercase tracking-wider flex items-center gap-1.5">
+                            <DoorOpen className="w-4 h-4 text-[#51465B]" />
+                            Room yang Menggunakan Soal Ini
+                          </h3>
+                          <p className="text-xs text-[#756F7A]">
+                            Satu butir soal dapat digunakan di banyak room kelas sekaligus untuk asesmen terstandar.
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <span className="px-3 py-1 rounded-full bg-purple-50 text-[#51465B] font-extrabold text-xs border border-purple-200">
+                            {roomsUsingQ.length} Room
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-[#FFD36D]/30 text-[#8C6D23] font-extrabold text-xs border border-[#FFD36D]/40">
+                            {totalAccesses} Total Akses Siswa
+                          </span>
+                        </div>
+                      </div>
 
-                {/* Explanation */}
-                {previewQuestion.explanation && (
-                  <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 space-y-1">
-                    <span className="font-extrabold text-[#51465B] block">Penjelasan / Pembahasan:</span>
-                    <p className="leading-relaxed font-medium">{previewQuestion.explanation}</p>
-                  </div>
-                )}
-
-                {/* Rubric if Essay */}
-                {previewQuestion.type === "essay" && previewQuestion.rubric && (
-                  <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-xs text-purple-900 space-y-1">
-                    <span className="font-extrabold text-[#51465B] block">Rubrik Penilaian:</span>
-                    <p className="leading-relaxed font-medium">{previewQuestion.rubric}</p>
-                  </div>
-                )}
+                      {roomsUsingQ.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400">
+                          Belum ada room kelas yang menggunakan soal ini. Klik &ldquo;Buat Room&rdquo; di atas untuk mulai membagikan.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {roomsUsingQ.map((r) => (
+                            <div
+                              key={r.id}
+                              className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-[#51465B] transition-all space-y-2"
+                            >
+                              <span className="font-bold text-xs text-[#23212A] block truncate">{r.title}</span>
+                              <div className="flex items-center justify-between text-[11px] text-slate-500">
+                                <span className="font-mono font-bold text-[#51465B] bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                                  {r.code}
+                                </span>
+                                <span className="font-semibold text-slate-700">
+                                  {r.visitors?.length || r.access_count || 0} Akses
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               /* Live Edit Mode */
@@ -1309,6 +1443,27 @@ function TeacherQuestionsContent() {
                   </span>
                 </div>
 
+                {/* AI Prompt Area jika metode Generate AI */}
+                {selectedMethod === "ai" && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#FFD36D] mb-1 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Apa yang ingin dibuat?</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      required
+                      value={aiPrompt}
+                      onChange={(e) => {
+                        setAiPrompt(e.target.value);
+                        if (!topic) setTopic(e.target.value.slice(0, 45));
+                      }}
+                      placeholder="Contoh: Buat 3 soal pilihan ganda operasi hitung belanja di Pasar Legi Ponorogo untuk kelas 5 SD..."
+                      className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
+                    />
+                  </div>
+                )}
+
                 {/* Topik Soal: Kosong default, placeholder transparan tanpa 'Contoh' */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
@@ -1361,7 +1516,7 @@ function TeacherQuestionsContent() {
                   </div>
                 </div>
 
-                {/* Footer Navigasi Identitas: Button 'Lanjut' Satu Kata */}
+                {/* Footer Navigasi Identitas: Button 'Generate' jika AI, 'Lanjut' jika method lain */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
                     type="button"
@@ -1372,11 +1527,25 @@ function TeacherQuestionsContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!topic.trim()}
+                    disabled={isAiGenerating || (selectedMethod === "ai" ? !aiPrompt.trim() && !topic.trim() : !topic.trim())}
                     className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Lanjut</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    {isAiGenerating ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Merumuskan AI...</span>
+                      </>
+                    ) : selectedMethod === "ai" ? (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Generate</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Lanjut</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
@@ -1389,6 +1558,35 @@ function TeacherQuestionsContent() {
                 =================================================================== */}
             {wizardStep === 3 && (
               <div className="w-full space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                {/* Hidden File Inputs */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setCapturedPhotoName(f.name);
+                      handleExtractFromFile(f);
+                    }
+                  }}
+                />
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setUploadedFileName(f.name);
+                      handleExtractFromFile(f);
+                    }
+                  }}
+                />
+
                 {/* Pemilihan Modul Rujukan jika dari materi */}
                 {selectedMethod === "from_material" && (
                   <div>
@@ -1416,6 +1614,116 @@ function TeacherQuestionsContent() {
                   </div>
                 )}
 
+                {/* Motret Naskah: Scan Camera & Editor */}
+                {selectedMethod === "camera" && (
+                  <div className="space-y-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
+                      <Camera className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                      <p className="text-xs font-bold text-gray-200">
+                        {capturedPhotoName ? `Foto terlampir: ${capturedPhotoName}` : "Foto lembar naskah soal fisik untuk diekstraksi OCR"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        disabled={isExtractingText}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Camera className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                        <span>{isExtractingText ? "Membaca Foto..." : capturedPhotoName ? "Foto Ulang" : "Ambil Foto Sekarang"}</span>
+                      </button>
+                    </div>
+
+                    {extractionError && (
+                      <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                        {extractionError}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
+                          HASIL EKSTRAKSI TEKS (DAPAT DIEDIT GURU)
+                        </label>
+                        <span className="text-[11px] text-gray-400 font-mono">
+                          {manualQuestionDraft.length} karakter
+                        </span>
+                      </div>
+                      <textarea
+                        rows={6}
+                        value={manualQuestionDraft}
+                        onChange={(e) => setManualQuestionDraft(e.target.value)}
+                        placeholder="Teks hasil OCR soal akan muncul di sini. Koreksi naskah jika terdapat saltik..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[120px]"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating || !manualQuestionDraft.trim()}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      <span>{isAiGenerating ? "Memproses & Menormalisasi Butir Soal..." : "Kontekstualisasikan Soal"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload PDF: File & Editor */}
+                {selectedMethod === "pdf" && (
+                  <div className="space-y-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
+                      <Upload className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                      <p className="text-xs font-bold text-gray-200">
+                        {uploadedFileName ? `Dokumen: ${uploadedFileName}` : "Unggah naskah dokumen soal format PDF"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => pdfInputRef.current?.click()}
+                        disabled={isExtractingText}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                        <span>{isExtractingText ? "Mengekstrak PDF..." : uploadedFileName ? "Ganti PDF" : "Upload PDF Sekarang"}</span>
+                      </button>
+                    </div>
+
+                    {extractionError && (
+                      <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                        {extractionError}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
+                          HASIL EKSTRAKSI TEKS DARI DOKUMEN PDF (DAPAT DIEDIT GURU)
+                        </label>
+                        <span className="text-[11px] text-gray-400 font-mono">
+                          {manualQuestionDraft.length} karakter
+                        </span>
+                      </div>
+                      <textarea
+                        rows={6}
+                        value={manualQuestionDraft}
+                        onChange={(e) => setManualQuestionDraft(e.target.value)}
+                        placeholder="Teks hasil ekstraksi PDF akan muncul di sini. Koreksi sebelum normalisasi..."
+                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[120px]"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating || !manualQuestionDraft.trim()}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      <span>{isAiGenerating ? "Memproses & Menormalisasi Butir Soal..." : "Kontekstualisasikan Soal"}</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* AI Generator Helper Bar di Step 3 jika metode AI */}
                 {selectedMethod === "ai" && (
                   <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1431,8 +1739,8 @@ function TeacherQuestionsContent() {
                       disabled={isAiGenerating}
                       className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>{isAiGenerating ? "Merumuskan..." : "Generate AI Soal #1"}</span>
+                      {isAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      <span>{isAiGenerating ? "Merumuskan..." : "Generate AI Ulang"}</span>
                     </button>
                   </div>
                 )}
@@ -1773,6 +2081,30 @@ function TeacherQuestionsContent() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Printable Document Modal */}
+      {isPrintingQuestion && previewQuestion && (
+        <DepaskanPrintableDocument
+          docType="question"
+          contentId={previewQuestion.id}
+          title={previewQuestion.topic || previewQuestion.question_text.slice(0, 40)}
+          subject={previewQuestion.subject}
+          grade={previewQuestion.grade}
+          regionName={activeSchool?.region_name || "Ponorogo"}
+          content={previewQuestion.question_text}
+          teacherName={currentUser?.full_name}
+          questions={[
+            {
+              number: 1,
+              type: previewQuestion.type,
+              question_text: previewQuestion.question_text,
+              options: previewQuestion.options,
+              correct_answer: previewQuestion.correct_answer,
+            },
+          ]}
+          onClose={() => setIsPrintingQuestion(false)}
+        />
       )}
     </TeacherWorkspaceShell>
   );
