@@ -358,7 +358,7 @@ function TeacherQuestionsContent() {
     setPreviewQuestion(updated);
     setIsEditingPreview(false);
     setEditNotification(
-      `Soal #${previewQuestion.id} berhasil diperbarui dengan ${itemsToSave.length} butir soal!`
+      `Soal ${previewQuestion.id} berhasil diperbarui dengan ${itemsToSave.length} butir soal!`
     );
     setTimeout(() => setEditNotification(null), 4000);
     loadData();
@@ -804,7 +804,7 @@ function TeacherQuestionsContent() {
                           title="Tambah butir soal baru ke paket ini"
                         >
                           <Plus className="w-3.5 h-3.5 text-[#51465B]" />
-                          <span>+ Tambah Soal</span>
+                          <span>Tambah Soal</span>
                         </button>
                         <button
                           type="button"
@@ -832,7 +832,7 @@ function TeacherQuestionsContent() {
                           title="Tambah Butir Soal Pilihan Ganda"
                         >
                           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                          <span>+ Pilgan</span>
+                          <span>Pilgan</span>
                         </button>
                         <button
                           type="button"
@@ -841,7 +841,7 @@ function TeacherQuestionsContent() {
                           title="Tambah Butir Soal Esai"
                         >
                           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                          <span>+ Esai</span>
+                          <span>Esai</span>
                         </button>
                         <button
                           type="button"
@@ -940,7 +940,7 @@ function TeacherQuestionsContent() {
                                   {idx + 1}
                                 </span>
                                 <span className="text-xs font-black text-[#23212A]">
-                                  Soal #{idx + 1}
+                                  Soal {idx + 1}
                                 </span>
                               </div>
                               <span
@@ -1101,7 +1101,7 @@ function TeacherQuestionsContent() {
                       className="px-4 py-2 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
                     >
                       <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>+ Pilihan Ganda</span>
+                      <span>Pilihan Ganda</span>
                     </button>
                     <button
                       type="button"
@@ -1109,7 +1109,7 @@ function TeacherQuestionsContent() {
                       className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
                     >
                       <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>+ Esai</span>
+                      <span>Esai</span>
                     </button>
                   </div>
                 </div>
@@ -1121,7 +1121,7 @@ function TeacherQuestionsContent() {
                 <div className="border-b border-[#51465B]/15 pb-4">
                   <h3 className="text-base sm:text-lg font-black text-[#23212A] flex items-center gap-2">
                     <Pencil className="w-4 h-4 text-[#51465B]" />
-                    Edit Paket Soal #{previewQuestion.id} ({editableItems.length} Butir Soal)
+                    Edit Paket Soal {previewQuestion.id} ({editableItems.length} Butir Soal)
                   </h3>
                   <p className="text-xs text-[#756F7A] mt-0.5">
                     Kelola seluruh butir pertanyaan, pilihan ganda, dan esai dalam paket soal ini.
@@ -1179,7 +1179,7 @@ function TeacherQuestionsContent() {
                             {idx + 1}
                           </span>
                           <span className="text-xs font-black text-[#23212A]">
-                            Butir Soal #{idx + 1}
+                            Butir Soal {idx + 1}
                           </span>
                           <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-white text-[#51465B] border border-[#51465B]/20">
                             {it.type === "multiple_choice" ? "Pilihan Ganda" : "Esai"}
@@ -1187,32 +1187,6 @@ function TeacherQuestionsContent() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {/* Switcher Tipe Soal */}
-                          <div className="inline-flex rounded-full bg-white p-0.5 border border-[#51465B]/20">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateItemInEdit(idx, "type", "multiple_choice")}
-                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                                it.type === "multiple_choice"
-                                  ? "bg-[#51465B] text-white shadow-xs"
-                                  : "text-[#756F7A] hover:text-[#51465B]"
-                              }`}
-                            >
-                              Pilgan
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateItemInEdit(idx, "type", "essay")}
-                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                                it.type === "essay"
-                                  ? "bg-[#51465B] text-white shadow-xs"
-                                  : "text-[#756F7A] hover:text-[#51465B]"
-                              }`}
-                            >
-                              Esai
-                            </button>
-                          </div>
-
                           {/* Tombol Hapus Butir Soal */}
                           <button
                             type="button"
@@ -1229,7 +1203,7 @@ function TeacherQuestionsContent() {
                       {/* Teks Pertanyaan Butir Soal */}
                       <div>
                         <label className="block text-xs font-bold text-[#51465B] mb-1">
-                          Pertanyaan Soal #{idx + 1}
+                          Pertanyaan Soal {idx + 1}
                         </label>
                         <textarea
                           rows={3}
@@ -2244,7 +2218,7 @@ function TeacherQuestionsContent() {
                             {index + 1}
                           </span>
                           <span className="text-sm font-black text-white">
-                            Soal #{index + 1}
+                            Soal {index + 1}
                           </span>
                           <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-white/10 text-gray-300 border border-white/10">
                             {q.type === "multiple_choice" ? "Pilihan Ganda" : "Soal Esai"}
@@ -2252,39 +2226,13 @@ function TeacherQuestionsContent() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {/* Switcher Tipe Soal untuk butir soal ini */}
-                          <div className="inline-flex rounded-xl bg-[#251E2B] p-1 border border-white/15">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateQuestion(index, "type", "multiple_choice")}
-                              className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                                q.type === "multiple_choice"
-                                  ? "bg-[#FFD36D] text-[#251E2B] shadow-xs font-black"
-                                  : "text-gray-300 hover:text-white"
-                              }`}
-                            >
-                              Pilihan Ganda
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateQuestion(index, "type", "essay")}
-                              className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                                q.type === "essay"
-                                  ? "bg-[#FFD36D] text-[#251E2B] shadow-xs font-black"
-                                  : "text-gray-300 hover:text-white"
-                              }`}
-                            >
-                              Esai
-                            </button>
-                          </div>
-
                           {/* Tombol Hapus Butir Soal (hanya tampil jika lebih dari 1 butir) */}
                           {questionsList.length > 1 && (
                             <button
                               type="button"
                               onClick={() => handleRemoveQuestion(index)}
                               className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 border border-rose-500/20 transition-all cursor-pointer"
-                              title={`Hapus Soal #${index + 1}`}
+                              title={`Hapus Soal ${index + 1}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -2295,14 +2243,14 @@ function TeacherQuestionsContent() {
                       {/* Teks Pertanyaan Soal */}
                       <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-200">
-                          Pertanyaan Soal #{index + 1}
+                          Pertanyaan Soal {index + 1}
                         </label>
                         <textarea
                           rows={3}
                           required
                           value={q.question_text}
                           onChange={(e) => handleUpdateQuestion(index, "question_text", e.target.value)}
-                          placeholder={`Tuliskan stimulus konteks atau pertanyaan soal #${index + 1} di sini...`}
+                          placeholder={`Tuliskan stimulus konteks atau pertanyaan soal ${index + 1} di sini...`}
                           className="w-full p-3.5 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[90px]"
                         />
                       </div>
@@ -2382,7 +2330,7 @@ function TeacherQuestionsContent() {
                       {/* Pembahasan Soal */}
                       <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-200">
-                          Pembahasan Soal #{index + 1}
+                          Pembahasan Soal {index + 1}
                         </label>
                         <textarea
                           rows={2}
@@ -2397,40 +2345,26 @@ function TeacherQuestionsContent() {
                 </div>
 
                 {/* ===============================================================
-                    BUTTON TAMBAH UNTUK TAMBAH SOAL NOMOR BERIKUTNYA
-                    (Pilihan Ganda atau Esai, Langsung Buat Banyak Soal di Sini)
+                    BUTTON TAMBAH SOAL
                     =============================================================== */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border-2 border-dashed border-[#FFD36D]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-[#FFD36D] text-[#251E2B] text-[10px] font-black uppercase">
-                        Nomor #{questionsList.length + 1}
-                      </span>
-                      <h4 className="text-xs sm:text-sm font-extrabold text-white">
-                        Tambah Soal Nomor Berikutnya
-                      </h4>
-                    </div>
-                    <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
-                      Pilih format soal untuk nomor berikutnya (Pilihan Ganda atau Esai) dan tambahkan langsung ke paket ini:
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border-2 border-dashed border-[#FFD36D]/40 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <span className="text-xs font-bold text-gray-300">Tambah Soal:</span>
+                  <div className="flex items-center gap-2.5">
                     <button
                       type="button"
                       onClick={() => handleAddQuestion("multiple_choice")}
-                      className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
+                      className="px-4 py-2.5 rounded-xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
                     >
                       <Plus className="w-4 h-4 stroke-[2.5]" />
-                      <span>+ Pilihan Ganda</span>
+                      <span>Pilihan Ganda</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAddQuestion("essay")}
-                      className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                      className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
                     >
                       <Plus className="w-4 h-4 stroke-[2.5]" />
-                      <span>+ Soal Esai</span>
+                      <span>Esai</span>
                     </button>
                   </div>
                 </div>
