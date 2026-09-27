@@ -36,6 +36,7 @@ import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-she
 import { repository } from "@/lib/db/repository";
 import { Question, LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
+import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -543,10 +544,41 @@ function TeacherQuestionsContent() {
     setWizardStep(4);
   };
 
-  const handleDeleteQuestion = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus butir soal ini?")) {
-      repository.deleteQuestion(id);
+  // Custom Delete Confirmation Modal State
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    id: string;
+    title: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    id: "",
+    title: "",
+    isDeleting: false,
+  });
+
+  const handleOpenDeleteModal = (id: string, title?: string) => {
+    setDeleteModal({
+      isOpen: true,
+      id,
+      title: title || "Butir Soal",
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.id) return;
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
+    try {
+      await repository.deleteQuestionAsync(deleteModal.id);
       loadData();
+      if (previewQuestion?.id === deleteModal.id) {
+        setPreviewQuestion(null);
+      }
+      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+    } catch (err) {
+      console.error("Gagal menghapus soal:", err);
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -1120,7 +1152,7 @@ function TeacherQuestionsContent() {
 
                           <button
                             type="button"
-                            onClick={() => handleDeleteQuestion(q.id)}
+                            onClick={() => handleOpenDeleteModal(q.id, q.topic || q.question_text.slice(0, 60))}
                             className="w-9 h-9 rounded-full bg-black/10 hover:bg-rose-500/25 text-[#23212A]/70 hover:text-rose-700 border border-[#51465B]/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Hapus Soal"
                           >
@@ -2106,6 +2138,21 @@ function TeacherQuestionsContent() {
           onClose={() => setIsPrintingQuestion(false)}
         />
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        itemType="soal"
+        itemId={deleteModal.id}
+        itemTitle={deleteModal.title}
+        isDeleting={deleteModal.isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => {
+          if (!deleteModal.isDeleting) {
+            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+          }
+        }}
+      />
     </TeacherWorkspaceShell>
   );
 }

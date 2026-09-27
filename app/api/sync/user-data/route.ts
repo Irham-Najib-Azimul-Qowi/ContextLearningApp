@@ -2,57 +2,76 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createLkbClient } from "@/lib/supabase/server";
 
-// Helper functions for conflict-free data merging
-function cleanMaterials(list: any[]): any[] {
+// Helper functions for conflict-free data merging with tombstone support
+function cleanMaterials(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
+  const delSet = new Set(deletedIds);
   return list.filter(
     (m) =>
       m &&
       typeof m === "object" &&
       m.id &&
+      !delSet.has(m.id) &&
       m.id !== "mat-test" &&
       m.title !== "Test Material Title"
   );
 }
 
-function cleanQuestions(list: any[]): any[] {
+function cleanQuestions(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
-  return list.filter((q) => q && typeof q === "object" && q.id);
+  const delSet = new Set(deletedIds);
+  return list.filter((q) => q && typeof q === "object" && q.id && !delSet.has(q.id));
 }
 
-function cleanRooms(list: any[]): any[] {
+function cleanRooms(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
-  return list.filter((r) => r && typeof r === "object" && (r.id || r.code));
+  const delSet = new Set(deletedIds.map((id) => id.toLowerCase()));
+  return list.filter(
+    (r) =>
+      r &&
+      typeof r === "object" &&
+      (r.id || r.code) &&
+      !delSet.has((r.id || "").toLowerCase()) &&
+      !delSet.has((r.code || "").toLowerCase())
+  );
 }
 
-function mergeMaterials(existing: any[], incoming: any[]): any[] {
+function mergeMaterials(existing: any[], incoming: any[], deletedIds: string[] = []): any[] {
   const map = new Map<string, any>();
-  cleanMaterials(existing).forEach((m) => map.set(m.id, m));
-  cleanMaterials(incoming).forEach((m) => {
-    // If incoming has same id, update with incoming
-    map.set(m.id, m);
+  const delSet = new Set(deletedIds);
+  cleanMaterials(existing, deletedIds).forEach((m) => {
+    if (!delSet.has(m.id)) map.set(m.id, m);
+  });
+  cleanMaterials(incoming, deletedIds).forEach((m) => {
+    if (!delSet.has(m.id)) map.set(m.id, m);
   });
   return Array.from(map.values());
 }
 
-function mergeQuestions(existing: any[], incoming: any[]): any[] {
+function mergeQuestions(existing: any[], incoming: any[], deletedIds: string[] = []): any[] {
   const map = new Map<string, any>();
-  cleanQuestions(existing).forEach((q) => map.set(q.id, q));
-  cleanQuestions(incoming).forEach((q) => {
-    map.set(q.id, q);
+  const delSet = new Set(deletedIds);
+  cleanQuestions(existing, deletedIds).forEach((q) => {
+    if (!delSet.has(q.id)) map.set(q.id, q);
+  });
+  cleanQuestions(incoming, deletedIds).forEach((q) => {
+    if (!delSet.has(q.id)) map.set(q.id, q);
   });
   return Array.from(map.values());
 }
 
-function mergeRooms(existing: any[], incoming: any[]): any[] {
+function mergeRooms(existing: any[], incoming: any[], deletedIds: string[] = []): any[] {
   const map = new Map<string, any>();
-  cleanRooms(existing).forEach((r) => {
+  const delSet = new Set(deletedIds.map((id) => id.toLowerCase()));
+  cleanRooms(existing, deletedIds).forEach((r) => {
     const key = (r.id || r.code || "").toLowerCase();
-    if (key) map.set(key, r);
+    if (key && !delSet.has(key) && !delSet.has((r.code || "").toLowerCase())) {
+      map.set(key, r);
+    }
   });
-  cleanRooms(incoming).forEach((r) => {
+  cleanRooms(incoming, deletedIds).forEach((r) => {
     const key = (r.id || r.code || "").toLowerCase();
-    if (key) {
+    if (key && !delSet.has(key) && !delSet.has((r.code || "").toLowerCase())) {
       if (map.has(key)) {
         const prev = map.get(key);
         const combinedVisitors = [...(prev.visitors || [])];
@@ -152,9 +171,10 @@ export async function GET(request: Request) {
     const meta = user.user_metadata || {};
 
     if (row) {
-      const sanitizedMaterials = cleanMaterials(row.materials);
-      const sanitizedQuestions = cleanQuestions(row.questions);
-      const sanitizedRooms = cleanRooms(row.rooms);
+      const deletedIds = row.deleted_ids || { materials: [], questions: [], rooms: [] };
+      const sanitizedMaterials = cleanMaterials(row.materials, deletedIds.materials || []);
+      const sanitizedQuestions = cleanQuestions(row.questions, deletedIds.questions || []);
+      const sanitizedRooms = cleanRooms(row.rooms, deletedIds.rooms || []);
 
       return NextResponse.json({
         success: true,
@@ -168,6 +188,7 @@ export async function GET(request: Request) {
           schools: Array.isArray(row.schools) ? row.schools : [],
           activeSchool: row.active_school_id || null,
           profile: row.profile || meta.teacher_profile || null,
+          deletedIds,
         },
       });
     }
@@ -187,6 +208,7 @@ export async function GET(request: Request) {
         schools: Array.isArray(meta.synced_schools) ? meta.synced_schools : [],
         activeSchool: meta.synced_active_school || null,
         profile: meta.teacher_profile || null,
+        deletedIds: { materials: [], questions: [], rooms: [] },
       },
     });
   } catch (err: any) {
@@ -223,6 +245,7 @@ export async function POST(request: Request) {
       onboardingCompleted,
       forceOverwrite,
       deletedItem,
+      deletedIds: incomingDeletedIds,
     } = body;
 
     const lkbClient = createLkbClient();
@@ -234,38 +257,54 @@ export async function POST(request: Request) {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    const existingDeletedIds = existingRow?.deleted_ids || {};
+
+    const finalDeletedMaterials = Array.from(
+      new Set([
+        ...(Array.isArray(existingDeletedIds.materials) ? existingDeletedIds.materials : []),
+        ...(Array.isArray(incomingDeletedIds?.materials) ? incomingDeletedIds.materials : []),
+        ...(deletedItem?.type === "material" && deletedItem.id ? [deletedItem.id] : []),
+      ])
+    );
+
+    const finalDeletedQuestions = Array.from(
+      new Set([
+        ...(Array.isArray(existingDeletedIds.questions) ? existingDeletedIds.questions : []),
+        ...(Array.isArray(incomingDeletedIds?.questions) ? incomingDeletedIds.questions : []),
+        ...(deletedItem?.type === "question" && deletedItem.id ? [deletedItem.id] : []),
+      ])
+    );
+
+    const finalDeletedRooms = Array.from(
+      new Set([
+        ...(Array.isArray(existingDeletedIds.rooms) ? existingDeletedIds.rooms : []),
+        ...(Array.isArray(incomingDeletedIds?.rooms) ? incomingDeletedIds.rooms : []),
+        ...(deletedItem?.type === "room" && deletedItem.id ? [deletedItem.id.toLowerCase()] : []),
+      ])
+    );
+
+    const finalDeletedIds = {
+      materials: finalDeletedMaterials,
+      questions: finalDeletedQuestions,
+      rooms: finalDeletedRooms,
+    };
+
     let finalMaterials: any[];
     let finalQuestions: any[];
     let finalRooms: any[];
     let finalSchools: any[];
 
     if (forceOverwrite) {
-      finalMaterials = cleanMaterials(materials);
-      finalQuestions = cleanQuestions(questions);
-      finalRooms = cleanRooms(rooms);
+      finalMaterials = cleanMaterials(materials, finalDeletedMaterials);
+      finalQuestions = cleanQuestions(questions, finalDeletedQuestions);
+      finalRooms = cleanRooms(rooms, finalDeletedRooms);
       finalSchools = Array.isArray(schools) ? schools : [];
     } else {
-      // Safe two-way union merge
-      finalMaterials = mergeMaterials(existingRow?.materials, materials);
-      finalQuestions = mergeQuestions(existingRow?.questions, questions);
-      finalRooms = mergeRooms(existingRow?.rooms, rooms);
+      // Safe two-way union merge with tombstone protection
+      finalMaterials = mergeMaterials(existingRow?.materials, materials, finalDeletedMaterials);
+      finalQuestions = mergeQuestions(existingRow?.questions, questions, finalDeletedQuestions);
+      finalRooms = mergeRooms(existingRow?.rooms, rooms, finalDeletedRooms);
       finalSchools = mergeSchools(existingRow?.schools, schools);
-    }
-
-    // Handle explicit deletion if sent
-    if (deletedItem && typeof deletedItem === "object") {
-      const { type, id } = deletedItem;
-      if (type === "material" && id) {
-        finalMaterials = finalMaterials.filter((m) => m.id !== id);
-      } else if (type === "question" && id) {
-        finalQuestions = finalQuestions.filter((q) => q.id !== id);
-      } else if (type === "room" && id) {
-        finalRooms = finalRooms.filter(
-          (r) =>
-            (r.id || "").toLowerCase() !== id.toLowerCase() &&
-            (r.code || "").toLowerCase() !== id.toLowerCase()
-        );
-      }
     }
 
     const finalProfile = {
@@ -286,6 +325,7 @@ export async function POST(request: Request) {
           rooms: finalRooms,
           schools: finalSchools,
           active_school_id: activeSchool || existingRow?.active_school_id || null,
+          deleted_ids: finalDeletedIds,
           onboarding_completed:
             onboardingCompleted !== undefined
               ? !!onboardingCompleted
@@ -317,6 +357,7 @@ export async function POST(request: Request) {
         activeSchool: activeSchool || existingRow?.active_school_id || null,
         profile: finalProfile,
         onboardingCompleted: true,
+        deletedIds: finalDeletedIds,
       },
     });
   } catch (err: any) {

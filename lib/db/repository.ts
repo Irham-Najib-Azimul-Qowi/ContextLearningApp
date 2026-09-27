@@ -368,9 +368,97 @@ class PahamiRepository {
     }
   }
 
+  // --- DELETED IDS TOMBSTONES ---
+  getDeletedIds(): { materials: string[]; questions: string[]; rooms: string[] } {
+    return this.getItem("deleted_ids", { materials: [], questions: [], rooms: [] });
+  }
+
+  addDeletedId(type: "material" | "question" | "room", id: string): void {
+    const current = this.getDeletedIds();
+    if (type === "material") {
+      current.materials = Array.from(new Set([...(current.materials || []), id]));
+    } else if (type === "question") {
+      current.questions = Array.from(new Set([...(current.questions || []), id]));
+    } else if (type === "room") {
+      current.rooms = Array.from(new Set([...(current.rooms || []), id.toLowerCase()]));
+    }
+    this.setItem("deleted_ids", current);
+  }
+
+  removeDeletedId(type: "material" | "question" | "room", id: string): void {
+    const current = this.getDeletedIds();
+    if (type === "material") {
+      current.materials = (current.materials || []).filter((x) => x !== id);
+    } else if (type === "question") {
+      current.questions = (current.questions || []).filter((x) => x !== id);
+    } else if (type === "room") {
+      current.rooms = (current.rooms || []).filter((x) => x !== id.toLowerCase());
+    }
+    this.setItem("deleted_ids", current);
+  }
+
   // --- CLOUD SYNCHRONIZATION (Cross-Device 2-Way Sync via Supabase & Route Handler) ---
   private syncDebounceTimer: any = null;
   private isSyncing: boolean = false;
+
+  async syncToCloudImmediate(options?: {
+    forceOverwrite?: boolean;
+    deletedItem?: { type: "material" | "question" | "room"; id: string };
+  }): Promise<void> {
+    if (!this.isBrowser()) return;
+    if (this.syncDebounceTimer) {
+      clearTimeout(this.syncDebounceTimer);
+      this.syncDebounceTimer = null;
+    }
+
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+
+      const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
+      const profile = profileRaw ? JSON.parse(profileRaw) : null;
+      const materials = this.getMaterials();
+      const questions = this.getQuestions();
+      const rooms = this.getRooms();
+      const schools = this.getSchools();
+      const activeSchoolId = this.getActiveSchoolId();
+      const deletedIds = this.getDeletedIds();
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch("/api/sync/user-data", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          materials,
+          questions,
+          rooms,
+          schools,
+          activeSchool: activeSchoolId,
+          profile,
+          onboardingCompleted: true,
+          forceOverwrite: options?.forceOverwrite,
+          deletedItem: options?.deletedItem,
+          deletedIds,
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          this.applyAuthoritativeCloudData(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn("Immediate sync to cloud error:", err);
+    }
+  }
 
   async syncToCloud(options?: {
     forceOverwrite?: boolean;
@@ -384,49 +472,7 @@ class PahamiRepository {
     return new Promise((resolve) => {
       this.syncDebounceTimer = setTimeout(async () => {
         try {
-          const { createClient } = await import("@/lib/supabase/client");
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          const user = session?.user;
-          if (!user) return resolve();
-
-          const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
-          const profile = profileRaw ? JSON.parse(profileRaw) : null;
-          const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
-          const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
-          const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
-          const schools = this.getItem<School[]>("schools", SEED_SCHOOLS);
-          const activeSchoolId = this.getActiveSchoolId();
-
-          const headers: Record<string, string> = { "Content-Type": "application/json" };
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
-
-          const res = await fetch("/api/sync/user-data", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              materials,
-              questions,
-              rooms,
-              schools,
-              activeSchool: activeSchoolId,
-              profile,
-              onboardingCompleted: true,
-              forceOverwrite: options?.forceOverwrite,
-              deletedItem: options?.deletedItem,
-            }),
-          });
-
-          if (res.ok) {
-            const json = await res.json();
-            if (json.success && json.data) {
-              this.applyAuthoritativeCloudData(json.data);
-            }
-          }
-        } catch (err) {
-          console.warn("Cross-device sync to cloud error:", err);
+          await this.syncToCloudImmediate(options);
         } finally {
           resolve();
         }
@@ -450,18 +496,19 @@ class PahamiRepository {
 
       const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
       const profile = profileRaw ? JSON.parse(profileRaw) : null;
-      const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
-      const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
-      const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
-      const schools = this.getItem<School[]>("schools", SEED_SCHOOLS);
+      const materials = this.getMaterials();
+      const questions = this.getQuestions();
+      const rooms = this.getRooms();
+      const schools = this.getSchools();
       const activeSchoolId = this.getActiveSchoolId();
+      const deletedIds = this.getDeletedIds();
 
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      // Safe two-way sync: sends local state, server reconciles conflict-free union and returns unified state
+      // Safe two-way sync: sends local state and tombstones, server reconciles conflict-free union
       const res = await fetch("/api/sync/user-data", {
         method: "POST",
         headers,
@@ -473,6 +520,7 @@ class PahamiRepository {
           activeSchool: activeSchoolId,
           profile,
           onboardingCompleted: true,
+          deletedIds,
         }),
       });
 
@@ -498,8 +546,20 @@ class PahamiRepository {
 
   private applyAuthoritativeCloudData(cloudData: any): void {
     if (!this.isBrowser() || !cloudData) return;
-    const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted } = cloudData;
+    const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted, deletedIds } = cloudData;
     let hasChanges = false;
+
+    if (deletedIds && typeof deletedIds === "object") {
+      const currentDeleted = this.getDeletedIds();
+      const mergedDeleted = {
+        materials: Array.from(new Set([...(currentDeleted.materials || []), ...(deletedIds.materials || [])])),
+        questions: Array.from(new Set([...(currentDeleted.questions || []), ...(deletedIds.questions || [])])),
+        rooms: Array.from(new Set([...(currentDeleted.rooms || []), ...(deletedIds.rooms || [])])),
+      };
+      this.setItem("deleted_ids", mergedDeleted);
+    }
+
+    const currentTombstones = this.getDeletedIds();
 
     if (onboardingCompleted) {
       localStorage.setItem("pahami_v2_onboarding_completed", "true");
@@ -524,17 +584,24 @@ class PahamiRepository {
     }
 
     if (Array.isArray(materials)) {
-      this.setItem<LearningMaterial[]>("materials", materials);
+      const cleanMats = materials.filter((m) => !currentTombstones.materials.includes(m.id));
+      this.setItem<LearningMaterial[]>("materials", cleanMats);
       hasChanges = true;
     }
 
     if (Array.isArray(questions)) {
-      this.setItem<Question[]>("questions", questions);
+      const cleanQs = questions.filter((q) => !currentTombstones.questions.includes(q.id));
+      this.setItem<Question[]>("questions", cleanQs);
       hasChanges = true;
     }
 
     if (Array.isArray(rooms)) {
-      this.setItem<LearningRoom[]>("rooms", rooms);
+      const cleanRooms = rooms.filter(
+        (r) =>
+          !currentTombstones.rooms.includes((r.id || "").toLowerCase()) &&
+          !currentTombstones.rooms.includes((r.code || "").toLowerCase())
+      );
+      this.setItem<LearningRoom[]>("rooms", cleanRooms);
       hasChanges = true;
     }
 
@@ -838,7 +905,10 @@ class PahamiRepository {
 
   // --- QUESTIONS ---
   getQuestions(filter?: { schoolId?: string; subject?: string; grade?: number; topic?: string }): Question[] {
-    let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const deleted = this.getDeletedIds().questions || [];
+    let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS).filter(
+      (q) => !deleted.includes(q.id)
+    );
     const currentUser = this.getCurrentUser();
     if (filter) {
       if (filter.schoolId) {
@@ -893,6 +963,7 @@ class PahamiRepository {
         const updated = { ...questions[index], ...data } as Question;
         questions[index] = updated;
         this.setItem<Question[]>("questions", questions);
+        this.removeDeletedId("question", data.id);
         this.syncToCloud();
         return updated;
       }
@@ -901,6 +972,8 @@ class PahamiRepository {
     const cleanQuestionId = (data.id || this.getNextQuestionId())
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
+
+    this.removeDeletedId("question", cleanQuestionId);
 
     const newQuestion: Question = {
       id: cleanQuestionId,
@@ -924,19 +997,29 @@ class PahamiRepository {
   }
 
   deleteQuestion(id: string): boolean {
-    const questions = this.getQuestions();
-    const filtered = questions.filter((q) => q.id !== id);
-    if (filtered.length !== questions.length) {
-      this.setItem<Question[]>("questions", filtered);
-      this.syncToCloud({ deletedItem: { type: "question", id } });
-      return true;
+    this.addDeletedId("question", id);
+    const rawQuestions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const filtered = rawQuestions.filter((q) => q.id !== id);
+    this.setItem<Question[]>("questions", filtered);
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
-    return false;
+    this.syncToCloudImmediate({ deletedItem: { type: "question", id } });
+    return true;
+  }
+
+  async deleteQuestionAsync(id: string): Promise<boolean> {
+    const ok = this.deleteQuestion(id);
+    await this.syncToCloudImmediate({ deletedItem: { type: "question", id } });
+    return ok;
   }
 
   // --- MATERIALS ---
   getMaterials(schoolId?: string): LearningMaterial[] {
-    const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const deleted = this.getDeletedIds().materials || [];
+    let materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS).filter(
+      (m) => !deleted.includes(m.id)
+    );
     if (!schoolId) return materials;
     const currentUser = this.getCurrentUser();
     return materials.filter(
@@ -981,6 +1064,7 @@ class PahamiRepository {
         const updated = { ...materials[index], ...data };
         materials[index] = updated;
         this.setItem<LearningMaterial[]>("materials", materials);
+        this.removeDeletedId("material", data.id);
         this.syncToCloud();
         return updated;
       }
@@ -989,6 +1073,8 @@ class PahamiRepository {
     const cleanMaterialId = (data.id || this.getNextMaterialId())
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
+
+    this.removeDeletedId("material", cleanMaterialId);
 
     const newMat: LearningMaterial = {
       id: cleanMaterialId,
@@ -1020,14 +1106,21 @@ class PahamiRepository {
   }
 
   deleteMaterial(id: string): boolean {
-    const materials = this.getMaterials();
-    const filtered = materials.filter((m) => m.id !== id);
-    if (filtered.length !== materials.length) {
-      this.setItem<LearningMaterial[]>("materials", filtered);
-      this.syncToCloud({ deletedItem: { type: "material", id } });
-      return true;
+    this.addDeletedId("material", id);
+    const rawMaterials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const filtered = rawMaterials.filter((m) => m.id !== id);
+    this.setItem<LearningMaterial[]>("materials", filtered);
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
-    return false;
+    this.syncToCloudImmediate({ deletedItem: { type: "material", id } });
+    return true;
+  }
+
+  async deleteMaterialAsync(id: string): Promise<boolean> {
+    const ok = this.deleteMaterial(id);
+    await this.syncToCloudImmediate({ deletedItem: { type: "material", id } });
+    return ok;
   }
 
   // --- EXAMS ---
@@ -1164,7 +1257,12 @@ class PahamiRepository {
 
   // --- LEARNING ROOMS (URL / KODE AKSES SISWA TANPA LOGIN) ---
   getRooms(teacherId?: string): LearningRoom[] {
-    const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+    const deleted = this.getDeletedIds().rooms || [];
+    let rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS).filter(
+      (r) =>
+        !deleted.includes((r.id || "").toLowerCase()) &&
+        !deleted.includes((r.code || "").toLowerCase())
+    );
     if (teacherId) {
       return rooms.filter(
         (r) =>
@@ -1205,6 +1303,10 @@ class PahamiRepository {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
     const cleanRoomId = cleanCode.startsWith("rom") ? cleanCode : `rom${cleanCode}`;
+
+    this.removeDeletedId("room", cleanRoomId);
+    this.removeDeletedId("room", cleanCode);
+
     const newRoom: LearningRoom = {
       ...data,
       id: cleanRoomId,
@@ -1263,15 +1365,27 @@ class PahamiRepository {
   }
 
   deleteRoom(id: string): boolean {
-    let rooms = this.getRooms();
-    const initialLength = rooms.length;
-    rooms = rooms.filter((r) => r.id !== id);
-    if (rooms.length !== initialLength) {
-      this.setItem<LearningRoom[]>("rooms", rooms);
-      this.syncToCloud({ deletedItem: { type: "room", id } });
-      return true;
+    const rawRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+    const target = rawRooms.find((r) => r.id === id || r.code === id);
+    if (target) {
+      this.addDeletedId("room", target.id);
+      if (target.code) this.addDeletedId("room", target.code);
+    } else {
+      this.addDeletedId("room", id);
     }
-    return false;
+    const filtered = rawRooms.filter((r) => r.id !== id && r.code !== id);
+    this.setItem<LearningRoom[]>("rooms", filtered);
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+    }
+    this.syncToCloudImmediate({ deletedItem: { type: "room", id } });
+    return true;
+  }
+
+  async deleteRoomAsync(id: string): Promise<boolean> {
+    const ok = this.deleteRoom(id);
+    await this.syncToCloudImmediate({ deletedItem: { type: "room", id } });
+    return ok;
   }
 }
 

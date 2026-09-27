@@ -30,6 +30,7 @@ import { repository } from "@/lib/db/repository";
 import { LearningRoom, LearningMaterial, Question, School, UserProfile } from "@/lib/db/types";
 import { RoomDashboardView } from "@/components/room/room-dashboard-view";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
+import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 
 function TeacherRoomsContent() {
   const searchParams = useSearchParams();
@@ -148,10 +149,41 @@ function TeacherRoomsContent() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleDeleteRoom = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus room akses ini?")) {
-      repository.deleteRoom(id);
+  // Custom Delete Confirmation Modal State
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    id: string;
+    title: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    id: "",
+    title: "",
+    isDeleting: false,
+  });
+
+  const handleOpenDeleteModal = (id: string, title?: string) => {
+    setDeleteModal({
+      isOpen: true,
+      id,
+      title: title || "Room Akses Siswa",
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.id) return;
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
+    try {
+      await repository.deleteRoomAsync(deleteModal.id);
       loadData();
+      if (previewRoom?.id === deleteModal.id || previewRoom?.code === deleteModal.id) {
+        setPreviewRoom(null);
+      }
+      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+    } catch (err) {
+      console.error("Gagal menghapus room:", err);
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -747,7 +779,7 @@ function TeacherRoomsContent() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteRoom(room.id)}
+                              onClick={() => handleOpenDeleteModal(room.id, `${room.title} (${room.code})`)}
                               className="w-9 h-9 rounded-full bg-white/10 hover:bg-rose-500/25 text-white/70 hover:text-rose-300 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
                               title="Hapus Room"
                             >
@@ -790,7 +822,7 @@ function TeacherRoomsContent() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteRoom(room.id)}
+                              onClick={() => handleOpenDeleteModal(room.id, `${room.title} (${room.code})`)}
                               className="w-9 h-9 rounded-full bg-white/10 hover:bg-rose-500/25 text-white/70 hover:text-rose-300 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
                               title="Hapus Room"
                             >
@@ -833,7 +865,7 @@ function TeacherRoomsContent() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteRoom(room.id)}
+                            onClick={() => handleOpenDeleteModal(room.id, `${room.title} (${room.code})`)}
                             className="w-9 h-9 rounded-full bg-black/10 hover:bg-rose-500/25 text-[#23212A]/70 hover:text-rose-700 border border-[#51465B]/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Hapus Room"
                           >
@@ -1303,6 +1335,21 @@ function TeacherRoomsContent() {
           onClose={() => setIsPrintingRoom(false)}
         />
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        itemType="room"
+        itemId={deleteModal.id}
+        itemTitle={deleteModal.title}
+        isDeleting={deleteModal.isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => {
+          if (!deleteModal.isDeleting) {
+            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+          }
+        }}
+      />
     </TeacherWorkspaceShell>
   );
 }

@@ -32,6 +32,7 @@ import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-she
 import { repository } from "@/lib/db/repository";
 import { LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
+import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -275,10 +276,41 @@ export default function TeacherMaterialsPage() {
     setWizardStep(4);
   };
 
-  const handleDeleteMaterial = (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus modul materi ini?")) {
-      repository.deleteMaterial(id);
+  // Custom Delete Confirmation Modal State
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    id: string;
+    title: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    id: "",
+    title: "",
+    isDeleting: false,
+  });
+
+  const handleOpenDeleteModal = (id: string, title?: string) => {
+    setDeleteModal({
+      isOpen: true,
+      id,
+      title: title || "Modul Materi",
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.id) return;
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
+    try {
+      await repository.deleteMaterialAsync(deleteModal.id);
       loadData();
+      if (previewMaterial?.id === deleteModal.id) {
+        setPreviewMaterial(null);
+      }
+      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+    } catch (err) {
+      console.error("Gagal menghapus materi:", err);
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -639,7 +671,7 @@ export default function TeacherMaterialsPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleDeleteMaterial(mat.id)}
+                            onClick={() => handleOpenDeleteModal(mat.id, mat.title)}
                             className="w-9 h-9 rounded-full bg-white/10 hover:bg-rose-500/25 text-white/70 hover:text-rose-300 border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Hapus Materi"
                           >
@@ -1320,6 +1352,21 @@ export default function TeacherMaterialsPage() {
           onClose={() => setIsPrintingMaterial(false)}
         />
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        itemType="materi"
+        itemId={deleteModal.id}
+        itemTitle={deleteModal.title}
+        isDeleting={deleteModal.isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => {
+          if (!deleteModal.isDeleting) {
+            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+          }
+        }}
+      />
     </TeacherWorkspaceShell>
   );
 }
