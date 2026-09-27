@@ -58,12 +58,11 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT BERIKUT
           grade: params.grade,
         };
       }
-    } catch (err) {
-      console.warn("AIProviderManager failed, using high-precision pedagogical fallback:", err);
+      throw new Error(result.error || "Gagal menghasilkan butir soal dari AI Gemini.");
+    } catch (err: any) {
+      console.error("[GeminiProvider generateQuestion Error]", err);
+      throw new Error("AI belum dapat memproses butir soal: " + (err.message || String(err)));
     }
-
-    // High-Precision Fallback for Hackathon Demonstration
-    return this.getFallbackQuestion(params);
   }
 
   async scanQuestionImage(base64Data: string, mimeType: string): Promise<GeneratedQuestionResult> {
@@ -109,90 +108,10 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT BERIKUT
           grade: 5,
         };
       }
-    } catch (err) {
-      console.warn("AIProviderManager vision scan failed, using fallback:", err);
-    }
-
-    // Fallback OCR result
-    return {
-      question_text:
-        "Seorang pedagang membeli 25 kg beras dengan harga Rp11.000 per kilogram di pasar. Berapa total harga yang harus dibayar pedagang?",
-      type: "multiple_choice",
-      options: [
-        { key: "A", text: "Rp250.000" },
-        { key: "B", text: "Rp275.000" },
-        { key: "C", text: "Rp300.000" },
-        { key: "D", text: "Rp325.000" },
-      ],
-      correct_answer: "B",
-      explanation: "25 kg × Rp11.000 = Rp275.000. (Hasil pindai foto lembar soal fisik).",
-      topic: "Aritmetika Sosial",
-      subject: "Matematika",
-      grade: 5,
-    };
-  }
-
-  private getFallbackQuestion(params: GenerateQuestionParams): GeneratedQuestionResult {
-    if (params.subject === "Matematika") {
-      return {
-        question_text:
-          "Seorang pedagang membeli 20 kg beras dengan harga Rp12.000 per kilogram. Berapakah total uang yang harus dibayarkan pedagang tersebut?",
-        type: params.type,
-        options:
-          params.type === "multiple_choice"
-            ? [
-                { key: "A", text: "Rp220.000" },
-                { key: "B", text: "Rp240.000" },
-                { key: "C", text: "Rp260.000" },
-                { key: "D", text: "Rp280.000" },
-              ]
-            : undefined,
-        correct_answer: "B",
-        explanation: "20 kg × Rp12.000/kg = Rp240.000.",
-        topic: params.topic || "Perkalian Bilangan Bulat",
-        subject: "Matematika",
-        grade: params.grade,
-      };
-    } else if (params.subject === "IPS") {
-      return {
-        question_text:
-          "Kesenian daerah yang terkenal menggunakan topeng berukuran besar dengan hiasan bulu merak indah berasal dari daerah...",
-        type: params.type,
-        options:
-          params.type === "multiple_choice"
-            ? [
-                { key: "A", text: "Banyuwangi" },
-                { key: "B", text: "Ponorogo" },
-                { key: "C", text: "Surakarta" },
-                { key: "D", text: "Cirebon" },
-              ]
-            : undefined,
-        correct_answer: "B",
-        explanation: "Kesenian Reog merupakan warisan budaya luhur yang berasal dari Kabupaten Ponorogo.",
-        topic: params.topic || "Kesenian Daerah",
-        subject: "IPS",
-        grade: params.grade,
-      };
-    } else {
-      return {
-        question_text:
-          "Bacalah teks berikut! 'Masyarakat berkumpul di tepi danau yang sejuk untuk melaksanakan tradisi syukuran tahunan.' Kalimat tersebut termasuk contoh paragraf...",
-        type: params.type,
-        options:
-          params.type === "multiple_choice"
-            ? [
-                { key: "A", text: "Deskripsi" },
-                { key: "B", text: "Persuasi" },
-                { key: "C", text: "Argumentasi" },
-                { key: "D", text: "Eksposisi" },
-              ]
-            : undefined,
-        correct_answer: "A",
-        explanation: "Paragraf deskripsi menggambarkan suatu tempat atau suasana secara rinci.",
-        topic: params.topic || "Paragraf Deskripsi",
-        subject: "Bahasa Indonesia",
-        grade: params.grade,
-      };
+      throw new Error(result.error || "Gagal mengekstrak soal dari citra foto.");
+    } catch (err: any) {
+      console.error("[GeminiProvider scanQuestionImage Error]", err);
+      throw new Error("Sistem belum dapat membaca naskah foto soal: " + (err.message || String(err)));
     }
   }
 }

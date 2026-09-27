@@ -82,11 +82,12 @@ KEMBALIKAN HANYA JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT:
     let issuance: any = null;
     let verified = false;
 
-    if (detected?.document_id) {
+    const targetDocId = (detected?.document_id || detected?.qr_payload || "").trim();
+    if (targetDocId) {
       const { data: found } = await lkbClient
         .from("document_issuances")
         .select("*")
-        .eq("id", detected.document_id.trim())
+        .eq("id", targetDocId)
         .maybeSingle();
 
       if (found) {
@@ -95,26 +96,11 @@ KEMBALIKAN HANYA JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN FORMAT:
       }
     }
 
-    // If document_id wasn't detected by text OCR, find the latest issuance or matching room
-    if (!issuance) {
-      const { data: latestIssuance } = await lkbClient
-        .from("document_issuances")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (latestIssuance) {
-        issuance = latestIssuance;
-        verified = true;
-      }
-    }
-
-    if (!issuance) {
+    if (!issuance || !verified) {
       return NextResponse.json({
         success: false,
         verified: false,
-        error: "DITOLAK: Dokumen hasil cetak tidak terverifikasi atau tidak berasal dari sistem DEPASKAN.",
+        error: "DITOLAK: Identitas dokumen / QR token DEPASKAN tidak terverifikasi atau tidak terdaftar di sistem.",
       });
     }
 

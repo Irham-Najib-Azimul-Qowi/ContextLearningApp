@@ -28,6 +28,7 @@ export default function QuestionGeneratorPage() {
   const [type, setType] = useState<"multiple_choice" | "essay">("multiple_choice");
   const [useLocalContext, setUseLocalContext] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveSchool(repository.getActiveSchool());
@@ -38,9 +39,10 @@ export default function QuestionGeneratorPage() {
     if (!activeSchool) return;
 
     setIsGenerating(true);
+    setErrorMessage(null);
 
     try {
-      // 1. Generate base question via Gemini Provider (or structured fallback)
+      // 1. Generate base question via Gemini Provider (with real AI and LKB grounding)
       const generated = await geminiProvider.generateQuestion({
         subject,
         grade,
@@ -67,8 +69,12 @@ export default function QuestionGeneratorPage() {
 
       // 3. Navigate to Contextual Preview Screen for review & variable mapping
       router.push(`/teacher/questions/context-preview?id=${savedQuestion.id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to generate question:", err);
+      setErrorMessage(
+        "AI belum dapat memproses permintaan butir soal: " +
+          (err.message || "Silakan periksa koneksi dan coba beberapa saat lagi.")
+      );
       setIsGenerating(false);
     }
   };
@@ -191,7 +197,14 @@ export default function QuestionGeneratorPage() {
             />
           </div>
 
-          {/* Submit Action */}
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold leading-relaxed">
+              {errorMessage}
+            </div>
+          )}
+
+          {/* Submit Action: Button 'Generate' */}
           <button
             type="submit"
             disabled={isGenerating}
@@ -205,7 +218,7 @@ export default function QuestionGeneratorPage() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4 text-[#FFD36D]" />
-                <span>Generate Soal & Lanjut ke Pratinjau Konteks</span>
+                <span>Generate</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

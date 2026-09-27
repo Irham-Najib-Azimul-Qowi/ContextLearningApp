@@ -894,10 +894,57 @@ class PahamiRepository {
     const role = this.getCurrentRole();
     if (role === "TEACHER" && this.isBrowser()) {
       try {
-        // 1. Cek profil guru yang tersimpan di localStorage
-        const storedProfile = localStorage.getItem("pahami_v2_teacher_profile");
-        if (storedProfile) {
-          const parsed = JSON.parse(storedProfile);
+        // 1. Cek apakah ada sesi Supabase aktif dari Google OAuth di localStorage
+        let authUser: any = null;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              try {
+                const sessionData = JSON.parse(raw);
+                if (sessionData?.user) {
+                  authUser = sessionData.user;
+                  break;
+                }
+              } catch {
+                // Ignore parse error
+              }
+            }
+          }
+        }
+
+        const storedProfileRaw = localStorage.getItem("pahami_v2_teacher_profile");
+        const parsed = storedProfileRaw ? JSON.parse(storedProfileRaw) : null;
+
+        if (authUser) {
+          const meta = authUser.user_metadata || {};
+          const displayName =
+            parsed?.fullName ||
+            parsed?.full_name ||
+            meta.full_name ||
+            meta.name ||
+            meta.display_name ||
+            (authUser.email ? authUser.email.split("@")[0] : "Guru");
+          const avatar =
+            parsed?.avatarUrl ||
+            parsed?.avatar_url ||
+            meta.avatar_url ||
+            meta.picture ||
+            "/images/dashboard/teacher-avatar.jpg";
+
+          return {
+            id: authUser.id,
+            email: authUser.email || parsed?.email || "guru@depaskan.id",
+            full_name: typeof displayName === "string" ? displayName.trim() : "Guru",
+            role: "TEACHER",
+            avatar_url: avatar,
+            school_id: parsed?.schoolId || "school-active",
+          };
+        }
+
+        // 2. Fallback ke profil guru lokal jika belum ada sesi OAuth
+        if (parsed) {
           const name = parsed.fullName || parsed.full_name;
           if (name && name.trim()) {
             return {
@@ -908,37 +955,6 @@ class PahamiRepository {
               avatar_url: parsed.avatarUrl || parsed.avatar_url || "/images/dashboard/teacher-avatar.jpg",
               school_id: parsed.schoolId || "school-active",
             };
-          }
-        }
-
-        // 2. Cek apakah ada sesi Supabase aktif dari Google OAuth di localStorage
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              const sessionData = JSON.parse(raw);
-              const authUser = sessionData?.user;
-              if (authUser) {
-                const meta = authUser.user_metadata || {};
-                const googleName =
-                  meta.full_name ||
-                  meta.name ||
-                  meta.display_name ||
-                  (authUser.email ? authUser.email.split("@")[0] : null);
-                if (googleName && typeof googleName === "string" && googleName.trim()) {
-                  const googleAvatar = meta.avatar_url || meta.picture || "";
-                  return {
-                    id: authUser.id || "usr-teacher-active",
-                    email: authUser.email || "guru@depaskan.id",
-                    full_name: googleName.trim(),
-                    role: "TEACHER",
-                    avatar_url: googleAvatar || "/images/dashboard/teacher-avatar.jpg",
-                    school_id: "school-active",
-                  };
-                }
-              }
-            }
           }
         }
       } catch {
@@ -1035,12 +1051,13 @@ class PahamiRepository {
     const currentUser = this.getCurrentUser();
     if (filter) {
       if (filter.schoolId) {
-        questions = questions.filter(
-          (q) =>
-            q.school_id === filter.schoolId ||
-            q.school_id === "school-individual" ||
-            (filter.schoolId === "school-active" && currentUser?.id && q.teacher_id === currentUser.id)
-        );
+        questions = questions.filter((q) => {
+          if (q.school_id === filter.schoolId) return true;
+          if (currentUser?.id && currentUser.id !== "usr-teacher-01" && q.teacher_id === currentUser.id) {
+            return true;
+          }
+          return false;
+        });
       }
       if (filter.subject) questions = questions.filter((q) => q.subject.toLowerCase() === filter.subject?.toLowerCase());
       if (filter.grade) questions = questions.filter((q) => q.grade === filter.grade);
@@ -1193,12 +1210,13 @@ class PahamiRepository {
     );
     if (!schoolId) return materials;
     const currentUser = this.getCurrentUser();
-    return materials.filter(
-      (m) =>
-        m.school_id === schoolId ||
-        m.school_id === "school-individual" ||
-        (schoolId === "school-active" && currentUser?.id && m.teacher_id === currentUser.id)
-    );
+    return materials.filter((m) => {
+      if (m.school_id === schoolId) return true;
+      if (currentUser?.id && currentUser.id !== "usr-teacher-01" && m.teacher_id === currentUser.id) {
+        return true;
+      }
+      return false;
+    });
   }
 
   getMaterial(id: string): LearningMaterial | undefined {

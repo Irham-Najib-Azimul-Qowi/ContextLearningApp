@@ -63,17 +63,17 @@ TUGAS:
       });
     }
 
-    // Fallback if AI fails or returns empty
-    const fallbackText = `[Ekstraksi Dokumen: ${fileName}]\nIsi dokumen berhasil dipindai. Silakan sesuaikan teks ini sebelum dikontekstualisasikan.`;
-    return NextResponse.json({
-      success: true,
-      extractedText: fallbackText,
-      warning: "AI Vision menghasilkan respon minimal, gunakan teks panduan.",
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "AI Vision belum dapat membaca teks dari berkas " + fileName + ". Pastikan foto naskah jelas, tegak, dan terbaca dengan baik.",
+      },
+      { status: 422 }
+    );
   } catch (err: any) {
     console.error("[API AI Extract Error]", err);
     return NextResponse.json(
-      { error: "Gagal mengekstrak teks dari berkas: " + (err.message || String(err)) },
+      { success: false, error: "Gagal mengekstrak teks dari berkas: " + (err.message || String(err)) },
       { status: 500 }
     );
   }

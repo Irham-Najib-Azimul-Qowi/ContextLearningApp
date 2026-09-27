@@ -31,6 +31,11 @@ import {
   Plus,
   Printer,
   Loader2,
+  AlertTriangle,
+  ShieldCheck,
+  CheckCircle,
+  Info,
+  RefreshCw,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -56,14 +61,35 @@ const SUBJECT_OPTIONS = [
   "Seni Budaya & Prakarya",
 ];
 
+export interface QuestionContextVariable {
+  original_term: string;
+  replacement_term: string;
+  category?: string;
+  reason?: string;
+}
+
+export interface QuestionValidation {
+  is_valid: boolean;
+  status?: "VALID" | "WARNING" | "INVALID";
+  competency_preserved?: boolean;
+  answer_key_preserved?: boolean;
+  math_numbers_strictly_preserved?: boolean;
+  local_context_grounded?: boolean;
+  warnings?: string[];
+  pedagogical_notes?: string;
+}
+
 export interface QuestionDraftItem {
   id: string;
   type: "multiple_choice" | "essay";
+  original_question_text?: string;
   question_text: string;
   options: { key: string; text: string }[];
   correct_answer: string;
   explanation: string;
   rubric?: string;
+  context_variables?: QuestionContextVariable[];
+  validation?: QuestionValidation;
 }
 
 function TeacherQuestionsContent() {
@@ -106,6 +132,8 @@ function TeacherQuestionsContent() {
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [overallValidation, setOverallValidation] = useState<QuestionValidation | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -545,6 +573,7 @@ function TeacherQuestionsContent() {
   // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
   const handleTriggerAiContextTransformation = async () => {
     setIsAiGenerating(true);
+    setAiError(null);
     try {
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
@@ -567,10 +596,14 @@ function TeacherQuestionsContent() {
         if (json.data.topic) {
           setTopic(json.data.topic);
         }
+        if (json.data.validation) {
+          setOverallValidation(json.data.validation);
+        }
         if (json.data.questions && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
           const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => ({
-            id: `q-draft-${Date.now()}-${idx + 1}`,
+            id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
             type: q.type === "essay" ? "essay" : "multiple_choice",
+            original_question_text: q.original_question_text || "",
             question_text: q.question_text || q.question || "",
             options: q.options && Array.isArray(q.options)
               ? q.options.map((o: any, oIdx: number) => ({
@@ -586,13 +619,18 @@ function TeacherQuestionsContent() {
             correct_answer: q.correct_answer || q.correctAnswer || "A",
             explanation: q.explanation || "",
             rubric: q.rubric || "",
+            context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
+            validation: q.validation || undefined,
           }));
           setQuestionsList(mapped);
           setWizardStep(3);
         }
+      } else {
+        setAiError(json.error || "Gagal menghasilkan butir soal kontekstual.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("AI question contextualization error:", err);
+      setAiError(err.message || "Gagal memproses butir soal dengan AI. Silakan coba kembali.");
     } finally {
       setIsAiGenerating(false);
     }
@@ -2201,6 +2239,69 @@ function TeacherQuestionsContent() {
                   </div>
                 )}
 
+                {/* Banner Error AI (Human-Friendly, No Mock Silently) */}
+                {aiError && (
+                  <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                      <div>
+                        <span className="font-bold text-white block">Gagal Kontekstualisasi AI:</span>
+                        <span className="text-rose-200/90">{aiError}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating}
+                      className="px-3.5 py-1.5 rounded-xl bg-rose-500/30 hover:bg-rose-500/40 text-white font-bold text-xs border border-rose-400/40 flex items-center gap-1.5 cursor-pointer shrink-0 transition-all"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Coba Lagi</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Bar Verifikasi Pedagogis DEPASKAN (Human-in-the-Loop) */}
+                {overallValidation && (
+                  <div className="p-4 rounded-2xl bg-[#FFD36D]/10 border border-[#FFD36D]/30 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-[#FFD36D]" />
+                        <span className="text-xs font-black text-white uppercase tracking-wider">
+                          Verifikasi Pedagogis DEPASKAN
+                        </span>
+                      </div>
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#FFD36D] text-[#251E2B]">
+                        {overallValidation.status === "VALID" ? "Terverifikasi" : "Perlu Peninjauan Guru"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Kompetensi Terjaga
+                      </span>
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Kunci Jawaban Konsisten
+                      </span>
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Angka Hitungan Utuh
+                      </span>
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> Konteks: {region}
+                      </span>
+                    </div>
+                    {overallValidation.warnings && overallValidation.warnings.length > 0 && (
+                      <div className="p-2.5 rounded-xl bg-amber-900/30 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+                        {overallValidation.warnings.map((w, wIdx) => (
+                          <div key={wIdx} className="flex items-start gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                            <span>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Daftar Form Buat Soal Pertama Sampai Pembahasan */}
                 <div className="space-y-5">
                   {questionsList.map((q, index) => (
@@ -2237,10 +2338,78 @@ function TeacherQuestionsContent() {
                         </div>
                       </div>
 
+                      {/* Review Kontekstualisasi Human-in-the-Loop */}
+                      {((q.original_question_text && q.original_question_text.trim() !== q.question_text.trim()) || (q.context_variables && q.context_variables.length > 0)) && (
+                        <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5" /> Kontekstualisasi Kearifan Lokal
+                            </span>
+                            {q.validation && (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                q.validation.status === "VALID" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              }`}>
+                                {q.validation.status === "VALID" ? "Lolos Validasi" : "Tinjau Catatan"}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Naskah Asli vs Kontekstual */}
+                          {q.original_question_text && q.original_question_text.trim() !== q.question_text.trim() && (
+                            <div className="space-y-1">
+                              <span className="text-[11px] text-gray-400 font-semibold block">Naskah Asli / Standar:</span>
+                              <div className="p-2.5 rounded-xl bg-black/25 border border-white/10 text-xs text-gray-300 italic font-normal leading-relaxed">
+                                {q.original_question_text}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Variabel Konteks yang Disubstitusi */}
+                          {q.context_variables && q.context_variables.length > 0 && (
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-bold text-gray-300 block">Substitusi Entitas Lokal ({region}):</span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {q.context_variables.map((cv, cvIdx) => (
+                                  <div
+                                    key={cvIdx}
+                                    className="px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] text-white flex items-center gap-1.5 shadow-xs"
+                                    title={cv.reason || `${cv.original_term} disesuaikan dengan ${cv.replacement_term}`}
+                                  >
+                                    <span className="text-gray-400 line-through">{cv.original_term}</span>
+                                    <span className="text-[#FFD36D]">➔</span>
+                                    <span className="font-bold text-[#FFD36D]">{cv.replacement_term}</span>
+                                    {cv.category && (
+                                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/10 text-gray-300 uppercase">
+                                        {cv.category}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Checklist Validasi Item */}
+                          {q.validation && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10 text-[10px]">
+                              <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                                <CheckCircle className="w-3 h-3" /> Kompetensi Terjaga
+                              </span>
+                              <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                                <CheckCircle className="w-3 h-3" /> Kunci Jawaban Konsisten
+                              </span>
+                              <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                                <CheckCircle className="w-3 h-3" /> Angka Hitungan Utuh
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Teks Pertanyaan Soal */}
                       <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-200">
-                          Pertanyaan Soal {index + 1}
+                          Pertanyaan Soal {index + 1} (Dapat Diedit Guru)
                         </label>
                         <textarea
                           rows={3}

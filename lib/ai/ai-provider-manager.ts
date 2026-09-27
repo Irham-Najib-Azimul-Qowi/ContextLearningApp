@@ -280,24 +280,30 @@ export class AIProviderManager {
 
         console.warn(`[AIProviderManager] Request failed on ${credName} (${classification}):`, errorMsg);
 
-        // Failover to secondary model (e.g. gemini-3.7-flash if 3.8-flash has 503 high demand)
+        // Failover to secondary model (e.g. gemini-flash-latest if 3.8-flash has 503 high demand)
         if (
-          (classification === "MODEL_UNAVAILABLE" || classification === "RATE_LIMITED") &&
+          (classification === "MODEL_UNAVAILABLE" || classification === "RATE_LIMITED" || classification === "TIMEOUT") &&
           targetModel !== fallbackModel
         ) {
           console.log(`[AIProviderManager] Switching model from ${targetModel} to fallback ${fallbackModel}`);
           targetModel = fallbackModel;
           isFailover = true;
+          // Exponential backoff for transient spikes
+          await new Promise((r) => setTimeout(r, attempts * 1200));
           continue;
+        } else if (classification === "MODEL_UNAVAILABLE" || classification === "RATE_LIMITED") {
+          // If already on fallback model, brief backoff before final retry attempt
+          await new Promise((r) => setTimeout(r, attempts * 1500));
         }
 
-        // Update Credential Failure & Circuit Breaker
+        // Update Credential Failure & Circuit Breaker (only trip on fatal auth errors or persistent failures)
         if (credential) {
           const newConsecutive = credential.consecutive_errors + 1;
           let newCircuitState = credential.circuit_state;
           let circuitOpenedAt = credential.circuit_opened_at;
 
-          if (newConsecutive >= 3 || classification === "INVALID_API_KEY") {
+          // Only open circuit on invalid key or repeated non-transient errors
+          if (classification === "INVALID_API_KEY" || (newConsecutive >= 5 && classification !== "MODEL_UNAVAILABLE")) {
             newCircuitState = "OPEN";
             circuitOpenedAt = new Date().toISOString();
           }

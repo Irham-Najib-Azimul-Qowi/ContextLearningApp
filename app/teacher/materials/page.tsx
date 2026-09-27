@@ -27,6 +27,10 @@ import {
   HelpCircle,
   Printer,
   Loader2,
+  AlertTriangle,
+  ShieldCheck,
+  CheckCircle,
+  RefreshCw,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -43,6 +47,22 @@ const SUBJECT_OPTIONS = [
   "Pendidikan Pancasila",
   "Seni Budaya & Prakarya",
 ];
+
+export interface MaterialContextVariable {
+  original_term: string;
+  replacement_term: string;
+  category?: string;
+  reason?: string;
+}
+
+export interface MaterialValidation {
+  is_valid: boolean;
+  competency_preserved?: boolean;
+  local_context_grounded?: boolean;
+  math_numbers_strictly_preserved?: boolean;
+  warnings?: string[];
+  pedagogical_notes?: string;
+}
 
 export default function TeacherMaterialsPage() {
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
@@ -78,6 +98,10 @@ export default function TeacherMaterialsPage() {
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [originalContent, setOriginalContent] = useState<string>("");
+  const [materialContextVariables, setMaterialContextVariables] = useState<MaterialContextVariable[]>([]);
+  const [materialValidation, setMaterialValidation] = useState<MaterialValidation | null>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
   const pdfInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -219,6 +243,7 @@ export default function TeacherMaterialsPage() {
   // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
   const handleTriggerAiContextTransformation = async () => {
     setIsAiGenerating(true);
+    setAiError(null);
     try {
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
@@ -246,9 +271,21 @@ export default function TeacherMaterialsPage() {
           setPreviewNarrative(json.data.content);
           setManualDraft(json.data.content);
         }
+        if (json.data.original_content) {
+          setOriginalContent(json.data.original_content);
+        }
+        if (json.data.context_variables && Array.isArray(json.data.context_variables)) {
+          setMaterialContextVariables(json.data.context_variables);
+        }
+        if (json.data.validation) {
+          setMaterialValidation(json.data.validation);
+        }
+      } else {
+        setAiError(json.error || "Gagal mengontekstualisasikan modul materi.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("AI Contextualization error:", err);
+      setAiError(err.message || "Gagal memproses materi dengan AI. Silakan coba kembali.");
     } finally {
       setIsAiGenerating(false);
     }
@@ -994,6 +1031,90 @@ export default function TeacherMaterialsPage() {
                     }
                   }}
                 />
+
+                {/* Banner Error AI (Human-Friendly, No Mock Silently) */}
+                {aiError && (
+                  <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                      <div>
+                        <span className="font-bold text-white block">Gagal Kontekstualisasi AI:</span>
+                        <span className="text-rose-200/90">{aiError}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTriggerAiContextTransformation}
+                      disabled={isAiGenerating}
+                      className="px-3.5 py-1.5 rounded-xl bg-rose-500/30 hover:bg-rose-500/40 text-white font-bold text-xs border border-rose-400/40 flex items-center gap-1.5 cursor-pointer shrink-0 transition-all"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Coba Lagi</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Bar Verifikasi Pedagogis Modul (Human-in-the-Loop) */}
+                {materialValidation && (
+                  <div className="p-4 rounded-2xl bg-[#FFD36D]/10 border border-[#FFD36D]/30 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-[#FFD36D]" />
+                        <span className="text-xs font-black text-white uppercase tracking-wider">
+                          Verifikasi Pedagogis Modul DEPASKAN
+                        </span>
+                      </div>
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#FFD36D] text-[#251E2B]">
+                        {materialValidation.is_valid ? "Terverifikasi" : "Perlu Peninjauan Guru"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Kompetensi Materi Terjaga
+                      </span>
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> Kearifan Lokal Terintegrasi: {region}
+                      </span>
+                    </div>
+                    {materialValidation.warnings && materialValidation.warnings.length > 0 && (
+                      <div className="p-2.5 rounded-xl bg-amber-900/30 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+                        {materialValidation.warnings.map((w, wIdx) => (
+                          <div key={wIdx} className="flex items-start gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                            <span>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Variabel Konteks yang Disubstitusi */}
+                {materialContextVariables && materialContextVariables.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                    <span className="text-[11px] font-bold text-gray-300 block">
+                      Substitusi Entitas Lokal Terintegrasi ({region}):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {materialContextVariables.map((cv, cvIdx) => (
+                        <div
+                          key={cvIdx}
+                          className="px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] text-white flex items-center gap-1.5 shadow-xs"
+                          title={cv.reason || `${cv.original_term} disesuaikan dengan ${cv.replacement_term}`}
+                        >
+                          <span className="text-gray-400 line-through">{cv.original_term}</span>
+                          <span className="text-[#FFD36D]">➔</span>
+                          <span className="font-bold text-[#FFD36D]">{cv.replacement_term}</span>
+                          {cv.category && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/10 text-gray-300 uppercase">
+                              {cv.category}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Input Manual Konten: Naskah Lebar & Lapang */}
                 {selectedMethod === "manual" && (
