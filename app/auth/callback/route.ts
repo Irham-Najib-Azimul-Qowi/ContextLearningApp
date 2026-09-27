@@ -25,24 +25,33 @@ export async function GET(request: Request) {
 
       const user = data.user;
       if (user) {
-        // Query user profile in Supabase to determine role and onboarding status
-        const { data: profile, error: profileError } = await supabase
+        const meta = user.user_metadata || {};
+
+        // 1. Check if user already completed onboarding across any device via user_metadata
+        if (meta.onboarding_completed || meta.profile_completed || meta.teacher_profile) {
+          if (meta.role === "STUDENT") {
+            return NextResponse.redirect(`${origin}/student/dashboard`);
+          }
+          return NextResponse.redirect(`${origin}/teacher/dashboard`);
+        }
+
+        // 2. Query user profile table in Supabase
+        const { data: profile } = await supabase
           .from("user_profiles")
           .select("id, role, school_id, is_verified")
           .eq("id", user.id)
           .single();
 
-        if (profileError || !profile) {
-          // New user -> direct to onboarding
-          return NextResponse.redirect(`${origin}/auth/onboarding`);
+        if (profile) {
+          if (profile.role === "TEACHER") {
+            return NextResponse.redirect(`${origin}/teacher/dashboard`);
+          } else if (profile.role === "STUDENT") {
+            return NextResponse.redirect(`${origin}/student/dashboard`);
+          }
         }
 
-        // Existing user with established profile
-        if (profile.role === "TEACHER") {
-          return NextResponse.redirect(`${origin}/teacher/dashboard`);
-        } else if (profile.role === "STUDENT") {
-          return NextResponse.redirect(`${origin}/student/dashboard`);
-        }
+        // New user -> direct to onboarding
+        return NextResponse.redirect(`${origin}/auth/onboarding`);
       }
     } catch (err: any) {
       console.error("Unexpected callback exception:", err);

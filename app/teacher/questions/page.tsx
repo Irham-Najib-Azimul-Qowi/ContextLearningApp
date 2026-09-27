@@ -244,12 +244,19 @@ function TeacherQuestionsContent() {
 
   useEffect(() => {
     loadData();
+    const handleSync = () => loadData();
+    window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("storage", handleSync);
     const methodParam = searchParams?.get("method");
     const actionParam = searchParams?.get("action");
     if (!hasAutoOpenedRef.current && (methodParam === "manual" || actionParam === "manual" || actionParam === "new")) {
       hasAutoOpenedRef.current = true;
       handleOpenWizard("manual");
     }
+    return () => {
+      window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, [searchParams]);
 
   const handleCopy = (code: string) => {

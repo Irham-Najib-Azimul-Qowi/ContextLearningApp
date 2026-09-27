@@ -65,6 +65,7 @@ export default function OnboardingPage() {
   const [userIntent, setUserIntent] = useState<string>("general");
 
   useEffect(() => {
+    // 1. Check local storage first for fast response
     if (typeof window !== "undefined") {
       const isCompleted = localStorage.getItem("pahami_v2_onboarding_completed");
       if (isCompleted === "true") {
@@ -75,13 +76,33 @@ export default function OnboardingPage() {
       setUserIntent(intent);
     }
 
-    // Auto-fill user name from Google account if logged in
-    const fetchGoogleUserName = async () => {
+    // 2. Check Supabase Auth user metadata & profile across devices
+    const checkUserAuthAndProfile = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const meta = user.user_metadata || {};
+          
+          // If this Google account has already completed onboarding on any device:
+          if (meta.onboarding_completed || meta.profile_completed || meta.teacher_profile) {
+            if (typeof window !== "undefined") {
+              localStorage.setItem("pahami_v2_onboarding_completed", "true");
+              if (meta.teacher_profile) {
+                localStorage.setItem(
+                  "pahami_v2_teacher_profile",
+                  JSON.stringify(meta.teacher_profile)
+                );
+              }
+            }
+            // Trigger sync and go straight to dashboard without filling form again
+            repository.syncFromCloud();
+            const destination = meta.role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard";
+            router.replace(destination);
+            return;
+          }
+
+          // Pre-fill user name from Google account for new users
           const googleName =
             meta.full_name ||
             meta.name ||
@@ -96,7 +117,7 @@ export default function OnboardingPage() {
       }
     };
 
-    fetchGoogleUserName();
+    checkUserAuthAndProfile();
   }, [router]);
 
   // Filter regions by selected province
@@ -272,6 +293,13 @@ export default function OnboardingPage() {
             })
           );
         }
+      }
+
+      // Synchronize initial data to cloud across all devices
+      try {
+        await repository.syncToCloud();
+      } catch (syncErr) {
+        console.warn("Initial syncToCloud warning:", syncErr);
       }
 
       // Determine redirect destination based on initial intent
@@ -608,9 +636,9 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                <span className="text-xs font-medium text-gray-300">Jenis Penggunaan</span>
+                <span className="text-xs font-medium text-gray-300">Penggunaan</span>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FFD36D]/20 text-[#FFD36D] border border-[#FFD36D]/30">
-                  {usageMode === "school" ? "Sekolah (Formal SD)" : "Perorangan (Mandiri)"}
+                  {usageMode === "school" ? "Sekolah" : "Perorangan"}
                 </span>
               </div>
 
@@ -621,18 +649,11 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-300">Wilayah Pembelajaran</span>
                 <span className="text-xs sm:text-sm font-bold text-[#FFD36D] flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-[#F47D83]" />
                   <span>{regionName} ({selectedProvince})</span>
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-300">Jenjang Pendidikan</span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-white/10 text-white">
-                  SD Kelas 5 (Fase C)
                 </span>
               </div>
             </div>

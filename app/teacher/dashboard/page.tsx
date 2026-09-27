@@ -26,7 +26,7 @@ export default function TeacherDashboardPage() {
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
   const [rooms, setRooms] = useState<LearningRoom[]>([]);
 
-  useEffect(() => {
+  const loadDashboardData = () => {
     const activeSchool = repository.getActiveSchool();
     const currentUser = repository.getCurrentUser();
 
@@ -34,6 +34,10 @@ export default function TeacherDashboardPage() {
     setQuestions(repository.getQuestions({ schoolId: activeSchool.id }));
     setMaterials(repository.getMaterials(activeSchool.id));
     setRooms(repository.getRooms(currentUser?.id));
+  };
+
+  useEffect(() => {
+    loadDashboardData();
 
     // Sinkronisasi otomatis dari sesi Google Supabase jika nama belum terisi
     import("@/lib/supabase/client").then(({ createClient }) => {
@@ -47,6 +51,7 @@ export default function TeacherDashboardPage() {
               meta.name ||
               meta.display_name ||
               (authUser.email ? authUser.email.split("@")[0] : null);
+            const currentUser = repository.getCurrentUser();
             if (googleName && (!currentUser.full_name || currentUser.full_name.includes("Siti Aminah"))) {
               const updated = repository.updateUserProfile({
                 full_name: googleName.trim(),
@@ -68,7 +73,13 @@ export default function TeacherDashboardPage() {
       }
     };
     window.addEventListener("userProfileChange", handleProfileChange);
-    return () => window.removeEventListener("userProfileChange", handleProfileChange);
+    window.addEventListener("repositorySyncCompleted", loadDashboardData);
+    window.addEventListener("storage", loadDashboardData);
+    return () => {
+      window.removeEventListener("userProfileChange", handleProfileChange);
+      window.removeEventListener("repositorySyncCompleted", loadDashboardData);
+      window.removeEventListener("storage", loadDashboardData);
+    };
   }, []);
 
   return (

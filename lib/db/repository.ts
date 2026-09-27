@@ -368,6 +368,122 @@ class PahamiRepository {
     }
   }
 
+  // --- CLOUD SYNCHRONIZATION (Cross-Device Data Sync via Supabase Auth) ---
+  private syncDebounceTimer: any = null;
+
+  async syncToCloud(): Promise<void> {
+    if (!this.isBrowser()) return;
+    if (this.syncDebounceTimer) {
+      clearTimeout(this.syncDebounceTimer);
+    }
+
+    return new Promise((resolve) => {
+      this.syncDebounceTimer = setTimeout(async () => {
+        try {
+          const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
+          const payload = {
+            materials: this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS),
+            questions: this.getItem<Question[]>("questions", SEED_QUESTIONS),
+            rooms: this.getItem<LearningRoom[]>("rooms", SEED_ROOMS),
+            schools: this.getItem<School[]>("schools", SEED_SCHOOLS),
+            activeSchool: this.getActiveSchoolId(),
+            profile: profileRaw ? JSON.parse(profileRaw) : null,
+            onboardingCompleted: localStorage.getItem("pahami_v2_onboarding_completed") === "true",
+          };
+
+          const res = await fetch("/api/sync/user-data", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const result = await res.json();
+          if (result.success) {
+            console.log("Cross-device sync to cloud complete.");
+          }
+        } catch (err) {
+          console.warn("Cross-device sync to cloud error:", err);
+        } finally {
+          resolve();
+        }
+      }, 350);
+    });
+  }
+
+  async syncFromCloud(): Promise<boolean> {
+    if (!this.isBrowser()) return false;
+    try {
+      const res = await fetch("/api/sync/user-data");
+      if (!res.ok) return false;
+      const json = await res.json();
+      if (!json.success || !json.data) return false;
+
+      const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted } = json.data;
+      let hasChanges = false;
+
+      if (onboardingCompleted) {
+        localStorage.setItem("pahami_v2_onboarding_completed", "true");
+      }
+
+      if (profile && typeof profile === "object") {
+        const existingRaw = localStorage.getItem("pahami_v2_teacher_profile");
+        const existing = existingRaw ? JSON.parse(existingRaw) : {};
+        const mergedProfile = { ...existing, ...profile };
+        localStorage.setItem("pahami_v2_teacher_profile", JSON.stringify(mergedProfile));
+        hasChanges = true;
+      }
+
+      if (Array.isArray(schools) && schools.length > 0) {
+        const localSchools = this.getSchools();
+        const map = new Map<string, School>();
+        localSchools.forEach((s) => map.set(s.id, s));
+        schools.forEach((s) => map.set(s.id, s));
+        this.setItem<School[]>("schools", Array.from(map.values()));
+        hasChanges = true;
+      }
+
+      if (activeSchool) {
+        this.setActiveSchoolId(activeSchool);
+        hasChanges = true;
+      }
+
+      if (Array.isArray(materials) && materials.length > 0) {
+        const localMaterials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+        const map = new Map<string, LearningMaterial>();
+        localMaterials.forEach((m) => map.set(m.id, m));
+        materials.forEach((m) => map.set(m.id, m));
+        this.setItem<LearningMaterial[]>("materials", Array.from(map.values()));
+        hasChanges = true;
+      }
+
+      if (Array.isArray(questions) && questions.length > 0) {
+        const localQuestions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+        const map = new Map<string, Question>();
+        localQuestions.forEach((q) => map.set(q.id, q));
+        questions.forEach((q) => map.set(q.id, q));
+        this.setItem<Question[]>("questions", Array.from(map.values()));
+        hasChanges = true;
+      }
+
+      if (Array.isArray(rooms) && rooms.length > 0) {
+        const localRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+        const map = new Map<string, LearningRoom>();
+        localRooms.forEach((r) => map.set(r.id || r.code, r));
+        rooms.forEach((r) => map.set(r.id || r.code, r));
+        this.setItem<LearningRoom[]>("rooms", Array.from(map.values()));
+        hasChanges = true;
+      }
+
+      if (hasChanges) {
+        window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn("Cross-device sync from cloud error:", err);
+      return false;
+    }
+  }
+
   // --- SCHOOLS ---
   getSchools(): School[] {
     return this.getItem<School[]>("schools", SEED_SCHOOLS);
@@ -395,6 +511,7 @@ class PahamiRepository {
     }
     this.setItem<School[]>("schools", schools);
     this.setActiveSchoolId(school.id);
+    this.syncToCloud();
   }
 
   getActiveSchool(): School {
@@ -520,6 +637,7 @@ class PahamiRepository {
     }
 
     this.setCurrentUser(updated);
+    this.syncToCloud();
     return updated;
   }
 
@@ -662,8 +780,16 @@ class PahamiRepository {
   // --- QUESTIONS ---
   getQuestions(filter?: { schoolId?: string; subject?: string; grade?: number; topic?: string }): Question[] {
     let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const currentUser = this.getCurrentUser();
     if (filter) {
-      if (filter.schoolId) questions = questions.filter((q) => q.school_id === filter.schoolId);
+      if (filter.schoolId) {
+        questions = questions.filter(
+          (q) =>
+            q.school_id === filter.schoolId ||
+            q.school_id === "school-individual" ||
+            (currentUser?.id && q.teacher_id === currentUser.id)
+        );
+      }
       if (filter.subject) questions = questions.filter((q) => q.subject.toLowerCase() === filter.subject?.toLowerCase());
       if (filter.grade) questions = questions.filter((q) => q.grade === filter.grade);
       if (filter.topic) questions = questions.filter((q) => q.topic.toLowerCase().includes(filter.topic!.toLowerCase()));
@@ -708,6 +834,7 @@ class PahamiRepository {
         const updated = { ...questions[index], ...data } as Question;
         questions[index] = updated;
         this.setItem<Question[]>("questions", questions);
+        this.syncToCloud();
         return updated;
       }
     }
@@ -733,6 +860,7 @@ class PahamiRepository {
       created_at: new Date().toISOString(),
     };
     this.setItem<Question[]>("questions", [newQuestion, ...questions]);
+    this.syncToCloud();
     return newQuestion;
   }
 
@@ -741,6 +869,7 @@ class PahamiRepository {
     const filtered = questions.filter((q) => q.id !== id);
     if (filtered.length !== questions.length) {
       this.setItem<Question[]>("questions", filtered);
+      this.syncToCloud();
       return true;
     }
     return false;
@@ -750,7 +879,13 @@ class PahamiRepository {
   getMaterials(schoolId?: string): LearningMaterial[] {
     const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
     if (!schoolId) return materials;
-    return materials.filter((m) => m.school_id === schoolId);
+    const currentUser = this.getCurrentUser();
+    return materials.filter(
+      (m) =>
+        m.school_id === schoolId ||
+        m.school_id === "school-individual" ||
+        (currentUser?.id && m.teacher_id === currentUser.id)
+    );
   }
 
   getMaterial(id: string): LearningMaterial | undefined {
@@ -787,6 +922,7 @@ class PahamiRepository {
         const updated = { ...materials[index], ...data };
         materials[index] = updated;
         this.setItem<LearningMaterial[]>("materials", materials);
+        this.syncToCloud();
         return updated;
       }
     }
@@ -808,6 +944,7 @@ class PahamiRepository {
       created_at: new Date().toISOString(),
     };
     this.setItem<LearningMaterial[]>("materials", [newMat, ...materials]);
+    this.syncToCloud();
     return newMat;
   }
 
@@ -817,6 +954,7 @@ class PahamiRepository {
     if (item) {
       item.published_to_classes = classIds;
       this.setItem<LearningMaterial[]>("materials", materials);
+      this.syncToCloud();
       return item;
     }
     return undefined;
@@ -827,6 +965,7 @@ class PahamiRepository {
     const filtered = materials.filter((m) => m.id !== id);
     if (filtered.length !== materials.length) {
       this.setItem<LearningMaterial[]>("materials", filtered);
+      this.syncToCloud();
       return true;
     }
     return false;
@@ -968,7 +1107,12 @@ class PahamiRepository {
   getRooms(teacherId?: string): LearningRoom[] {
     const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
     if (teacherId) {
-      return rooms.filter((r) => r.teacher_id === teacherId);
+      return rooms.filter(
+        (r) =>
+          r.teacher_id === teacherId ||
+          r.teacher_id === "usr-teacher-01" ||
+          !r.teacher_id
+      );
     }
     return rooms;
   }
@@ -1012,6 +1156,7 @@ class PahamiRepository {
     };
     rooms.unshift(newRoom);
     this.setItem<LearningRoom[]>("rooms", rooms);
+    this.syncToCloud();
     return newRoom;
   }
 
@@ -1022,6 +1167,7 @@ class PahamiRepository {
       const updated = { ...rooms[index], ...data };
       rooms[index] = updated;
       this.setItem<LearningRoom[]>("rooms", rooms);
+      this.syncToCloud();
       return updated;
     }
     return undefined;
@@ -1063,6 +1209,7 @@ class PahamiRepository {
     rooms = rooms.filter((r) => r.id !== id);
     if (rooms.length !== initialLength) {
       this.setItem<LearningRoom[]>("rooms", rooms);
+      this.syncToCloud();
       return true;
     }
     return false;

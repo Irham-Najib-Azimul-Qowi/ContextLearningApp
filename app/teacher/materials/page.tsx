@@ -123,6 +123,13 @@ export default function TeacherMaterialsPage() {
 
   useEffect(() => {
     loadData();
+    const handleSync = () => loadData();
+    window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("storage", handleSync);
+    return () => {
+      window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, []);
 
   const handleCopy = (code: string) => {

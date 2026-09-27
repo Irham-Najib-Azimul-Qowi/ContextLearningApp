@@ -49,6 +49,8 @@ export function TeacherWorkspaceShell({
   useEffect(() => {
     if (typeof window !== "undefined") {
       setIsCollapsed(window.innerWidth < 768);
+      // Trigger cloud sync to fetch materials, questions, rooms across devices
+      repository.syncFromCloud();
     }
   }, []);
 

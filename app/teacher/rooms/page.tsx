@@ -102,11 +102,18 @@ function TeacherRoomsContent() {
 
   useEffect(() => {
     loadData();
+    const handleSync = () => loadData();
+    window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("storage", handleSync);
     const actionParam = searchParams?.get("action");
     if (!hasAutoOpenedRef.current && (actionParam === "new" || actionParam === "create")) {
       hasAutoOpenedRef.current = true;
       handleOpenWizard();
     }
+    return () => {
+      window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, [searchParams]);
 
   const handleCopyCode = (code: string) => {

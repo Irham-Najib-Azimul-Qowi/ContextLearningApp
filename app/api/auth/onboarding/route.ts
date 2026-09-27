@@ -37,8 +37,28 @@ export async function POST(request: Request) {
 
       const assignedSchoolId = schoolId || (isIndividual ? "school-individual" : "sch-ponorogo-01");
 
-      // If Supabase is connected, write to user_profiles table
+      // If Supabase is connected, update Auth user_metadata and write to user_profiles table
       if (supabase && supabaseUser) {
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              onboarding_completed: true,
+              profile_completed: true,
+              role: "TEACHER",
+              teacher_profile: {
+                fullName: fullName.trim(),
+                usageMode,
+                schoolId: assignedSchoolId,
+                schoolName: schoolName || (isIndividual ? "Workspace Mandiri" : "SD"),
+                regionId,
+                regionName,
+              },
+            },
+          });
+        } catch (metaErr) {
+          console.warn("Failed to update Supabase Auth user_metadata:", metaErr);
+        }
+
         const { error: dbError } = await supabase.from("user_profiles").upsert({
           id: userId,
           email,
@@ -50,7 +70,7 @@ export async function POST(request: Request) {
         });
 
         if (dbError) {
-          console.error("Supabase teacher profile upsert error:", dbError);
+          console.warn("Supabase teacher profile upsert warning:", dbError);
         }
       }
 
@@ -116,8 +136,24 @@ export async function POST(request: Request) {
         );
       }
 
-      // Save student profile
+      // Save student profile and auth metadata
       if (supabase && supabaseUser) {
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              onboarding_completed: true,
+              profile_completed: true,
+              role: "STUDENT",
+              student_profile: {
+                fullName: fullName.trim(),
+                classCode,
+              },
+            },
+          });
+        } catch (metaErr) {
+          console.warn("Failed to update student user_metadata:", metaErr);
+        }
+
         await supabase.from("user_profiles").upsert({
           id: userId,
           email,
