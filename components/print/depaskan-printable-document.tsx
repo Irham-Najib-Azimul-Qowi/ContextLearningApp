@@ -149,16 +149,13 @@ export function DepaskanPrintableDocument({
         <div className="space-y-6 print:space-y-5 text-left font-sans">
           {/* HEADER: Logo & Brand Kiri, QR Code & Doc ID Kanan */}
           <div className="flex items-start justify-between pb-4 border-b-2 border-[#51465B]">
-            <div className="flex items-center gap-3">
-              <PahamiPuzzleLogo size="md" />
-              <div>
-                <h1 className="text-2xl font-black text-[#51465B] tracking-tight leading-none">
-                  DEPASKAN
-                </h1>
-                <p className="text-[11px] font-bold text-slate-600 mt-1 uppercase tracking-wider">
+            <div className="flex flex-col items-start">
+              <PahamiPuzzleLogo size="md" asButton className="pointer-events-none p-0" />
+              <div className="mt-1.5 space-y-0.5">
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider leading-tight">
                   Platform Asesmen & Bahan Ajar Kontekstual Berbasis Kearifan Lokal
                 </p>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-slate-500 leading-tight">
                   Kabupaten Ponorogo & Karesidenan Madiun
                 </p>
               </div>
