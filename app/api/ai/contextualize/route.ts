@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { aiProviderManager } from "@/lib/ai/ai-provider-manager";
+import { aiProviderManager, extractJsonFromAiResponse } from "@/lib/ai/ai-provider-manager";
 import { defaultRetriever } from "@/lib/context-engine/retrieval-adapter";
 
 export async function POST(request: Request) {
@@ -79,12 +79,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR BERIK
 
       let resultData = aiRes.data;
       if (!resultData && aiRes.rawText) {
-        try {
-          const clean = aiRes.rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-          resultData = JSON.parse(clean);
-        } catch {
-          resultData = null;
-        }
+        resultData = extractJsonFromAiResponse(aiRes.rawText) || null;
       }
 
       if (resultData && resultData.title && resultData.content) {
@@ -159,12 +154,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR BERIK
 
     let qData = aiRes.data;
     if (!qData && aiRes.rawText) {
-      try {
-        const clean = aiRes.rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-        qData = JSON.parse(clean);
-      } catch {
-        qData = null;
-      }
+      qData = extractJsonFromAiResponse(aiRes.rawText) || null;
     }
 
     if (qData && Array.isArray(qData.questions) && qData.questions.length > 0) {

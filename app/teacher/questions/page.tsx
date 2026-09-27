@@ -1902,24 +1902,21 @@ function TeacherQuestionsContent() {
                       rows={3}
                       required
                       value={aiPrompt}
-                      onChange={(e) => {
-                        setAiPrompt(e.target.value);
-                        if (!topic) setTopic(e.target.value.slice(0, 45));
-                      }}
-                      placeholder="Contoh: Buat 3 soal pilihan ganda operasi hitung belanja di Pasar Legi Ponorogo untuk kelas 5 SD..."
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Buat 3 soal pilihan ganda operasi hitung belanja di Pasar Legi Ponorogo untuk kelas 5 SD..."
                       className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
                     />
                   </div>
                 )}
 
-                {/* Topik Soal: Kosong default, placeholder transparan tanpa 'Contoh' */}
+                {/* Topik Soal: Kosong default, placeholder contoh tanpa kata 'Contoh' */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
                     Topik Soal
                   </label>
                   <input
                     type="text"
-                    required
+                    required={selectedMethod !== "ai"}
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Operasi Hitung Belanja Pasar Tradisional"

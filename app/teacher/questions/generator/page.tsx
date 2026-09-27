@@ -168,7 +168,7 @@ export default function QuestionGeneratorPage() {
               required
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="Contoh: Aritmetika Sosial, Paragraf Deskripsi, Seni Budaya Tradisional"
+              placeholder="Aritmetika Sosial, Paragraf Deskripsi, Seni Budaya Tradisional"
               className="w-full px-4 py-2.5 rounded-2xl border border-[#E9E5E8] bg-[#FAF7F3] font-semibold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
             />
           </div>

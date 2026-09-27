@@ -867,24 +867,21 @@ export default function TeacherMaterialsPage() {
                       rows={3}
                       required
                       value={aiPrompt}
-                      onChange={(e) => {
-                        setAiPrompt(e.target.value);
-                        if (!title) setTitle(e.target.value.slice(0, 45));
-                      }}
-                      placeholder="Contoh: Modul ajar IPAS ekosistem persawahan dan panen padi di Ponorogo untuk siswa SD..."
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Modul ajar IPAS ekosistem persawahan dan panen padi di Ponorogo untuk siswa SD..."
                       className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
                     />
                   </div>
                 )}
 
-                {/* Judul Materi: Kosong default, placeholder transparan tanpa kata 'Contoh' */}
+                {/* Judul Materi: Kosong default, placeholder contoh tanpa kata 'Contoh' */}
                 <div>
                   <label className="block text-xs font-bold text-gray-200 mb-1">
                     Judul Materi
                   </label>
                   <input
                     type="text"
-                    required
+                    required={selectedMethod !== "ai"}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Operasi Hitung Belanja Pasar Tradisional"

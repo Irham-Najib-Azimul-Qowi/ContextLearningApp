@@ -549,6 +549,8 @@ class PahamiRepository {
         method: "POST",
         headers,
         body: JSON.stringify({
+          userId: user.id,
+          userEmail: user.email,
           materials,
           questions,
           rooms,
@@ -567,6 +569,9 @@ class PahamiRepository {
         if (json.success && json.data) {
           this.applyAuthoritativeCloudData(json.data);
         }
+      } else {
+        const errText = await res.text();
+        console.warn("[Cloud Sync Immediate Failed]", res.status, errText);
       }
     } catch (err) {
       console.warn("Immediate sync to cloud error:", err);
@@ -626,6 +631,8 @@ class PahamiRepository {
         method: "POST",
         headers,
         body: JSON.stringify({
+          userId: user.id,
+          userEmail: user.email,
           materials,
           questions,
           rooms,
@@ -643,6 +650,9 @@ class PahamiRepository {
           this.applyAuthoritativeCloudData(json.data);
           return true;
         }
+      } else {
+        const errText = await res.text();
+        console.warn("[Cross-device syncWithCloud Failed]", res.status, errText);
       }
       return false;
     } catch (err) {

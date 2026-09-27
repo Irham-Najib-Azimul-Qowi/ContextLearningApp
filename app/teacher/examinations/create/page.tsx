@@ -146,7 +146,7 @@ export default function CreateExamPage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Contoh: Penilaian Harian Matematika Kontekstual Ponorogo"
+                  placeholder="Penilaian Harian Matematika Kontekstual Ponorogo"
                   className="w-full px-3.5 py-2.5 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs font-semibold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                 />
               </div>

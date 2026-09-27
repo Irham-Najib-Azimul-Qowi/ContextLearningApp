@@ -55,10 +55,8 @@ function CreateMaterialContent() {
   const [subject, setSubject] = useState<string>("IPS");
   const [grade, setGrade] = useState<number>(5);
   const [title, setTitle] = useState<string>("");
-  const [topic, setTopic] = useState<string>("Kegiatan Ekonomi & Pengelolaan Sumber Daya Alam");
-  const [learningObjectives, setLearningObjectives] = useState<string>(
-    "Siswa mampu mengidentifikasi bentang alam dan mata pencaharian masyarakat di sekitarnya."
-  );
+  const [topic, setTopic] = useState<string>("");
+  const [learningObjectives, setLearningObjectives] = useState<string>("");
   const [targetRegion, setTargetRegion] = useState<string>("Kabupaten Ponorogo");
   const [targetDistrict, setTargetDistrict] = useState<string>("Kecamatan Pudak");
 
@@ -395,7 +393,7 @@ function CreateMaterialContent() {
                         type="text"
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        placeholder="Contoh: Bentang alam & kegiatan ekonomi"
+                        placeholder="Bentang alam & kegiatan ekonomi"
                         className="w-full px-3.5 py-2.5 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs text-[#23212A] font-medium focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                       />
                     </div>
@@ -407,7 +405,7 @@ function CreateMaterialContent() {
                         type="text"
                         value={targetDistrict}
                         onChange={(e) => setTargetDistrict(e.target.value)}
-                        placeholder="Contoh: Kecamatan Pudak, Kota Lama, dsb."
+                        placeholder="Kecamatan Pudak, Kota Lama, dsb."
                         className="w-full px-3.5 py-2.5 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs text-[#23212A] font-medium focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                       />
                     </div>
@@ -450,7 +448,7 @@ function CreateMaterialContent() {
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Contoh: Mengenal Kegiatan Ekonomi dan Sumber Daya Alam di Sekitarku"
+                      placeholder="Mengenal Kegiatan Ekonomi dan Sumber Daya Alam di Sekitarku"
                       className="w-full px-3.5 py-2.5 bg-[#FAF7F3] border border-[#E9E5E8] rounded-xl text-xs text-[#23212A] font-medium focus:outline-none focus:ring-2 focus:ring-[#51465B]/20"
                     />
                   </div>
