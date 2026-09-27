@@ -425,12 +425,12 @@ export default function TeacherMaterialsPage() {
                 />
               </div>
 
-              {/* Instant Filter Dropdown: Rata Kanan, Ukuran Mengikuti Isi */}
-              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
+              {/* Instant Filter Dropdown: Sebaris & full sejajar search di mobile, Rata Kanan di desktop */}
+              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 shrink-0">
                 <select
                   value={filterSubject}
                   onChange={(e) => setFilterSubject(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
                 >
                   {SUBJECT_OPTIONS.map((subj) => (
                     <option key={subj} value={subj}>

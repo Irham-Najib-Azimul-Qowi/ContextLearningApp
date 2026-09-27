@@ -569,12 +569,12 @@ function TeacherRoomsContent() {
                 />
               </div>
 
-              {/* Filter Room Pills - Rata kanan & ukuran pas nama */}
-              <div className="flex items-center gap-1.5 overflow-x-auto shrink-0 sm:ml-auto justify-end">
+              {/* Filter Room Pills - Sebaris & full sejajar search di mobile, rata kanan di desktop */}
+              <div className="w-full sm:w-auto flex items-center justify-between gap-1 sm:gap-1.5 sm:ml-auto sm:justify-end flex-nowrap">
                 <button
                   type="button"
                   onClick={() => setFilterType("all")}
-                  className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-none inline-flex items-center justify-center whitespace-nowrap px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                     filterType === "all"
                       ? "bg-[#51465B] text-white shadow-xs"
                       : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
@@ -585,7 +585,7 @@ function TeacherRoomsContent() {
                 <button
                   type="button"
                   onClick={() => setFilterType("material")}
-                  className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-none inline-flex items-center justify-center whitespace-nowrap px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                     filterType === "material"
                       ? "bg-[#51465B] text-white shadow-xs"
                       : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
@@ -596,7 +596,7 @@ function TeacherRoomsContent() {
                 <button
                   type="button"
                   onClick={() => setFilterType("question")}
-                  className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-none inline-flex items-center justify-center whitespace-nowrap px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                     filterType === "question"
                       ? "bg-[#51465B] text-white shadow-xs"
                       : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
@@ -607,7 +607,7 @@ function TeacherRoomsContent() {
                 <button
                   type="button"
                   onClick={() => setFilterType("both")}
-                  className={`w-auto inline-flex items-center justify-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-none inline-flex items-center justify-center whitespace-nowrap px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                     filterType === "both"
                       ? "bg-[#51465B] text-white shadow-xs"
                       : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"

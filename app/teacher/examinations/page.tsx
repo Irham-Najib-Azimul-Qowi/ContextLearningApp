@@ -97,21 +97,21 @@ export default function TeacherExaminationsPage() {
             />
           </div>
 
-          <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <div className="w-full sm:w-auto flex gap-1.5 overflow-x-auto pb-1 sm:pb-0 flex-nowrap">
             {["ALL", "published", "draft", "completed"].map((st) => (
               <button
                 key={st}
                 onClick={() => setSelectedStatus(st)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none text-center px-2 sm:px-3.5 py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   selectedStatus === st
                     ? "bg-[#51465B] text-white shadow-xs"
                     : "bg-[#FAF7F3] hover:bg-slate-100 text-[#756F7A]"
                 }`}
               >
                 {st === "ALL"
-                  ? "Semua Status"
+                  ? "Semua"
                   : st === "published"
-                  ? "Aktif Berjalan"
+                  ? "Aktif"
                   : st === "draft"
                   ? "Draft"
                   : "Selesai"}

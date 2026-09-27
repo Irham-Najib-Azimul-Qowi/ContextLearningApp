@@ -851,8 +851,36 @@ function TeacherQuestionsContent() {
                 />
               </div>
 
-              {/* Instant Filter Pills & Dropdown: Rata Kanan, Ukuran Sesuai Isi */}
-              <div className="flex items-center justify-end gap-1.5 overflow-x-auto ml-auto shrink-0 flex-wrap sm:flex-nowrap">
+              {/* Mobile Filter: Sebaris & full sejajar search (Dua dropdown berdampingan 50%-50%) */}
+              <div className="w-full flex sm:hidden items-center gap-2 flex-nowrap">
+                <div className="flex-1 min-w-0">
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors truncate"
+                  >
+                    <option value="all">Semua Tipe</option>
+                    <option value="multiple_choice">Pilihan Ganda</option>
+                    <option value="essay">Esai</option>
+                  </select>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <select
+                    value={filterSubject}
+                    onChange={(e) => setFilterSubject(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors truncate"
+                  >
+                    {SUBJECT_OPTIONS.map((subj) => (
+                      <option key={subj} value={subj}>
+                        {subj}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Desktop / Tablet Filter Pills & Dropdown: Rata Kanan, Ukuran Sesuai Isi */}
+              <div className="hidden sm:flex items-center justify-end gap-1.5 ml-auto shrink-0 flex-nowrap">
                 <button
                   type="button"
                   onClick={() => setFilterType("all")}
