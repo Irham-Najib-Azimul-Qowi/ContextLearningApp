@@ -84,19 +84,34 @@ export default function OnboardingPage() {
         if (user) {
           const meta = user.user_metadata || {};
           
+          // Check user_synced_data table in Supabase (highest reliability across devices)
+          const { data: synced } = await supabase
+            .from("user_synced_data")
+            .select("*")
+            .or(`user_id.eq.${user.id},user_email.eq.${user.email}`)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
           // If this Google account has already completed onboarding on any device:
-          if (meta.onboarding_completed || meta.profile_completed || meta.teacher_profile) {
+          if (
+            synced?.onboarding_completed ||
+            meta.onboarding_completed ||
+            meta.profile_completed ||
+            meta.teacher_profile
+          ) {
             if (typeof window !== "undefined") {
               localStorage.setItem("pahami_v2_onboarding_completed", "true");
-              if (meta.teacher_profile) {
+              const savedProfile = synced?.profile || meta.teacher_profile;
+              if (savedProfile) {
                 localStorage.setItem(
                   "pahami_v2_teacher_profile",
-                  JSON.stringify(meta.teacher_profile)
+                  JSON.stringify(savedProfile)
                 );
               }
             }
             // Trigger sync and go straight to dashboard without filling form again
-            repository.syncFromCloud();
+            await repository.syncFromCloud();
             const destination = meta.role === "STUDENT" ? "/student/dashboard" : "/teacher/dashboard";
             router.replace(destination);
             return;

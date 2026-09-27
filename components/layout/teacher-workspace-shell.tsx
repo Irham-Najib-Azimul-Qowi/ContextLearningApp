@@ -51,6 +51,14 @@ export function TeacherWorkspaceShell({
       setIsCollapsed(window.innerWidth < 768);
       // Trigger cloud sync to fetch materials, questions, rooms across devices
       repository.syncFromCloud();
+
+      const handleFocus = () => {
+        repository.syncFromCloud();
+      };
+      window.addEventListener("focus", handleFocus);
+      return () => {
+        window.removeEventListener("focus", handleFocus);
+      };
     }
   }, []);
 

@@ -368,7 +368,7 @@ class PahamiRepository {
     }
   }
 
-  // --- CLOUD SYNCHRONIZATION (Cross-Device Data Sync via Supabase Auth) ---
+  // --- CLOUD SYNCHRONIZATION (Cross-Device Data Sync via Supabase Table & Auth) ---
   private syncDebounceTimer: any = null;
 
   async syncToCloud(): Promise<void> {
@@ -380,44 +380,167 @@ class PahamiRepository {
     return new Promise((resolve) => {
       this.syncDebounceTimer = setTimeout(async () => {
         try {
-          const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
-          const payload = {
-            materials: this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS),
-            questions: this.getItem<Question[]>("questions", SEED_QUESTIONS),
-            rooms: this.getItem<LearningRoom[]>("rooms", SEED_ROOMS),
-            schools: this.getItem<School[]>("schools", SEED_SCHOOLS),
-            activeSchool: this.getActiveSchoolId(),
-            profile: profileRaw ? JSON.parse(profileRaw) : null,
-            onboardingCompleted: localStorage.getItem("pahami_v2_onboarding_completed") === "true",
-          };
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
 
-          const res = await fetch("/api/sync/user-data", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const result = await res.json();
-          if (result.success) {
-            console.log("Cross-device sync to cloud complete.");
+          const profileRaw = localStorage.getItem("pahami_v2_teacher_profile");
+          const profile = profileRaw ? JSON.parse(profileRaw) : null;
+          const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+          const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+          const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+          const schools = this.getItem<School[]>("schools", SEED_SCHOOLS);
+          const activeSchoolId = this.getActiveSchoolId();
+
+          if (user) {
+            // 1. Direct HTTPS upsert to Supabase PostgreSQL table user_synced_data
+            const { error: upsertError } = await supabase
+              .from("user_synced_data")
+              .upsert(
+                {
+                  user_id: user.id,
+                  user_email: user.email,
+                  profile,
+                  materials,
+                  questions,
+                  rooms,
+                  schools,
+                  active_school_id: activeSchoolId,
+                  onboarding_completed: true,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "user_id" }
+              );
+
+            if (upsertError) {
+              console.warn("Direct Supabase cloud sync warning:", upsertError.message);
+            } else {
+              console.log("Direct Supabase cloud sync succeeded for user:", user.email);
+            }
+
+            // 2. Extra backup: update Supabase Auth user_metadata
+            await supabase.auth.updateUser({
+              data: {
+                onboarding_completed: true,
+                profile_completed: true,
+                teacher_profile: profile,
+                role: "TEACHER",
+              },
+            }).catch(() => {});
           }
+
+          // 3. Fallback to API sync endpoint with Bearer token
+          const { data: { session } } = await supabase.auth.getSession();
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+
+          await fetch("/api/sync/user-data", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              userId: user?.id,
+              userEmail: user?.email,
+              materials,
+              questions,
+              rooms,
+              schools,
+              activeSchool: activeSchoolId,
+              profile,
+              onboardingCompleted: true,
+            }),
+          }).catch(() => {});
         } catch (err) {
           console.warn("Cross-device sync to cloud error:", err);
         } finally {
           resolve();
         }
-      }, 350);
+      }, 300);
     });
   }
 
   async syncFromCloud(): Promise<boolean> {
     if (!this.isBrowser()) return false;
     try {
-      const res = await fetch("/api/sync/user-data");
-      if (!res.ok) return false;
-      const json = await res.json();
-      if (!json.success || !json.data) return false;
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      let activeUser: any = null;
 
-      const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted } = json.data;
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        activeUser = userData.user;
+      } else {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          activeUser = sessionData.session.user;
+        }
+      }
+
+      let cloudData: any = null;
+
+      // 1. Direct query to Supabase PostgreSQL table user_synced_data
+      if (activeUser) {
+        const filterOr = `user_id.eq.${activeUser.id},user_email.eq.${activeUser.email}`;
+        const { data: row, error: tableError } = await supabase
+          .from("user_synced_data")
+          .select("*")
+          .or(filterOr)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (row && !tableError) {
+          cloudData = {
+            materials: row.materials,
+            questions: row.questions,
+            rooms: row.rooms,
+            schools: row.schools,
+            activeSchool: row.active_school_id,
+            profile: row.profile,
+            onboardingCompleted: row.onboarding_completed,
+          };
+        }
+
+        // 2. Backup check in user_metadata
+        if (!cloudData && activeUser.user_metadata) {
+          const meta = activeUser.user_metadata;
+          if (meta.synced_materials || meta.teacher_profile || meta.onboarding_completed) {
+            cloudData = {
+              materials: meta.synced_materials,
+              questions: meta.synced_questions,
+              rooms: meta.synced_rooms,
+              schools: meta.synced_schools,
+              activeSchool: meta.synced_active_school,
+              profile: meta.teacher_profile,
+              onboardingCompleted: meta.onboarding_completed,
+            };
+          }
+        }
+      }
+
+      // 3. Fallback to API route
+      if (!cloudData) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+        const queryParams = activeUser
+          ? `?email=${encodeURIComponent(activeUser.email)}&userId=${encodeURIComponent(activeUser.id)}`
+          : "";
+        const res = await fetch(`/api/sync/user-data${queryParams}`, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            cloudData = json.data;
+          }
+        }
+      }
+
+      if (!cloudData) return false;
+
+      const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted } = cloudData;
       let hasChanges = false;
 
       if (onboardingCompleted) {
@@ -474,6 +597,7 @@ class PahamiRepository {
       }
 
       if (hasChanges) {
+        console.log("Cross-device cloud sync hydrated successfully.");
         window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
         return true;
       }

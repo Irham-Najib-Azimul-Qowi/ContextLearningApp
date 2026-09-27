@@ -27,7 +27,20 @@ export async function GET(request: Request) {
       if (user) {
         const meta = user.user_metadata || {};
 
-        // 1. Check if user already completed onboarding across any device via user_metadata
+        // 1. Check user_synced_data table in Supabase (highest reliability across devices)
+        const { data: synced } = await supabase
+          .from("user_synced_data")
+          .select("onboarding_completed, profile")
+          .or(`user_id.eq.${user.id},user_email.eq.${user.email}`)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (synced?.onboarding_completed) {
+          return NextResponse.redirect(`${origin}/teacher/dashboard`);
+        }
+
+        // 2. Check if user already completed onboarding across any device via user_metadata
         if (meta.onboarding_completed || meta.profile_completed || meta.teacher_profile) {
           if (meta.role === "STUDENT") {
             return NextResponse.redirect(`${origin}/student/dashboard`);
@@ -35,12 +48,12 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}/teacher/dashboard`);
         }
 
-        // 2. Query user profile table in Supabase
+        // 3. Query user profile table in Supabase
         const { data: profile } = await supabase
           .from("user_profiles")
           .select("id, role, school_id, is_verified")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           if (profile.role === "TEACHER") {
