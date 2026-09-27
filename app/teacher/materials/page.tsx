@@ -560,67 +560,102 @@ export default function TeacherMaterialsPage() {
             </div>
 
             {/* ===================================================================
-                STEP 1: PILIH METODE (UKURAN CARD PEMBUNGKUS KONSISTEN & NAMA FITUR TEPAT)
+                STEP 1: PILIH METODE (CARD HORIZONTAL DISUSUN VERTIKAL, GENERATE AI PALING ATAS)
                 =================================================================== */}
             {wizardStep === 1 && (
-              <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
-                  {/* Card Kotak 1: Ketik Manual */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectMethod("manual")}
-                    className="p-3.5 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
-                  >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
-                      <PenTool className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                    </div>
-                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
-                      Ketik Manual
-                    </span>
-                  </button>
-
-                  {/* Card Kotak 2: Ambil Foto */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectMethod("camera")}
-                    className="p-3.5 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
-                  >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
-                      <Camera className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                    </div>
-                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
-                      Ambil Foto
-                    </span>
-                  </button>
-
-                  {/* Card Kotak 3: Upload PDF */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectMethod("pdf")}
-                    className="p-3.5 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
-                  >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
-                      <Upload className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                    </div>
-                    <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
-                      Upload PDF
-                    </span>
-                  </button>
-
-                  {/* Card Kotak 4: Generate AI */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectMethod("ai")}
-                    className="p-3.5 sm:p-5 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
-                  >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
+              <div className="w-full space-y-2.5 sm:space-y-3 animate-in fade-in zoom-in-95 duration-200 pt-1">
+                {/* Card Horizontal 1: Generate AI (Paling Atas) */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMethod("ai")}
+                  className="w-full p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#FFD36D]/20 via-[#FFD36D]/10 to-transparent hover:from-[#FFD36D]/25 hover:via-[#FFD36D]/15 hover:to-white/5 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex items-center justify-between gap-3.5 transition-all cursor-pointer group active:scale-[0.99] text-left shadow-xs"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-xs">
                       <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
-                    <span className="font-bold text-xs text-[#FFD36D] transition-colors leading-tight">
-                      Generate AI
-                    </span>
-                  </button>
-                </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm sm:text-base text-[#FFD36D] group-hover:text-white transition-colors">
+                          Generate AI
+                        </span>
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#FFD36D]/25 text-[#FFD36D] border border-[#FFD36D]/30 shrink-0">
+                          Rekomendasi
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">
+                        Susun modul ajar otomatis dengan kecerdasan buatan Gemini
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-[#FFD36D] shrink-0 group-hover:translate-x-1 transition-transform ml-2" />
+                </button>
+
+                {/* Card Horizontal 2: Ketik Manual */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMethod("manual")}
+                  className="w-full p-3.5 sm:p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex items-center justify-between gap-3.5 transition-all cursor-pointer group active:scale-[0.99] text-left"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center shrink-0 transition-all shadow-xs">
+                      <PenTool className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-sm sm:text-base text-white group-hover:text-[#FFD36D] transition-colors block">
+                        Ketik Manual
+                      </span>
+                      <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">
+                        Tulis naskah modul ajar materi secara langsung dan mandiri
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#FFD36D] shrink-0 group-hover:translate-x-1 transition-transform ml-2" />
+                </button>
+
+                {/* Card Horizontal 3: Ambil Foto */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMethod("camera")}
+                  className="w-full p-3.5 sm:p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex items-center justify-between gap-3.5 transition-all cursor-pointer group active:scale-[0.99] text-left"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center shrink-0 transition-all shadow-xs">
+                      <Camera className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-sm sm:text-base text-white group-hover:text-[#FFD36D] transition-colors block">
+                        Ambil Foto
+                      </span>
+                      <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">
+                        Foto lembar buku materi cetak atau dokumen fisik
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#FFD36D] shrink-0 group-hover:translate-x-1 transition-transform ml-2" />
+                </button>
+
+                {/* Card Horizontal 4: Upload PDF */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMethod("pdf")}
+                  className="w-full p-3.5 sm:p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex items-center justify-between gap-3.5 transition-all cursor-pointer group active:scale-[0.99] text-left"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center shrink-0 transition-all shadow-xs">
+                      <Upload className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-sm sm:text-base text-white group-hover:text-[#FFD36D] transition-colors block">
+                        Upload PDF
+                      </span>
+                      <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">
+                        Unggah dokumen materi kurikulum berformat PDF
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#FFD36D] shrink-0 group-hover:translate-x-1 transition-transform ml-2" />
+                </button>
               </div>
             )}
 
