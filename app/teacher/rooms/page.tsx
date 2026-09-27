@@ -580,7 +580,7 @@ function TeacherRoomsContent() {
                       : "bg-white text-[#756F7A] hover:bg-slate-100 border-2 border-[#51465B]/20"
                   }`}
                 >
-                  Semua ({rooms.length})
+                  Semua
                 </button>
                 <button
                   type="button"
