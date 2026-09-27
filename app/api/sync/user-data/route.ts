@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createLkbClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
-import { getPostgresPool } from "@/lib/db/postgres";
 
 // Helper functions for conflict-free data merging with tombstone support
 function cleanMaterials(list: any[], deletedIds: string[] = []): any[] {
@@ -164,22 +163,18 @@ async function authenticateRequest(
 }
 
 /**
- * Create a Supabase client fallback
+ * Create a Supabase client for reading/writing synced data.
+ * Safe for serverless Vercel edge/node execution without external dependencies.
  */
-function createAuthenticatedClient(accessToken: string | null) {
+function getSyncDbClient(accessToken: string | null) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (serviceRoleKey) {
-    return createLkbClient();
-  }
-
-  const anonKey =
+  const apiKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     "";
 
-  return createSupabaseJsClient(supabaseUrl, anonKey, {
+  return createSupabaseJsClient(supabaseUrl, apiKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -213,39 +208,18 @@ export async function GET(request: Request) {
     }
 
     const { user, accessToken } = auth;
-    let row: any = null;
+    const dbClient = getSyncDbClient(accessToken);
 
-    // A. Priority 1: Direct PostgreSQL pool connection
-    const pool = getPostgresPool();
-    if (pool) {
-      try {
-        const pgRes = await pool.query(
-          `SELECT * FROM user_synced_data WHERE user_id = $1 OR user_email = $2 ORDER BY updated_at DESC LIMIT 1;`,
-          [user.id, user.email || ""]
-        );
-        if (pgRes.rows.length > 0) {
-          row = pgRes.rows[0];
-        }
-      } catch (pgErr) {
-        console.warn("[Sync GET] Direct Postgres query error, falling back to REST:", pgErr);
-      }
-    }
+    const { data: row, error: queryErr } = await dbClient
+      .from("user_synced_data")
+      .select("*")
+      .or(`user_id.eq.${user.id},user_email.eq.${user.email || ""}`)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // B. Priority 2: Supabase PostgREST client fallback
-    if (!row) {
-      try {
-        const dbClient = createAuthenticatedClient(accessToken);
-        const { data: restRow } = await dbClient
-          .from("user_synced_data")
-          .select("*")
-          .or(`user_id.eq.${user.id},user_email.eq.${user.email || ""}`)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (restRow) row = restRow;
-      } catch (restErr) {
-        console.warn("[Sync GET] REST query error:", restErr);
-      }
+    if (queryErr) {
+      console.warn("[Sync GET] query error:", queryErr.message);
     }
 
     const meta = user.user_metadata || {};
@@ -342,36 +316,19 @@ export async function POST(request: Request) {
     const effectiveUserId = user.id || body.userId;
     const effectiveEmail = user.email || body.userEmail || "";
 
-    let existingRow: any = null;
-    const pool = getPostgresPool();
+    const dbClient = getSyncDbClient(accessToken);
 
     // 1. Fetch current existing cloud data for conflict-free reconciliation
-    if (pool) {
-      try {
-        const pgRes = await pool.query(
-          `SELECT * FROM user_synced_data WHERE user_id = $1 OR user_email = $2 ORDER BY updated_at DESC LIMIT 1;`,
-          [effectiveUserId, effectiveEmail]
-        );
-        if (pgRes.rows.length > 0) existingRow = pgRes.rows[0];
-      } catch (e) {
-        console.warn("[Sync POST] Direct Postgres fetch error:", e);
-      }
-    }
+    const { data: existingRow, error: fetchErr } = await dbClient
+      .from("user_synced_data")
+      .select("*")
+      .or(`user_id.eq.${effectiveUserId},user_email.eq.${effectiveEmail}`)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (!existingRow) {
-      try {
-        const dbClient = createAuthenticatedClient(accessToken);
-        const { data } = await dbClient
-          .from("user_synced_data")
-          .select("*")
-          .or(`user_id.eq.${effectiveUserId},user_email.eq.${effectiveEmail}`)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        existingRow = data;
-      } catch (e) {
-        console.warn("[Sync POST] REST fetch error:", e);
-      }
+    if (fetchErr) {
+      console.warn("[Sync POST] Fetch error:", fetchErr.message);
     }
 
     const existingDeletedIds = existingRow?.deleted_ids || {};
@@ -435,78 +392,32 @@ export async function POST(request: Request) {
         ? !!onboardingCompleted
         : existingRow?.onboarding_completed ?? true;
 
-    // 2. Atomic Upsert to Supabase PostgreSQL table
-    let savedSuccessfully = false;
+    // 2. Atomic Upsert to Supabase PostgreSQL table via Supabase Client (No RLS blockers)
+    const { error: upsertError } = await dbClient
+      .from("user_synced_data")
+      .upsert(
+        {
+          user_id: effectiveUserId,
+          user_email: effectiveEmail,
+          profile: finalProfile,
+          materials: finalMaterials,
+          questions: finalQuestions,
+          rooms: finalRooms,
+          schools: finalSchools,
+          active_school_id: finalActiveSchool,
+          deleted_ids: finalDeletedIds,
+          onboarding_completed: finalOnboarding,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
 
-    // Option A: Direct PostgreSQL query (Atomic, ultra-reliable, bypasses REST & RLS)
-    if (pool) {
-      try {
-        const upsertSql = `
-          INSERT INTO user_synced_data (
-            user_id, user_email, profile, materials, questions, rooms, schools,
-            active_school_id, deleted_ids, onboarding_completed, updated_at
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-          ON CONFLICT (user_id) DO UPDATE SET
-            user_email = EXCLUDED.user_email,
-            profile = EXCLUDED.profile,
-            materials = EXCLUDED.materials,
-            questions = EXCLUDED.questions,
-            rooms = EXCLUDED.rooms,
-            schools = EXCLUDED.schools,
-            active_school_id = EXCLUDED.active_school_id,
-            deleted_ids = EXCLUDED.deleted_ids,
-            onboarding_completed = EXCLUDED.onboarding_completed,
-            updated_at = NOW();
-        `;
-        await pool.query(upsertSql, [
-          effectiveUserId,
-          effectiveEmail,
-          JSON.stringify(finalProfile),
-          JSON.stringify(finalMaterials),
-          JSON.stringify(finalQuestions),
-          JSON.stringify(finalRooms),
-          JSON.stringify(finalSchools),
-          finalActiveSchool,
-          JSON.stringify(finalDeletedIds),
-          finalOnboarding,
-        ]);
-        savedSuccessfully = true;
-      } catch (pgErr) {
-        console.warn("[Sync POST] Direct Postgres upsert error, trying REST fallback:", pgErr);
-      }
-    }
-
-    // Option B: PostgREST Client Fallback
-    if (!savedSuccessfully) {
-      const dbClient = createAuthenticatedClient(accessToken);
-      const { error: upsertError } = await dbClient
-        .from("user_synced_data")
-        .upsert(
-          {
-            user_id: effectiveUserId,
-            user_email: effectiveEmail,
-            profile: finalProfile,
-            materials: finalMaterials,
-            questions: finalQuestions,
-            rooms: finalRooms,
-            schools: finalSchools,
-            active_school_id: finalActiveSchool,
-            deleted_ids: finalDeletedIds,
-            onboarding_completed: finalOnboarding,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
-
-      if (upsertError) {
-        console.error("[Sync POST] Fallback upsert error:", upsertError);
-        return NextResponse.json(
-          { success: false, error: upsertError.message },
-          { status: 500 }
-        );
-      }
-      savedSuccessfully = true;
+    if (upsertError) {
+      console.error("[Sync POST] Upsert error:", upsertError);
+      return NextResponse.json(
+        { success: false, error: upsertError.message },
+        { status: 500 }
+      );
     }
 
     // 3. Return the reconciled merged state so the client stays 100% in sync
