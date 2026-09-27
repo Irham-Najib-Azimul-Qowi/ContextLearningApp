@@ -664,7 +664,7 @@ function TeacherRoomsContent() {
                                 setPreviewRoom(room);
                                 setIsEditingPreview(false);
                               }}
-                              className="flex-1 py-2.5 px-5 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#23212A] text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                              className="flex-1 py-2.5 px-5 rounded-full bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#23212A] text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                             >
                               <span>Lihat Room</span>
                             </button>
@@ -777,7 +777,7 @@ function TeacherRoomsContent() {
           CREATION WIZARD MODAL (LOGIN & ROOM ENTRY INSPIRED CLEAN STEP FORM)
           ===================================================================== */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <div className={`w-full ${wizardStep === 3 ? "max-w-[620px]" : "max-w-[540px]"} bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300`}>
             {/* ===================================================================
                 MODAL HEADER: JUDUL DI KIRI ATAS, PROGRES STEP DI BAWAHNYA, X DI KANAN ATAS

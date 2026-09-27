@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { X } from "lucide-react";
 import { TEACHER_NAV_GROUPS } from "./teacher-nav-config";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
@@ -44,7 +45,7 @@ export function IconNavigationRail({
       {/* 1. Mobile Backdrop when sidebar is expanded as overlay drawer */}
       {!isCollapsed && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-30 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden transition-opacity"
           onClick={toggleCollapse}
           aria-label="Tutup navigasi"
         />
@@ -54,8 +55,8 @@ export function IconNavigationRail({
       <aside
         className={`${
           isCollapsed
-            ? `w-14 sm:w-20 ${railBg} ${railBorder} flex flex-col justify-start py-5 px-1 sm:px-2 shrink-0 z-30 select-none h-screen max-h-screen overflow-hidden`
-            : `w-72 ${railBg} ${railBorder} flex flex-col justify-start py-6 px-4 shrink-0 z-40 select-none h-screen max-h-screen overflow-hidden max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:shadow-2xl md:relative md:w-64 lg:md:w-72`
+            ? `hidden md:flex w-14 sm:w-20 ${railBg} ${railBorder} flex-col justify-start py-5 px-1 sm:px-2 shrink-0 z-30 select-none h-screen max-h-screen overflow-hidden`
+            : `w-72 ${railBg} ${railBorder} flex flex-col justify-start py-6 px-4 shrink-0 z-50 select-none h-screen max-h-screen overflow-hidden max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:shadow-2xl md:relative md:w-64 lg:md:w-72`
         }`}
         aria-label="Navigasi Menu DEPASKAN"
       >
@@ -127,11 +128,11 @@ export function IconNavigationRail({
              ==================================================================== */
           <div className="flex-1 flex flex-col min-h-0 space-y-6">
             {/* 1. BRAND LOGO & NAME "DEPASKAN" (Clicking toggles collapse, NO subtitle text) */}
-            <div className="px-1 shrink-0">
+            <div className="px-1 shrink-0 flex items-center justify-between">
               <button
                 type="button"
                 onClick={toggleCollapse}
-                className="w-full flex items-center justify-between p-1 -m-1 rounded-2xl hover:bg-black/10 active:scale-98 transition-all cursor-pointer text-left group"
+                className="flex items-center justify-between p-1 -m-1 rounded-2xl hover:bg-black/10 active:scale-98 transition-all cursor-pointer text-left group"
                 title="Klik untuk mengecilkan navigasi"
                 aria-label="Kecilkan navigasi Depaskan"
               >
@@ -141,6 +142,18 @@ export function IconNavigationRail({
                   showText={true}
                   asButton
                 />
+              </button>
+              {/* Mobile Close Button */}
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                className={`md:hidden p-2 rounded-2xl transition-colors cursor-pointer ${
+                  isQuestion ? "text-[#251E2B] hover:bg-black/10" : "text-white hover:bg-white/10"
+                }`}
+                aria-label="Tutup Menu"
+                title="Tutup Menu"
+              >
+                <X className="w-5 h-5 stroke-[2.2]" />
               </button>
             </div>
 

@@ -389,11 +389,11 @@ export default function TeacherMaterialsPage() {
             {/* ===================================================================
                 1. HEADER: BUTTON TAMBAH DI SEBELAH KIRI JUDUL & DESKRIPSI
                 =================================================================== */}
-            <div className="flex flex-col sm:flex-row sm:items-center items-start gap-4 sm:gap-5">
+            <div className="flex flex-col sm:flex-row sm:items-center items-start gap-3 sm:gap-5">
               <button
                 type="button"
                 onClick={handleOpenWizard}
-                className="px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#645770]/40 text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0"
+                className="px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#645770]/40 text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>Tambah Materi</span>
@@ -426,11 +426,11 @@ export default function TeacherMaterialsPage() {
               </div>
 
               {/* Instant Filter Dropdown: Rata Kanan, Ukuran Mengikuti Isi */}
-              <div className="flex items-center justify-end gap-2 ml-auto shrink-0">
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
                 <select
                   value={filterSubject}
                   onChange={(e) => setFilterSubject(e.target.value)}
-                  className="w-auto px-4 py-2 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 rounded-full bg-white border-2 border-[#51465B]/25 text-xs font-bold text-[#51465B] focus:outline-none focus:border-[#51465B] cursor-pointer shadow-xs transition-colors"
                 >
                   {SUBJECT_OPTIONS.map((subj) => (
                     <option key={subj} value={subj}>
@@ -488,7 +488,7 @@ export default function TeacherMaterialsPage() {
                               setEditSubject(mat.subject || "Matematika");
                               setEditGrade(mat.grade || 5);
                             }}
-                            className="flex-1 py-2.5 px-5 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                            className="flex-1 py-2.5 px-5 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                           >
                             <span>Lihat Materi</span>
                           </button>
@@ -520,11 +520,11 @@ export default function TeacherMaterialsPage() {
           Step 4: Berhasil / Selesai
           ===================================================================== */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <div
-            className={`w-full ${
+            className={`w-[calc(100%-16px)] sm:w-full ${
               wizardStep === 3 ? "max-w-4xl lg:max-w-5xl" : "max-w-[540px]"
-            } bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300`}
+            } bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-5 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300`}
           >
             {/* ===================================================================
                 MODAL HEADER: JUDUL DI KIRI ATAS, PROGRES STEP DI BAWAHNYA, X DI KANAN ATAS
@@ -564,15 +564,15 @@ export default function TeacherMaterialsPage() {
                 =================================================================== */}
             {wizardStep === 1 && (
               <div className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
                   {/* Card Kotak 1: Ketik Manual */}
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("manual")}
-                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
+                    className="p-3.5 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
-                      <PenTool className="w-6 h-6 stroke-[2.2]" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <PenTool className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
                     <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
                       Ketik Manual
@@ -583,10 +583,10 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("camera")}
-                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
+                    className="p-3.5 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
-                      <Camera className="w-6 h-6 stroke-[2.2]" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Camera className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
                     <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
                       Ambil Foto
@@ -597,10 +597,10 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("pdf")}
-                    className="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
+                    className="p-3.5 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
-                      <Upload className="w-6 h-6 stroke-[2.2]" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 group-hover:bg-[#FFD36D] text-[#FFD36D] group-hover:text-[#251E2B] flex items-center justify-center transition-all shadow-xs">
+                      <Upload className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
                     <span className="font-bold text-xs text-white group-hover:text-[#FFD36D] transition-colors leading-tight">
                       Upload PDF
@@ -611,10 +611,10 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectMethod("ai")}
-                    className="p-5 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-3 transition-all cursor-pointer group active:scale-95 aspect-square h-full"
+                    className="p-3.5 sm:p-5 rounded-2xl bg-gradient-to-br from-[#FFD36D]/20 to-[#FDB040]/10 hover:from-[#FFD36D]/30 hover:to-[#FDB040]/20 border border-[#FFD36D]/40 hover:border-[#FFD36D] flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all cursor-pointer group active:scale-95 aspect-auto sm:aspect-square py-4 sm:py-5 h-full"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
-                      <Sparkles className="w-6 h-6 stroke-[2.2]" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#FFD36D] text-[#251E2B] flex items-center justify-center transition-all shadow-xs group-hover:scale-105">
+                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
                     <span className="font-bold text-xs text-[#FFD36D] transition-colors leading-tight">
                       Generate AI
@@ -694,7 +694,7 @@ export default function TeacherMaterialsPage() {
                   <button
                     type="button"
                     onClick={() => setWizardStep(1)}
-                    className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                    className="py-2.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer whitespace-nowrap"
                   >
                     Kembali
                   </button>

@@ -239,7 +239,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
     <>
       <div
         ref={containerRef}
-        className="fixed top-4 right-4 sm:right-6 z-50 select-none flex items-center gap-2 justify-end"
+        className="fixed top-2 right-3 md:top-4 md:right-6 z-50 select-none flex items-center gap-2 justify-end"
         aria-label="Kontrol Utama Pengguna"
       >
         {/* Menu Notifikasi & Setting di sampingnya (muncul saat avatar diklik) */}
@@ -269,7 +269,7 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
 
               {/* Notifications Dropdown Panel */}
               {isNotifMenuOpen && (
-                <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 text-left text-slate-800">
+                <div className="absolute right-0 top-full mt-3 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 text-left text-slate-800">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="text-xs font-bold text-slate-900">Notifikasi</span>
                     {unreadCount > 0 && (
@@ -365,8 +365,8 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
           - Tombol Batal & Simpan Perubahan yang jelas
           ===================================================================== */}
       {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-slate-200 shadow-2xl max-w-lg w-full p-6 sm:p-7 relative animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-slate-200 shadow-2xl w-[calc(100%-16px)] sm:w-full max-w-lg p-5 sm:p-7 relative animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
             {/* Header Modal - Tanpa Ikon Setting, Hanya Judul di Paling Atas */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
@@ -610,17 +610,17 @@ export function GlobalControls({ contextMode: propContextMode }: GlobalControlsP
               {/* =============================================================
                   TOMBOL AKSI: BATAL & SIMPAN BULAT SESUAI DESAIN SISTEM
                   ============================================================= */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-wrap sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={() => setIsSettingsModalOpen(false)}
-                  className="py-2.5 px-6 rounded-full border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                  className="py-2.5 px-6 rounded-full border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="py-2.5 px-7 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+                  className="py-2.5 px-7 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
                   Simpan Perubahan
                 </button>

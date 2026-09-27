@@ -944,7 +944,7 @@ function TeacherQuestionsContent() {
                               setPreviewQuestion(q);
                               setIsEditingPreview(false);
                             }}
-                            className="flex-1 py-2.5 px-5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                            className="flex-1 py-2.5 px-5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-black flex items-center justify-center shadow-xs hover:shadow transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                           >
                             <span>Lihat Soal</span>
                           </button>
@@ -972,7 +972,7 @@ function TeacherQuestionsContent() {
           OVERLAY KHUSUS: TAMBAH SOAL DARI MATERI
           ===================================================================== */}
       {isFromMaterialOverlayOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <div className="w-full max-w-xl bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[90vh] flex flex-col text-white">
             {/* Header Overlay */}
             <div className="flex items-center justify-between pb-4 border-b border-white/15">
@@ -1100,7 +1100,7 @@ function TeacherQuestionsContent() {
           Step 4: Berhasil / Selesai
           ===================================================================== */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <div
             className={`w-full ${
               wizardStep === 3 ? "max-w-4xl lg:max-w-5xl" : "max-w-[560px]"

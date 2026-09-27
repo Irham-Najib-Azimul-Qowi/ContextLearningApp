@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Play,
   Trash2,
-  Shield,
   Lock,
   Sparkles,
   Check,
@@ -110,39 +109,34 @@ export default function AdminAICredentialsPage() {
 
   return (
     <AdminWorkspaceShell activeGroupId="ai">
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
-        {/* Header */}
-        <div className="clay-card p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center font-bold shadow-[0_4px_12px_rgba(81,70,91,0.2)]">
-                <Key className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
-                  Kredensial API Key AI
-                </h1>
-                <p className="text-xs text-[#756F7A] mt-0.5">
-                  Kelola API key terenkripsi AES-256-GCM untuk failover Gemini.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="px-5 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white text-xs font-black shadow-[0_4px_16px_rgba(81,70,91,0.25)] flex items-center gap-2 transition-transform active:scale-95 shrink-0"
-            >
-              <Plus className="w-4 h-4 text-[#FFD36D]" />
-              <span>Tambah Kredensial Baru</span>
-            </button>
+      <div className="space-y-5 max-w-7xl mx-auto pb-12 font-sans">
+        {/* ===================================================================
+            HEADER: AI API, [+ Tambah API] (Sesuai Aturan 17)
+            =================================================================== */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#E9E5E8]">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-black text-[#23212A] tracking-tight">
+              AI API
+            </h1>
+            <span className="text-xs font-bold text-[#51465B] bg-white border border-[#E9E5E8] px-3 py-1 rounded-full shadow-2xs">
+              {credentials.length} Endpoint
+            </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap cursor-pointer shrink-0 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4 text-[#FFD36D]" />
+            <span>Tambah API</span>
+          </button>
         </div>
 
-        {/* Test Result Toast/Notice */}
+        {/* Test Result Notice */}
         {testResult && (
           <div
-            className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-xs ${
+            className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-2xs ${
               testResult.success
                 ? "bg-emerald-50 border-emerald-200 text-emerald-800"
                 : "bg-rose-50 border-rose-200 text-rose-800"
@@ -156,26 +150,26 @@ export default function AdminAICredentialsPage() {
               )}
               <span className="font-semibold">
                 {testResult.success
-                  ? `Uji koneksi berhasil! Latensi respons: ${testResult.latencyMs} ms`
+                  ? `Uji koneksi berhasil (${testResult.latencyMs} ms)`
                   : `Uji koneksi gagal: ${testResult.error}`}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setTestResult(null)}
-              className="font-bold underline text-[11px]"
+              className="font-bold underline text-[11px] cursor-pointer"
             >
               Tutup
             </button>
           </div>
         )}
 
-        {/* Credentials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        {/* Credentials List (Sederhana & Bersih) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {credentials.map((cred) => (
             <div
               key={cred.id}
-              className={`bg-white rounded-[28px] border p-6 shadow-[0_8px_24px_rgba(81,70,91,0.04)] flex flex-col justify-between transition-all ${
+              className={`bg-white rounded-3xl border p-5 shadow-xs flex flex-col justify-between transition-all ${
                 cred.is_enabled ? "border-[#E9E5E8]" : "border-slate-200 opacity-60 bg-slate-50/50"
               }`}
             >
@@ -184,17 +178,17 @@ export default function AdminAICredentialsPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black uppercase text-[#51465B]">{cred.name}</span>
-                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#756F7A]">
-                        Prioritas #{cred.priority}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#756F7A]">
+                        P#{cred.priority}
                       </span>
                     </div>
-                    <span className="text-[11px] font-mono text-[#756F7A] mt-1 block">
-                      Grup Kuota: {cred.quota_group}
+                    <span className="text-[11px] text-[#756F7A] mt-0.5 block">
+                      Kuota: {cred.quota_group} • Harian: {cred.daily_request_limit} req
                     </span>
                   </div>
 
                   <span
-                    className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border shadow-xs ${
+                    className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border shadow-2xs ${
                       cred.health_status === "healthy"
                         ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                         : cred.health_status === "rate_limited"
@@ -202,56 +196,43 @@ export default function AdminAICredentialsPage() {
                         : "bg-rose-50 text-rose-800 border-rose-200"
                     }`}
                   >
-                    {cred.health_status}
+                    {cred.health_status === "healthy" ? "Active" : cred.health_status}
                   </span>
                 </div>
 
-                {/* Masked Key Display */}
-                <div className="my-3.5 p-3 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-2">
+                {/* Masked Key Display (Sesuai Aturan 17) */}
+                <div className="my-3 p-2.5 px-3.5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-mono text-xs font-bold text-[#23212A]">
                     <Lock className="w-3.5 h-3.5 text-[#51465B]" />
-                    <span className="font-mono text-xs font-bold text-[#23212A]">{cred.masked_key}</span>
+                    <span>{cred.masked_key || "••••••••••••••••"}</span>
                   </div>
-                  <span className="text-[10px] text-[#51465B] bg-[#FFD36D]/30 border border-[#FFD36D] font-black px-2.5 py-0.5 rounded-full">
-                    AES-GCM
+                  <span className="text-[9px] text-[#51465B] bg-[#FFD36D]/30 border border-[#FFD36D] font-black px-2 py-0.5 rounded-full">
+                    AES-256
                   </span>
-                </div>
-
-                {cred.notes && (
-                  <p className="text-[11px] text-[#756F7A] mb-3 leading-snug">{cred.notes}</p>
-                )}
-
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-[#756F7A] mb-2 font-medium">
-                  <div>
-                    Circuit: <span className="font-bold text-[#23212A]">{cred.circuit_state}</span>
-                  </div>
-                  <div>
-                    Batas Harian: <span className="font-bold text-[#23212A]">{cred.daily_request_limit} req</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-4 border-t border-[#E9E5E8] flex items-center justify-between gap-2 mt-2">
+              {/* Action Buttons: Uji, Aktif/Nonaktif, Hapus */}
+              <div className="pt-3 border-t border-[#E9E5E8] flex items-center justify-between gap-2 mt-2">
                 <button
                   type="button"
                   onClick={() => handleTestConnection(cred.id)}
                   disabled={testingId === cred.id}
-                  className="px-3.5 py-2 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] hover:bg-slate-100 text-xs font-bold text-[#51465B] flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] hover:bg-slate-100 text-xs font-bold text-[#51465B] flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
                 >
                   {testingId === cred.id ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Play className="w-3.5 h-3.5 text-[#F47D83]" />
                   )}
-                  <span>Uji Koneksi</span>
+                  <span>Test</span>
                 </button>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleToggleEnabled(cred)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer shadow-2xs ${
                       cred.is_enabled
                         ? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
                         : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
@@ -263,10 +244,10 @@ export default function AdminAICredentialsPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(cred.id)}
-                    className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors shadow-xs"
-                    title="Hapus Kredensial"
+                    className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs cursor-pointer"
+                    title="Hapus API"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -274,25 +255,25 @@ export default function AdminAICredentialsPage() {
           ))}
         </div>
 
-        {/* Modal: Add Credential */}
+        {/* Modal: Tambah API */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-[32px] sm:rounded-[36px] max-w-lg w-full p-6 sm:p-8 shadow-[0_20px_60px_rgba(81,70,91,0.25)] border border-[#E9E5E8] space-y-4 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E9E5E8]">
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E9E5E8] space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E9E5E8]">
                 <div className="flex items-center gap-2">
-                  <Key className="w-5 h-5 text-[#51465B]" />
-                  <h3 className="font-black text-base text-[#23212A]">Tambah Kredensial Gemini API</h3>
+                  <Key className="w-4 h-4 text-[#51465B]" />
+                  <h3 className="font-black text-sm text-[#23212A]">Tambah Kredensial Gemini API</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="text-xs font-bold text-[#756F7A] hover:text-[#23212A]"
+                  className="text-xs font-bold text-[#756F7A] hover:text-[#23212A] cursor-pointer"
                 >
                   Tutup
                 </button>
               </div>
 
-              <form onSubmit={handleAddCredential} className="space-y-4">
+              <form onSubmit={handleAddCredential} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-bold text-[#23212A] mb-1">
                     Nama Konfigurasi
@@ -302,8 +283,8 @@ export default function AdminAICredentialsPage() {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Contoh: Gemini Primary Project Ponorogo"
-                    className="clay-input text-xs text-[#23212A] font-semibold"
+                    placeholder="Contoh: Gemini Primary Prod"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#E9E5E8] text-xs font-semibold text-[#23212A] focus:outline-none focus:border-[#51465B]"
                   />
                 </div>
 
@@ -317,17 +298,17 @@ export default function AdminAICredentialsPage() {
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder="AIzaSy..."
-                    className="clay-input text-xs text-[#23212A] font-mono"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#E9E5E8] text-xs font-mono text-[#23212A] focus:outline-none focus:border-[#51465B]"
                   />
                   <span className="text-[10px] text-[#756F7A] mt-1 block">
-                    Kunci akan dienkripsi dengan AES-256-GCM sebelum disimpan ke database.
+                    Disimpan terenkripsi dengan AES-256-GCM.
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-[#23212A] mb-1">
-                      Kelompok Kuota (Project Quota)
+                      Kelompok Kuota
                     </label>
                     <input
                       type="text"
@@ -335,52 +316,39 @@ export default function AdminAICredentialsPage() {
                       value={quotaGroup}
                       onChange={(e) => setQuotaGroup(e.target.value)}
                       placeholder="default_project"
-                      className="clay-input text-xs text-[#23212A] font-mono"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#E9E5E8] text-xs font-mono text-[#23212A] focus:outline-none focus:border-[#51465B]"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#23212A] mb-1">
-                      Prioritas Pemanggilan
+                      Prioritas
                     </label>
                     <select
                       value={priority}
                       onChange={(e) => setPriority(Number(e.target.value))}
-                      className="clay-input text-xs text-[#23212A] font-bold"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#23212A] focus:outline-none focus:border-[#51465B]"
                     >
-                      <option value={1}>1 (Utama / Primer)</option>
-                      <option value={2}>2 (Cadangan / Secondary)</option>
-                      <option value={3}>3 (Tersier / Standby)</option>
+                      <option value={1}>1 (Utama)</option>
+                      <option value={2}>2 (Cadangan)</option>
+                      <option value={3}>3 (Standby)</option>
                     </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[#23212A] mb-1">
-                    Catatan Konfigurasi
-                  </label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Opsional: Proyek AI Studio akun dev..."
-                    className="clay-input text-xs text-[#23212A]"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end gap-2">
+                <div className="pt-2 flex justify-end gap-2 border-t border-[#E9E5E8]">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#756F7A] hover:bg-slate-50 transition-colors"
+                    className="px-4 py-2 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#756F7A] hover:bg-slate-50 transition-colors whitespace-nowrap cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="clay-btn-primary px-5 py-2 text-xs font-bold"
+                    className="px-5 py-2 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-white text-xs font-bold shadow-xs active:scale-95 transition-all whitespace-nowrap cursor-pointer"
                   >
-                    {submitting ? "Mengenkripsi..." : "Simpan Kredensial"}
+                    {submitting ? "Menyimpan..." : "Simpan API"}
                   </button>
                 </div>
               </form>

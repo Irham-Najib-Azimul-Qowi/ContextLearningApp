@@ -66,7 +66,7 @@ export default function AdminLoginPage() {
           </div>
           <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[#FFD36D] text-[11px] font-black tracking-wide uppercase shadow-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-[#F47D83]" />
-            <span>Admin Control Center</span>
+            <span>Admin</span>
           </div>
         </div>
 
@@ -138,7 +138,7 @@ export default function AdminLoginPage() {
               </div>
             ) : (
               <>
-                <span>Masuk ke Control Center</span>
+                <span>Masuk</span>
                 <ArrowRight className="w-4 h-4 text-[#3E3547] group-hover:translate-x-1 transition-transform" />
               </>
             )}

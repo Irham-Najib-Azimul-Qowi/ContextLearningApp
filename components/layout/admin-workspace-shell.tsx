@@ -351,7 +351,45 @@ export function AdminWorkspaceShell({ children, activeGroupId }: AdminWorkspaceS
   );
 
   return (
-    <div className="h-screen max-h-screen w-full bg-[#51465B] flex flex-row relative overflow-hidden text-[#23212A] antialiased">
+    <div className="h-screen max-h-screen w-full bg-[#51465B] flex flex-col lg:flex-row relative overflow-hidden text-[#23212A] antialiased">
+      {/* Admin Mobile Top Bar (< lg) */}
+      <header className="lg:hidden flex items-center justify-between px-4 h-14 bg-[#51465B] text-white z-30 shrink-0 select-none border-b border-white/10">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            aria-label="Buka Menu Admin"
+          >
+            <Menu className="w-5 h-5 stroke-[2.2]" />
+          </button>
+          <div className="flex items-center gap-1.5">
+            <span className="font-black text-sm tracking-tight text-white">DEPASKAN</span>
+            <span className="text-[9px] font-black uppercase tracking-wider bg-[#FFD36D] text-[#3E3547] px-2 py-0.5 rounded-full shadow-xs">
+              Admin
+            </span>
+          </div>
+        </div>
+
+        {/* Profile indicator on mobile top bar */}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/profile"
+            className="w-8 h-8 rounded-full bg-[#FFD36D] text-[#51465B] font-black text-xs flex items-center justify-center shadow-xs"
+            title="Profil Admin"
+          >
+            {adminUser?.username?.substring(0, 2).toUpperCase() || "AD"}
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="p-1.5 rounded-xl bg-white/10 hover:bg-rose-500 text-white/80 hover:text-white transition-colors"
+            title="Keluar"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </header>
       {/* 1. Left Vertical Navigation Sidebar (Desktop) */}
       <aside className="hidden lg:flex w-64 bg-[#51465B] text-white p-5 flex-col justify-between shrink-0 h-screen max-h-screen overflow-hidden border-r border-white/5">
         {navContent}
@@ -368,7 +406,7 @@ export function AdminWorkspaceShell({ children, activeGroupId }: AdminWorkspaceS
       )}
 
       {/* 2. Floating Top-Right Controls Pill matching Teacher Workspace Shell */}
-      <div className="fixed top-4 right-4 sm:right-6 z-40 select-none flex items-center gap-2 justify-end">
+      <div className="hidden lg:flex fixed top-4 right-6 z-40 select-none items-center gap-2 justify-end">
         <div className="flex items-center gap-2 p-1.5 pl-3 rounded-full bg-[#51465B]/90 backdrop-blur-md text-white border border-white/15 shadow-xl">
           {/* Mobile Menu Toggle Button */}
           <button
@@ -419,8 +457,8 @@ export function AdminWorkspaceShell({ children, activeGroupId }: AdminWorkspaceS
       </div>
 
       {/* 3. Main Content Section (Layered Stacking Card with rounded corners matching TeacherWorkspaceShell) */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#51465B] h-screen max-h-screen overflow-hidden">
-        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[24px] sm:rounded-tl-[42px] rounded-bl-[24px] sm:rounded-bl-[42px] shadow-2xl p-4 sm:p-7 lg:p-9 h-screen max-h-screen overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#51465B] h-[calc(100vh-56px)] lg:h-screen lg:max-h-screen overflow-hidden">
+        <main className="flex-1 bg-[#FAF7F3] rounded-t-[28px] lg:rounded-t-none lg:rounded-tl-[42px] lg:rounded-bl-[42px] shadow-2xl p-4 sm:p-7 lg:p-9 h-full max-h-full overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>

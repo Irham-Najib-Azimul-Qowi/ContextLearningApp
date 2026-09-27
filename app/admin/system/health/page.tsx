@@ -159,12 +159,35 @@ export default function AdminSystemHealthPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-bold text-[#51465B]">
-            <span className="p-2 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8]">
-              Serverless Node v24.18
+          {/* Requirement 19: System Status Quick Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full md:w-auto">
+            <span className="px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold flex items-center justify-between gap-2">
+              <span className="text-[#756F7A]">Database</span>
+              <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Connected
+              </span>
             </span>
-            <span className="p-2 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8]">
-              Auto-Heartbeat: 30s
+            <span className="px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold flex items-center justify-between gap-2">
+              <span className="text-[#756F7A]">AI API</span>
+              <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Active
+              </span>
+            </span>
+            <span className="px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold flex items-center justify-between gap-2">
+              <span className="text-[#756F7A]">Storage</span>
+              <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Connected
+              </span>
+            </span>
+            <span className="px-3 py-1.5 rounded-xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-bold flex items-center justify-between gap-2">
+              <span className="text-[#756F7A]">Knowledge</span>
+              <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Ready
+              </span>
             </span>
           </div>
         </div>

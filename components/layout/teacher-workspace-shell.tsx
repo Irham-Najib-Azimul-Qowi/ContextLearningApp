@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import { IconNavigationRail } from "./icon-navigation-rail";
 import { GlobalControls } from "./global-controls";
+import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
 
 interface TeacherWorkspaceShellProps {
@@ -77,9 +79,37 @@ export function TeacherWorkspaceShell({
 
   return (
     <div
-      className={`h-screen max-h-screen w-full ${shellBg} flex flex-row relative overflow-hidden text-[#23212A] antialiased transition-colors duration-300`}
+      className={`h-screen max-h-screen w-full ${shellBg} flex flex-col md:flex-row relative overflow-hidden text-[#23212A] antialiased transition-colors duration-300`}
     >
-      {/* 1. Left Vertical Navigation Sidebar (Desktop fixed screen height, fits without page scroll) */}
+      {/* 1. Mobile Top Bar (< md) */}
+      <header className={`md:hidden flex items-center justify-between px-4 h-14 shrink-0 ${shellBg} z-20 relative select-none`}>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(false)}
+            className={`p-2 rounded-2xl ${
+              isQuestion
+                ? "bg-[#251E2B]/10 hover:bg-[#251E2B]/20 text-[#251E2B]"
+                : "bg-white/10 hover:bg-white/20 text-white"
+            } transition-colors cursor-pointer flex items-center justify-center`}
+            aria-label="Buka Menu Navigasi"
+            title="Buka Menu"
+          >
+            <Menu className="w-5 h-5 stroke-[2.2]" />
+          </button>
+          <div className="flex items-center">
+            <PahamiPuzzleLogo
+              size="sm"
+              theme={isQuestion ? "light" : "dark"}
+              showText={true}
+            />
+          </div>
+        </div>
+        {/* Placeholder spacer for GlobalControls on mobile */}
+        <div className="w-12 h-10" />
+      </header>
+
+      {/* 2. Left Vertical Navigation Sidebar (Desktop fixed screen height, fits without page scroll) */}
       <IconNavigationRail
         activeGroupId={activeGroupId}
         contextMode={contextMode}
@@ -87,12 +117,12 @@ export function TeacherWorkspaceShell({
         onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
       />
 
-      {/* 2. Floating Top-Right Controls (Collapsible Profile Circle -> Feature Themed Pill) */}
+      {/* 3. Floating Top-Right Controls (Collapsible Profile Circle -> Feature Themed Pill) */}
       <GlobalControls contextMode={contextMode} />
 
-      {/* 3. Main Content Section (Layered Stacking Card with rounded corners revealing theme background) */}
-      <div className={`flex-1 flex flex-col min-w-0 ${shellBg} h-screen max-h-screen overflow-hidden transition-colors duration-300`}>
-        <main className="flex-1 bg-[#FAF7F3] rounded-tl-[24px] sm:rounded-tl-[42px] rounded-bl-[24px] sm:rounded-bl-[42px] shadow-2xl p-4 sm:p-7 lg:p-9 h-screen max-h-screen overflow-y-auto overflow-x-hidden">
+      {/* 4. Main Content Section (Layered Stacking Card with rounded corners revealing theme background) */}
+      <div className={`flex-1 flex flex-col min-w-0 ${shellBg} h-[calc(100vh-56px)] md:h-screen md:max-h-screen overflow-hidden transition-colors duration-300`}>
+        <main className="flex-1 bg-[#FAF7F3] rounded-t-[28px] md:rounded-t-none md:rounded-tl-[42px] md:rounded-bl-[42px] shadow-2xl p-4 sm:p-7 lg:p-9 h-full max-h-full overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>

@@ -73,7 +73,7 @@ export default function TeacherDashboardPage() {
 
   return (
     <TeacherWorkspaceShell activeGroupId="dashboard">
-      <div className="h-full flex flex-col justify-between gap-4 sm:gap-5 lg:gap-6 max-w-7xl mx-auto overflow-hidden">
+      <div className="min-h-full md:h-full flex flex-col justify-between gap-4 sm:gap-5 lg:gap-6 max-w-7xl mx-auto overflow-y-auto md:overflow-hidden pb-4 md:pb-0">
         {/* ====================================================================
             1. HEADER: SAMBUTAN SELAMAT DATANG (DI SAMPING KIRI)
             ==================================================================== */}
@@ -125,14 +125,14 @@ export default function TeacherDashboardPage() {
             <div className="pt-4 border-t border-[#51465B]/20 flex items-center gap-3">
               <Link
                 href="/teacher/questions"
-                className="flex-1 py-3 px-5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all group/btn"
+                className="flex-1 py-3 px-5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all group/btn whitespace-nowrap"
               >
                 <span>Buka Bank Soal</span>
                 <ArrowRight className="w-4 h-4 text-[#FFD36D] stroke-[2.5] group-hover/btn:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/teacher/questions/generator"
-                className="py-3 px-4 sm:px-5 rounded-2xl bg-white/90 hover:bg-white text-[#23212A] border border-[#51465B]/25 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition-all"
+                className="py-3 px-4 sm:px-5 rounded-2xl bg-white/90 hover:bg-white text-[#23212A] border border-[#51465B]/25 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition-all whitespace-nowrap"
                 title="Generate Soal AI"
               >
                 <Sparkles className="w-4 h-4 text-[#51465B]" />
@@ -170,14 +170,14 @@ export default function TeacherDashboardPage() {
             <div className="pt-4 border-t border-white/20 flex items-center gap-3">
               <Link
                 href="/teacher/materials"
-                className="flex-1 py-3 px-5 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C75A] text-[#23212A] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all group/btn"
+                className="flex-1 py-3 px-5 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C75A] text-[#23212A] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all group/btn whitespace-nowrap"
               >
                 <span>Buka Modul Ajar</span>
                 <ArrowRight className="w-4 h-4 text-[#51465B] stroke-[2.5] group-hover/btn:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/teacher/materials/create?tab=ai"
-                className="py-3 px-4 sm:px-5 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all"
+                className="py-3 px-4 sm:px-5 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
                 title="Generate Materi AI"
               >
                 <Sparkles className="w-4 h-4 text-[#FFD36D]" />
