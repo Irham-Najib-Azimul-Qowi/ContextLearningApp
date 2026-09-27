@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   DoorOpen,
@@ -25,7 +26,10 @@ import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-she
 import { repository } from "@/lib/db/repository";
 import { LearningRoom, LearningMaterial, Question, School, UserProfile } from "@/lib/db/types";
 
-export default function TeacherRoomsPage() {
+function TeacherRoomsContent() {
+  const searchParams = useSearchParams();
+  const hasAutoOpenedRef = useRef(false);
+
   const [rooms, setRooms] = useState<LearningRoom[]>([]);
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -98,7 +102,12 @@ export default function TeacherRoomsPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    const actionParam = searchParams?.get("action");
+    if (!hasAutoOpenedRef.current && (actionParam === "new" || actionParam === "create")) {
+      hasAutoOpenedRef.current = true;
+      handleOpenWizard();
+    }
+  }, [searchParams]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -769,7 +778,7 @@ export default function TeacherRoomsPage() {
           ===================================================================== */}
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-[540px] bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300">
+          <div className={`w-full ${wizardStep === 3 ? "max-w-[620px]" : "max-w-[540px]"} bg-gradient-to-b from-[#3E3547] via-[#332A3B] to-[#251E2B] rounded-[32px] sm:rounded-[36px] border border-[#5A4F65] shadow-2xl p-6 sm:p-8 relative my-auto max-h-[92vh] overflow-y-auto text-white flex flex-col text-left transition-all duration-300`}>
             {/* ===================================================================
                 MODAL HEADER: JUDUL DI KIRI ATAS, PROGRES STEP DI BAWAHNYA, X DI KANAN ATAS
                 =================================================================== */}
@@ -943,64 +952,146 @@ export default function TeacherRoomsPage() {
             )}
 
             {/* ===================================================================
-                STEP 3: PILIH KONTEN
+                STEP 3: PILIH KONTEN (DAFTAR LIST HORIZONTAL JUDUL & KODE SAJA)
                 =================================================================== */}
             {wizardStep === 3 && (
-              <form onSubmit={handleSaveRoom} className="w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              <form onSubmit={handleSaveRoom} className="w-full space-y-5 animate-in fade-in zoom-in-95 duration-200">
                 {/* Resource Picker Materi */}
                 {(roomType === "material" || roomType === "both") && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Materi
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-gray-200">
+                        Pilih Materi ({materials.length})
+                      </label>
+                      <span className="text-[11px] text-[#FFD36D] font-medium flex items-center gap-1">
+                        Geser horizontal &rarr;
+                      </span>
+                    </div>
+
                     {materials.length === 0 ? (
-                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
                         Belum ada modul materi tersimpan.
                       </div>
                     ) : (
-                      <select
-                        value={selectedResourceId}
-                        onChange={(e) => setSelectedResourceId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none select-dark"
-                      >
-                        {materials.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            [{m.id}] {m.title} ({m.subject})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-stretch gap-3 overflow-x-auto pb-2.5 pt-1 -mx-1 px-1 scrollbar-thin">
+                        {materials.map((m) => {
+                          const isSelected = selectedResourceId === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setSelectedResourceId(m.id)}
+                              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer min-w-[200px] max-w-[240px] shrink-0 flex flex-col justify-between gap-3 group active:scale-95 ${
+                                isSelected
+                                  ? "border-[#FFD36D] bg-[#FFD36D]/15 shadow-md shadow-[#FFD36D]/10 ring-1 ring-[#FFD36D]"
+                                  : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span
+                                  className={`font-mono text-[11px] font-black px-2.5 py-0.5 rounded-lg transition-colors ${
+                                    isSelected
+                                      ? "bg-[#FFD36D] text-[#251E2B] shadow-xs"
+                                      : "bg-[#251E2B] text-[#FFD36D] border border-white/15"
+                                  }`}
+                                >
+                                  {m.id}
+                                </span>
+                                {isSelected && (
+                                  <span className="w-5 h-5 rounded-full bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 shadow-xs">
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                  </span>
+                                )}
+                              </div>
+
+                              <div
+                                className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${
+                                  isSelected ? "text-white font-extrabold" : "text-gray-200 group-hover:text-white"
+                                }`}
+                                title={m.title}
+                              >
+                                {m.title}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}
 
                 {/* Resource Picker Soal */}
                 {(roomType === "question" || roomType === "both") && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Pilih Soal
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-gray-200">
+                        Pilih Soal ({questions.length})
+                      </label>
+                      <span className="text-[11px] text-[#FFD36D] font-medium flex items-center gap-1">
+                        Geser horizontal &rarr;
+                      </span>
+                    </div>
+
                     {questions.length === 0 ? (
-                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400 text-center">
                         Belum ada butir soal tersimpan.
                       </div>
                     ) : (
-                      <select
-                        value={roomType === "both" ? secondaryResourceId : selectedResourceId}
-                        onChange={(e) => {
-                          if (roomType === "both") {
-                            setSecondaryResourceId(e.target.value);
-                          } else {
-                            setSelectedResourceId(e.target.value);
-                          }
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none select-dark"
-                      >
-                        {questions.map((q) => (
-                          <option key={q.id} value={q.id}>
-                            [{q.id}] {q.topic || "Butir Asesmen"} ({q.subject})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-stretch gap-3 overflow-x-auto pb-2.5 pt-1 -mx-1 px-1 scrollbar-thin">
+                        {questions.map((q) => {
+                          const isSelected =
+                            roomType === "both"
+                              ? secondaryResourceId === q.id
+                              : selectedResourceId === q.id;
+
+                          const questionTitle = q.topic || q.question_text || "Butir Soal";
+
+                          return (
+                            <button
+                              key={q.id}
+                              type="button"
+                              onClick={() => {
+                                if (roomType === "both") {
+                                  setSecondaryResourceId(q.id);
+                                } else {
+                                  setSelectedResourceId(q.id);
+                                }
+                              }}
+                              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer min-w-[200px] max-w-[240px] shrink-0 flex flex-col justify-between gap-3 group active:scale-95 ${
+                                isSelected
+                                  ? "border-[#FFD36D] bg-[#FFD36D]/15 shadow-md shadow-[#FFD36D]/10 ring-1 ring-[#FFD36D]"
+                                  : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span
+                                  className={`font-mono text-[11px] font-black px-2.5 py-0.5 rounded-lg transition-colors ${
+                                    isSelected
+                                      ? "bg-[#FFD36D] text-[#251E2B] shadow-xs"
+                                      : "bg-[#251E2B] text-[#FFD36D] border border-white/15"
+                                  }`}
+                                >
+                                  {q.id}
+                                </span>
+                                {isSelected && (
+                                  <span className="w-5 h-5 rounded-full bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 shadow-xs">
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                  </span>
+                                )}
+                              </div>
+
+                              <div
+                                className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${
+                                  isSelected ? "text-white font-extrabold" : "text-gray-200 group-hover:text-white"
+                                }`}
+                                title={questionTitle}
+                              >
+                                {questionTitle}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}
@@ -1108,5 +1199,13 @@ export default function TeacherRoomsPage() {
         </div>
       )}
     </TeacherWorkspaceShell>
+  );
+}
+
+export default function TeacherRoomsPage() {
+  return (
+    <Suspense fallback={null}>
+      <TeacherRoomsContent />
+    </Suspense>
   );
 }

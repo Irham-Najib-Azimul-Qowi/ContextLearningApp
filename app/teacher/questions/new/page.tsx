@@ -95,7 +95,7 @@ export default function NewQuestionHubPage() {
 
         {/* Method 3: Ketik Manual */}
         <Link
-          href="/teacher/questions/manual"
+          href="/teacher/questions?method=manual"
           className="group p-6 rounded-[28px] bg-white border-2 border-[#E9E5E8] hover:border-[#51465B] shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between"
         >
           <div>
