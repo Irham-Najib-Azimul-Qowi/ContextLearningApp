@@ -301,8 +301,17 @@ export default function CreateExamPage() {
                               {q.subject} Kelas {q.grade}
                             </span>
                             <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F3] border border-[#E9E5E8] text-[#756F7A] font-bold">
-                              {q.type === "multiple_choice" ? "Pilihan Ganda" : "Esai"}
+                              {q.type === "multiple_choice"
+                                ? "Pilihan Ganda"
+                                : q.type === "mixed"
+                                ? "Kombinasi (PG & Esai)"
+                                : "Esai"}
                             </span>
+                            {q.items && q.items.length > 1 && (
+                              <span className="px-2 py-0.5 rounded-full bg-[#51465B]/10 text-[#51465B] font-bold">
+                                {q.items.length} Butir
+                              </span>
+                            )}
                             {q.is_contextualized && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold">
                                 <Sparkles className="w-3 h-3 text-emerald-600" />

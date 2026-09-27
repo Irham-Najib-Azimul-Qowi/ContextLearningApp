@@ -34,7 +34,15 @@ import {
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
-import { Question, LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
+import {
+  Question,
+  QuestionItem,
+  getQuestionItems,
+  LearningMaterial,
+  School,
+  UserProfile,
+  LearningRoom,
+} from "@/lib/db/types";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 
@@ -67,7 +75,7 @@ function TeacherQuestionsContent() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [rooms, setRooms] = useState<LearningRoom[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "multiple_choice" | "essay">("all");
+  const [filterType, setFilterType] = useState<"all" | "multiple_choice" | "essay" | "mixed">("all");
   const [filterSubject, setFilterSubject] = useState("Semua Mapel");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -199,51 +207,136 @@ function TeacherQuestionsContent() {
   // Full-page Live Preview & Edit State (No Modal Overlay)
   const [previewQuestion, setPreviewQuestion] = useState<Question | null>(null);
   const [isEditingPreview, setIsEditingPreview] = useState(false);
-  const [editQuestionText, setEditQuestionText] = useState("");
-  const [editType, setEditType] = useState<"multiple_choice" | "essay">("multiple_choice");
   const [editSubject, setEditSubject] = useState("Matematika");
   const [editGrade, setEditGrade] = useState(5);
   const [editTopic, setEditTopic] = useState("");
-  const [editOptionA, setEditOptionA] = useState("");
-  const [editOptionB, setEditOptionB] = useState("");
-  const [editOptionC, setEditOptionC] = useState("");
-  const [editOptionD, setEditOptionD] = useState("");
-  const [editCorrectAnswer, setEditCorrectAnswer] = useState("A");
-  const [editExplanation, setEditExplanation] = useState("");
-  const [editRubric, setEditRubric] = useState("");
+  const [editNotification, setEditNotification] = useState<string | null>(null);
+  const [editableItems, setEditableItems] = useState<QuestionDraftItem[]>([]);
 
-  const handleStartEditQuestion = () => {
+  const handleStartEditQuestion = (initialAddType?: "multiple_choice" | "essay") => {
     if (!previewQuestion) return;
     setIsEditingPreview(true);
-    setEditQuestionText(previewQuestion.question_text);
-    setEditType(previewQuestion.type);
     setEditSubject(previewQuestion.subject);
     setEditGrade(previewQuestion.grade);
     setEditTopic(previewQuestion.topic || "");
-    const optA = previewQuestion.options?.find((o) => o.key === "A")?.text || previewQuestion.options?.[0]?.text || "";
-    const optB = previewQuestion.options?.find((o) => o.key === "B")?.text || previewQuestion.options?.[1]?.text || "";
-    const optC = previewQuestion.options?.find((o) => o.key === "C")?.text || previewQuestion.options?.[2]?.text || "";
-    const optD = previewQuestion.options?.find((o) => o.key === "D")?.text || previewQuestion.options?.[3]?.text || "";
-    setEditOptionA(optA);
-    setEditOptionB(optB);
-    setEditOptionC(optC);
-    setEditOptionD(optD);
-    setEditCorrectAnswer(previewQuestion.correct_answer || "A");
-    setEditExplanation(previewQuestion.explanation || "");
-    setEditRubric(previewQuestion.rubric || "");
+
+    const existingItems = getQuestionItems(previewQuestion);
+    const mapped: QuestionDraftItem[] = existingItems.map((it, idx) => ({
+      id: it.id || `item-edit-${Date.now()}-${idx + 1}`,
+      type: it.type,
+      question_text: it.question_text || "",
+      options:
+        it.options && it.options.length > 0
+          ? it.options.map((o) => ({ key: o.key, text: o.text }))
+          : [
+              { key: "A", text: "" },
+              { key: "B", text: "" },
+              { key: "C", text: "" },
+              { key: "D", text: "" },
+            ],
+      correct_answer: it.correct_answer || "A",
+      explanation: it.explanation || "",
+      rubric: it.rubric || "",
+    }));
+
+    if (initialAddType) {
+      mapped.push({
+        id: `item-edit-${Date.now()}-${mapped.length + 1}`,
+        type: initialAddType,
+        question_text: "",
+        options: [
+          { key: "A", text: "" },
+          { key: "B", text: "" },
+          { key: "C", text: "" },
+          { key: "D", text: "" },
+        ],
+        correct_answer: "A",
+        explanation: "",
+        rubric: "",
+      });
+    }
+
+    setEditableItems(mapped);
+  };
+
+  const handleAddItemToEdit = (type: "multiple_choice" | "essay" = "multiple_choice") => {
+    setEditableItems((prev) => [
+      ...prev,
+      {
+        id: `item-edit-${Date.now()}-${prev.length + 1}`,
+        type,
+        question_text: "",
+        options: [
+          { key: "A", text: "" },
+          { key: "B", text: "" },
+          { key: "C", text: "" },
+          { key: "D", text: "" },
+        ],
+        correct_answer: "A",
+        explanation: "",
+        rubric: "",
+      },
+    ]);
+  };
+
+  const handleRemoveItemFromEdit = (index: number) => {
+    if (editableItems.length <= 1) {
+      alert("Paket soal harus memiliki setidaknya satu butir soal.");
+      return;
+    }
+    setEditableItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateItemInEdit = (
+    index: number,
+    field: keyof QuestionDraftItem,
+    value: any
+  ) => {
+    setEditableItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleUpdateItemOptionInEdit = (
+    itemIndex: number,
+    optKey: string,
+    text: string
+  ) => {
+    setEditableItems((prev) => {
+      const next = [...prev];
+      const opts = next[itemIndex].options.map((o) =>
+        o.key === optKey ? { ...o, text } : o
+      );
+      next[itemIndex] = { ...next[itemIndex], options: opts };
+      return next;
+    });
   };
 
   const handleSaveEditedQuestion = () => {
-    if (!previewQuestion || !editQuestionText.trim()) return;
-    const options =
-      editType === "multiple_choice"
-        ? [
-            { key: "A", text: editOptionA.trim() },
-            { key: "B", text: editOptionB.trim() },
-            { key: "C", text: editOptionC.trim() },
-            { key: "D", text: editOptionD.trim() },
-          ]
-        : [];
+    if (!previewQuestion) return;
+    const validItems = editableItems.filter((it) => it.question_text.trim());
+    if (validItems.length === 0) {
+      alert("Mohon isi teks pertanyaan setidaknya untuk satu butir soal.");
+      return;
+    }
+
+    const itemsToSave: QuestionItem[] = validItems.map((it) => ({
+      id: it.id,
+      type: it.type,
+      question_text: it.question_text.trim(),
+      options:
+        it.type === "multiple_choice"
+          ? it.options.map((o) => ({
+              key: o.key,
+              text: o.text.trim() || `Pilihan ${o.key}`,
+            }))
+          : [],
+      correct_answer: it.type === "multiple_choice" ? it.correct_answer : "",
+      explanation: it.explanation.trim(),
+      rubric: it.type === "essay" ? it.rubric?.trim() : undefined,
+    }));
 
     const updated = repository.saveQuestion({
       id: previewQuestion.id,
@@ -251,16 +344,16 @@ function TeacherQuestionsContent() {
       teacher_id: previewQuestion.teacher_id,
       subject: editSubject as any,
       grade: editGrade,
-      topic: editTopic.trim() || editQuestionText.slice(0, 30),
-      type: editType,
-      question_text: editQuestionText.trim(),
-      options,
-      correct_answer: editType === "multiple_choice" ? editCorrectAnswer : "",
-      explanation: editExplanation.trim(),
-      rubric: editType === "essay" ? editRubric.trim() : undefined,
+      topic: editTopic.trim() || itemsToSave[0].question_text.slice(0, 30),
+      items: itemsToSave,
     });
+
     setPreviewQuestion(updated);
     setIsEditingPreview(false);
+    setEditNotification(
+      `Soal #${previewQuestion.id} berhasil diperbarui dengan ${itemsToSave.length} butir soal!`
+    );
+    setTimeout(() => setEditNotification(null), 4000);
     loadData();
   };
 
@@ -505,41 +598,35 @@ function TeacherQuestionsContent() {
     const validQuestions = questionsList.filter((q) => q.question_text.trim());
     if (validQuestions.length === 0) return;
 
-    const savedIds: string[] = [];
-
-    validQuestions.forEach((q, index) => {
-      const opts =
+    const itemsToSave: QuestionItem[] = validQuestions.map((q, idx) => ({
+      id: `item-${Date.now()}-${idx + 1}`,
+      type: q.type,
+      question_text: q.question_text.trim(),
+      options:
         q.type === "multiple_choice"
           ? q.options.map((o) => ({
               key: o.key,
               text: o.text || `Pilihan ${o.key}`,
             }))
-          : [];
+          : [],
+      correct_answer: q.type === "multiple_choice" ? q.correct_answer : "",
+      explanation: q.explanation.trim() || "Pembahasan butir evaluasi kontekstual.",
+      rubric: q.type === "essay" ? q.rubric : undefined,
+    }));
 
-      // Butir pertama memakai patentQuestionId (jika ada), berikutnya auto sequential
-      const designatedId = index === 0 && patentQuestionId ? patentQuestionId : undefined;
-
-      const saved = repository.saveQuestion({
-        id: designatedId,
-        school_id: activeSchool.id,
-        subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
-        grade,
-        topic: topic.trim(),
-        type: q.type,
-        question_text: q.question_text.trim(),
-        options: opts,
-        correct_answer: q.type === "multiple_choice" ? q.correct_answer : "",
-        explanation: q.explanation.trim() || "Pembahasan butir evaluasi kontekstual.",
-        rubric: q.type === "essay" ? q.rubric : undefined,
-        teacher_id: currentUser?.id || "usr-teacher-01",
-        is_contextualized: true,
-      });
-
-      savedIds.push(saved.id);
+    const saved = repository.saveQuestion({
+      id: patentQuestionId ? patentQuestionId : undefined,
+      school_id: activeSchool.id,
+      subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
+      grade,
+      topic: topic.trim(),
+      items: itemsToSave,
+      teacher_id: currentUser?.id || "usr-teacher-01",
+      is_contextualized: true,
     });
 
-    setCreatedQuestionId(savedIds[0]);
-    setCreatedQuestionIds(savedIds);
+    setCreatedQuestionId(saved.id);
+    setCreatedQuestionIds([saved.id]);
     loadData();
     setWizardStep(4);
   };
@@ -610,12 +697,24 @@ function TeacherQuestionsContent() {
   };
 
   const filteredQuestions = questions.filter((q) => {
+    const qItems = getQuestionItems(q);
     const matchesSearch =
       q.question_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === "all" || q.type === filterType;
+      q.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      qItems.some((it) => it.question_text.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesType =
+      filterType === "all" ||
+      q.type === filterType ||
+      (filterType === "multiple_choice" && qItems.some((it) => it.type === "multiple_choice")) ||
+      (filterType === "essay" && qItems.some((it) => it.type === "essay")) ||
+      (filterType === "mixed" &&
+        (q.type === "mixed" ||
+          (qItems.some((it) => it.type === "multiple_choice") &&
+            qItems.some((it) => it.type === "essay"))));
+
     const matchesSubject = filterSubject === "Semua Mapel" || q.subject.toLowerCase() === filterSubject.toLowerCase();
     return matchesSearch && matchesType && matchesSubject;
   });
@@ -636,146 +735,286 @@ function TeacherQuestionsContent() {
               =================================================================== */
           <div className="space-y-5 animate-in fade-in duration-200">
             {/* Top Bar: Tombol Kembali, Identitas Bersih & Tombol Edit/Simpan */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[#51465B]/15">
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewQuestion(null);
-                    setIsEditingPreview(false);
-                  }}
-                  className="px-3.5 py-1.5 rounded-full bg-white border-2 border-[#51465B]/25 text-[#51465B] hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Kembali</span>
-                </button>
+            {(() => {
+              const previewItems = getQuestionItems(previewQuestion);
+              const mcCount = previewItems.filter((i) => i.type === "multiple_choice").length;
+              const essayCount = previewItems.filter((i) => i.type === "essay").length;
 
-                {/* Identitas Bersih & Rapi Tanpa Terlalu Banyak Teks */}
-                <div className="flex items-center gap-2 text-xs font-bold text-[#756F7A]">
-                  <span className="font-mono text-[#51465B] font-black">{previewQuestion.id}</span>
-                  <span>&bull;</span>
-                  <span>{previewQuestion.type === "essay" ? "Esai" : "Pilihan Ganda"}</span>
-                  <span>&bull;</span>
-                  <span>{previewQuestion.subject}</span>
-                  <span>&bull;</span>
-                  <span>Kelas {previewQuestion.grade} SD</span>
+              return (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[#51465B]/15">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewQuestion(null);
+                        setIsEditingPreview(false);
+                        setEditableItems([]);
+                      }}
+                      className="px-3.5 py-1.5 rounded-full bg-white border-2 border-[#51465B]/25 text-[#51465B] hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Kembali</span>
+                    </button>
+
+                    {/* Identitas Bersih & Rapi */}
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#756F7A] flex-wrap">
+                      <span className="font-mono text-[#51465B] font-black">{previewQuestion.id}</span>
+                      <span>&bull;</span>
+                      <span className="px-2 py-0.5 rounded-full bg-[#51465B]/10 text-[#51465B] font-black">
+                        {previewItems.length} Butir Soal
+                      </span>
+                      <span>&bull;</span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold">
+                        {previewQuestion.type === "mixed"
+                          ? `Kombinasi (${mcCount} PG & ${essayCount} Esai)`
+                          : previewQuestion.type === "essay"
+                          ? "Esai"
+                          : "Pilihan Ganda"}
+                      </span>
+                      <span>&bull;</span>
+                      <span>{previewQuestion.subject}</span>
+                      <span>&bull;</span>
+                      <span>Kelas {previewQuestion.grade} SD</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons Top Right: Bulat */}
+                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    {!isEditingPreview ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsPrintingQuestion(true)}
+                          className="px-4 py-2 rounded-full bg-white hover:bg-slate-100 text-[#51465B] border border-[#51465B]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-[#51465B]" />
+                          <span>Cetak PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditQuestion("multiple_choice")}
+                          className="px-3.5 py-2 rounded-full bg-[#FAF7F3] hover:bg-[#F3EEFF] text-[#51465B] border border-[#51465B]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                          title="Tambah butir soal baru ke paket ini"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-[#51465B]" />
+                          <span>+ Tambah Soal</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditQuestion()}
+                          className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPublishRoom(previewQuestion)}
+                          className="px-4 py-2 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                        >
+                          <DoorOpen className="w-3.5 h-3.5" />
+                          <span>Buat Room</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleAddItemToEdit("multiple_choice")}
+                          className="px-3 py-1.5 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+                          title="Tambah Butir Soal Pilihan Ganda"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>+ Pilgan</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddItemToEdit("essay")}
+                          className="px-3 py-1.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#FFD36D]/30 text-xs font-black flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+                          title="Tambah Butir Soal Esai"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>+ Esai</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingPreview(false);
+                            setEditableItems([]);
+                          }}
+                          className="px-3.5 py-1.5 rounded-full bg-slate-200 hover:bg-slate-300 text-[#23212A] text-xs font-bold cursor-pointer transition-colors"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveEditedQuestion}
+                          className="px-4 py-1.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                        >
+                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Simpan ({editableItems.length} Soal)</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              );
+            })()}
 
-              {/* Action Buttons Top Right: Bulat */}
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                {!isEditingPreview ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsPrintingQuestion(true)}
-                      className="px-4 py-2 rounded-full bg-white hover:bg-slate-100 text-[#51465B] border border-[#51465B]/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
-                    >
-                      <Printer className="w-3.5 h-3.5 text-[#51465B]" />
-                      <span>Cetak PDF</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleStartEditQuestion}
-                      className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPublishRoom(previewQuestion)}
-                      className="px-4 py-2 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
-                    >
-                      <DoorOpen className="w-3.5 h-3.5" />
-                      <span>Buat Room</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingPreview(false)}
-                      className="px-4 py-2 rounded-full bg-slate-200 hover:bg-slate-300 text-[#23212A] text-xs font-bold cursor-pointer transition-colors"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveEditedQuestion}
-                      className="px-5 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
-                    >
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Simpan</span>
-                    </button>
-                  </>
-                )}
+            {/* Notification Alert if Saved */}
+            {editNotification && (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-xs font-bold flex items-center justify-between animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{editNotification}</span>
+                </div>
+                <button type="button" onClick={() => setEditNotification(null)} className="cursor-pointer">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </div>
+            )}
 
             {/* Content Area */}
             {!isEditingPreview ? (
               <div className="space-y-6">
-                <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-5">
-                  {previewQuestion.topic && (
-                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#FAF7F3] text-[#51465B] border border-[#51465B]/15">
-                      {previewQuestion.topic}
-                    </span>
-                  )}
-                  <h2 className="text-base sm:text-lg font-black text-[#23212A] leading-relaxed">
-                    {previewQuestion.question_text}
-                  </h2>
+                {/* Header Paket Soal & Daftar Sub-Soal */}
+                {(() => {
+                  const previewItems = getQuestionItems(previewQuestion);
+                  const mcCount = previewItems.filter((i) => i.type === "multiple_choice").length;
+                  const essayCount = previewItems.filter((i) => i.type === "essay").length;
 
-                  {/* Multiple choice options */}
-                  {previewQuestion.type === "multiple_choice" && previewQuestion.options && previewQuestion.options.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                      {previewQuestion.options.map((opt, idx) => {
-                        const optLabel = opt.key || String.fromCharCode(65 + idx);
-                        const isCorrect = previewQuestion.correct_answer === optLabel || previewQuestion.correct_answer === opt.text;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3.5 rounded-2xl border-2 text-xs flex items-center justify-between transition-all ${
-                              isCorrect
-                                ? "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold shadow-xs"
-                                : "bg-[#FAF7F3] border-[#E9E5E8] text-[#23212A]"
-                            }`}
-                          >
-                            <span className="flex items-center gap-2">
-                              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                                isCorrect ? "bg-emerald-500 text-white" : "bg-[#51465B]/10 text-[#51465B]"
-                              }`}>
-                                {optLabel}
-                              </span>
-                              <span>{opt.text}</span>
+                  return (
+                    <div className="bg-white rounded-3xl border-2 border-[#51465B]/15 p-6 sm:p-8 shadow-xs space-y-6">
+                      {/* Top Header Card */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#51465B]/10">
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
+                            Topik & Stimulus Asesmen
+                          </span>
+                          <h2 className="text-lg sm:text-xl font-black text-[#23212A]">
+                            {previewQuestion.topic || "Paket Soal Kontekstual"}
+                          </h2>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-3 py-1 rounded-full text-xs font-black bg-[#51465B] text-[#FFD36D]">
+                            Total {previewItems.length} Butir Soal
+                          </span>
+                          <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900">
+                            {previewQuestion.type === "mixed"
+                              ? `${mcCount} Pilihan Ganda & ${essayCount} Esai`
+                              : previewQuestion.type === "essay"
+                              ? `${essayCount} Butir Esai`
+                              : `${mcCount} Butir Pilihan Ganda`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stimulus Text / Pengantar jika ada */}
+                      {previewQuestion.question_text &&
+                        previewQuestion.question_text !== previewItems[0]?.question_text && (
+                          <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs sm:text-sm font-medium text-[#23212A] leading-relaxed">
+                            <span className="text-[11px] font-black uppercase text-[#51465B] block mb-1">
+                              Pengantar Wacana / Stimulus Kontekstual:
                             </span>
-                            {isCorrect && (
-                              <span className="text-[10px] bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full">
-                                Kunci
+                            {previewQuestion.question_text}
+                          </div>
+                        )}
+
+                      {/* Render ALL Questions in the package sequentially */}
+                      <div className="space-y-5">
+                        {previewItems.map((item, idx) => (
+                          <div
+                            key={item.id || idx}
+                            className="p-5 sm:p-6 rounded-2xl border-2 border-[#51465B]/15 bg-white shadow-2xs space-y-4"
+                          >
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <span className="w-7 h-7 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <span className="text-xs font-black text-[#23212A]">
+                                  Soal #{idx + 1}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-[11px] px-3 py-1 rounded-full font-black ${
+                                  item.type === "essay"
+                                    ? "bg-purple-100 text-purple-900 border border-purple-200"
+                                    : "bg-amber-100 text-amber-900 border border-amber-200"
+                                }`}
+                              >
+                                {item.type === "essay" ? "Uraian / Esai" : "Pilihan Ganda"}
                               </span>
+                            </div>
+
+                            <p className="text-sm sm:text-base font-bold text-[#23212A] leading-relaxed">
+                              {item.question_text}
+                            </p>
+
+                            {/* Multiple choice options */}
+                            {item.type === "multiple_choice" && item.options && item.options.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                {item.options.map((opt, optIdx) => {
+                                  const optLabel = opt.key || String.fromCharCode(65 + optIdx);
+                                  const isCorrect =
+                                    item.correct_answer === optLabel || item.correct_answer === opt.text;
+                                  return (
+                                    <div
+                                      key={optIdx}
+                                      className={`p-3 rounded-xl border-2 text-xs flex items-center justify-between transition-all ${
+                                        isCorrect
+                                          ? "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold shadow-xs"
+                                          : "bg-[#FAF7F3] border-[#E9E5E8] text-[#23212A]"
+                                      }`}
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        <span
+                                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                                            isCorrect
+                                              ? "bg-emerald-600 text-white"
+                                              : "bg-[#51465B]/10 text-[#51465B]"
+                                          }`}
+                                        >
+                                          {optLabel}
+                                        </span>
+                                        <span>{opt.text}</span>
+                                      </span>
+                                      {isCorrect && (
+                                        <span className="text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full">
+                                          Kunci
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Rubric if Essay */}
+                            {item.type === "essay" && item.rubric && (
+                              <div className="p-3.5 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 space-y-1">
+                                <span className="font-extrabold text-purple-900 block">
+                                  Pedoman Penskoran / Rubrik:
+                                </span>
+                                <p className="leading-relaxed font-medium">{item.rubric}</p>
+                              </div>
+                            )}
+
+                            {/* Explanation */}
+                            {item.explanation && (
+                              <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 space-y-1">
+                                <span className="font-extrabold text-amber-900 block">
+                                  Pembahasan:
+                                </span>
+                                <p className="leading-relaxed font-medium">{item.explanation}</p>
+                              </div>
                             )}
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  )}
-
-                  {/* Explanation */}
-                  {previewQuestion.explanation && (
-                    <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 space-y-1">
-                      <span className="font-extrabold text-[#51465B] block">Penjelasan / Pembahasan:</span>
-                      <p className="leading-relaxed font-medium">{previewQuestion.explanation}</p>
-                    </div>
-                  )}
-
-                  {/* Rubric if Essay */}
-                  {previewQuestion.type === "essay" && previewQuestion.rubric && (
-                    <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-xs text-purple-900 space-y-1">
-                      <span className="font-extrabold text-[#51465B] block">Rubrik Penilaian:</span>
-                      <p className="leading-relaxed font-medium">{previewQuestion.rubric}</p>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Aggregated Rooms using this Question */}
                 {(() => {
@@ -796,7 +1035,7 @@ function TeacherQuestionsContent() {
                             Room yang Menggunakan Soal Ini
                           </h3>
                           <p className="text-xs text-[#756F7A]">
-                            Satu butir soal dapat digunakan di banyak room kelas sekaligus untuk asesmen terstandar.
+                            Satu paket soal dapat digunakan di banyak room kelas sekaligus untuk asesmen terstandar.
                           </p>
                         </div>
                         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -836,39 +1075,53 @@ function TeacherQuestionsContent() {
                     </div>
                   );
                 })()}
-              </div>
-            ) : (
-              /* Live Edit Mode */
-              <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-6 sm:p-8 shadow-sm space-y-4">
-                {/* Tipe Soal Toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#51465B]">Tipe Soal:</span>
-                  <div className="inline-flex rounded-full bg-[#FAF7F3] p-1 border border-[#51465B]/20">
+
+                {/* Banner Tambah Butir Soal Baru ke Paket Ini */}
+                <div className="p-5 rounded-3xl bg-gradient-to-r from-[#FAF7F3] to-[#F3EEFF] border-2 border-[#51465B]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                  <div>
+                    <h3 className="text-sm font-black text-[#23212A] flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-[#51465B]" />
+                      Ingin Menambahkan Butir Soal Baru ke Paket Ini?
+                    </h3>
+                    <p className="text-xs text-[#756F7A] mt-0.5">
+                      Tambahkan variasi soal pilihan ganda atau esai baru dalam satu paket soal &ldquo;{previewQuestion.topic}&rdquo; dengan mudah.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setEditType("multiple_choice")}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        editType === "multiple_choice"
-                          ? "bg-[#51465B] text-white shadow-xs"
-                          : "text-[#756F7A] hover:text-[#51465B]"
-                      }`}
+                      onClick={() => handleStartEditQuestion("multiple_choice")}
+                      className="px-4 py-2 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
                     >
-                      Pilihan Ganda
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>+ Pilihan Ganda</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditType("essay")}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        editType === "essay"
-                          ? "bg-[#51465B] text-white shadow-xs"
-                          : "text-[#756F7A] hover:text-[#51465B]"
-                      }`}
+                      onClick={() => handleStartEditQuestion("essay")}
+                      className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
                     >
-                      Esai
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>+ Esai</span>
                     </button>
                   </div>
                 </div>
+              </div>
+            ) : (
+              /* Live Edit Mode */
+              <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-6 sm:p-8 shadow-sm space-y-6">
+                {/* Header Edit Mode */}
+                <div className="border-b border-[#51465B]/15 pb-4">
+                  <h3 className="text-base sm:text-lg font-black text-[#23212A] flex items-center gap-2">
+                    <Pencil className="w-4 h-4 text-[#51465B]" />
+                    Edit Paket Soal #{previewQuestion.id} ({editableItems.length} Butir Soal)
+                  </h3>
+                  <p className="text-xs text-[#756F7A] mt-0.5">
+                    Kelola seluruh butir pertanyaan, pilihan ganda, dan esai dalam paket soal ini.
+                  </p>
+                </div>
 
+                {/* Metadata Paket: Mapel, Kelas, Topik */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-[#51465B] mb-1">Mata Pelajaran</label>
@@ -895,7 +1148,7 @@ function TeacherQuestionsContent() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#51465B] mb-1">Topik Soal</label>
+                    <label className="block text-xs font-bold text-[#51465B] mb-1">Topik Paket Soal</label>
                     <input
                       type="text"
                       value={editTopic}
@@ -905,79 +1158,216 @@ function TeacherQuestionsContent() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[#51465B] mb-1">Butir Soal</label>
-                  <textarea
-                    value={editQuestionText}
-                    onChange={(e) => setEditQuestionText(e.target.value)}
-                    rows={4}
-                    className="w-full p-4 rounded-2xl border-2 border-[#51465B]/25 text-xs sm:text-sm text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
-                  />
-                </div>
-
-                {editType === "multiple_choice" ? (
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-[#51465B]">Pilihan & Kunci Jawaban</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {[
-                        { key: "A", val: editOptionA, setVal: setEditOptionA },
-                        { key: "B", val: editOptionB, setVal: setEditOptionB },
-                        { key: "C", val: editOptionC, setVal: setEditOptionC },
-                        { key: "D", val: editOptionD, setVal: setEditOptionD },
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          onClick={() => setEditCorrectAnswer(item.key)}
-                          className={`p-2.5 rounded-2xl border-2 flex items-center gap-2 transition-all cursor-pointer ${
-                            editCorrectAnswer === item.key
-                              ? "border-emerald-500 bg-emerald-50/50"
-                              : "border-[#51465B]/20 bg-white"
-                          }`}
-                        >
-                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                            editCorrectAnswer === item.key ? "bg-emerald-500 text-white" : "bg-[#51465B]/10 text-[#51465B]"
-                          }`}>
-                            {item.key}
+                {/* Daftar Semua Butir Soal yang Sedang Diedit */}
+                <div className="space-y-5 pt-2">
+                  {editableItems.map((it, idx) => (
+                    <div
+                      key={it.id || idx}
+                      className="p-5 rounded-2xl bg-[#FAF7F3]/70 border-2 border-[#51465B]/20 shadow-xs space-y-4"
+                    >
+                      {/* Baris Header Item: Nomor, Switcher Tipe, Tombol Hapus */}
+                      <div className="flex items-center justify-between pb-3 border-b border-[#51465B]/10 flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-full bg-[#51465B] text-white text-xs font-black flex items-center justify-center">
+                            {idx + 1}
                           </span>
-                          <input
-                            type="text"
-                            value={item.val}
-                            onChange={(e) => item.setVal(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            placeholder={`Pilihan ${item.key}...`}
-                            className="w-full text-xs font-semibold text-[#23212A] bg-transparent focus:outline-none"
-                          />
-                          <input
-                            type="radio"
-                            name="correctAnswerEdit"
-                            checked={editCorrectAnswer === item.key}
-                            onChange={() => setEditCorrectAnswer(item.key)}
-                            className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 shrink-0 cursor-pointer"
+                          <span className="text-xs font-black text-[#23212A]">
+                            Butir Soal #{idx + 1}
+                          </span>
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-white text-[#51465B] border border-[#51465B]/20">
+                            {it.type === "multiple_choice" ? "Pilihan Ganda" : "Esai"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Switcher Tipe Soal */}
+                          <div className="inline-flex rounded-full bg-white p-0.5 border border-[#51465B]/20">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateItemInEdit(idx, "type", "multiple_choice")}
+                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                                it.type === "multiple_choice"
+                                  ? "bg-[#51465B] text-white shadow-xs"
+                                  : "text-[#756F7A] hover:text-[#51465B]"
+                              }`}
+                            >
+                              Pilgan
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateItemInEdit(idx, "type", "essay")}
+                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                                it.type === "essay"
+                                  ? "bg-[#51465B] text-white shadow-xs"
+                                  : "text-[#756F7A] hover:text-[#51465B]"
+                              }`}
+                            >
+                              Esai
+                            </button>
+                          </div>
+
+                          {/* Tombol Hapus Butir Soal */}
+                          <button
+                            type="button"
+                            disabled={editableItems.length <= 1}
+                            onClick={() => handleRemoveItemFromEdit(idx)}
+                            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Hapus butir soal ini"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Teks Pertanyaan Butir Soal */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#51465B] mb-1">
+                          Pertanyaan Soal #{idx + 1}
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={it.question_text}
+                          onChange={(e) => handleUpdateItemInEdit(idx, "question_text", e.target.value)}
+                          placeholder="Tuliskan butir pertanyaan atau stimulus soal di sini..."
+                          className="w-full p-3.5 rounded-2xl border-2 border-[#51465B]/20 bg-white text-xs text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Pilihan Ganda / Rubrik Esai */}
+                      {it.type === "multiple_choice" ? (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-[#51465B]">
+                            Pilihan & Kunci Jawaban
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {it.options.map((opt) => (
+                              <div
+                                key={opt.key}
+                                onClick={() => handleUpdateItemInEdit(idx, "correct_answer", opt.key)}
+                                className={`p-2.5 rounded-xl border-2 flex items-center gap-2 transition-all cursor-pointer ${
+                                  it.correct_answer === opt.key
+                                    ? "border-emerald-500 bg-emerald-50/50"
+                                    : "border-[#51465B]/20 bg-white"
+                                }`}
+                              >
+                                <span
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                                    it.correct_answer === opt.key
+                                      ? "bg-emerald-500 text-white"
+                                      : "bg-[#51465B]/10 text-[#51465B]"
+                                  }`}
+                                >
+                                  {opt.key}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={opt.text}
+                                  onChange={(e) => handleUpdateItemOptionInEdit(idx, opt.key, e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  placeholder={`Pilihan ${opt.key}...`}
+                                  className="w-full text-xs font-semibold text-[#23212A] bg-transparent focus:outline-none"
+                                />
+                                <input
+                                  type="radio"
+                                  name={`correctAnswerEdit_${it.id}_${idx}`}
+                                  checked={it.correct_answer === opt.key}
+                                  onChange={() => handleUpdateItemInEdit(idx, "correct_answer", opt.key)}
+                                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 shrink-0 cursor-pointer"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-xs font-bold text-[#51465B] mb-1">
+                            Rubrik Penilaian Esai
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={it.rubric || ""}
+                            onChange={(e) => handleUpdateItemInEdit(idx, "rubric", e.target.value)}
+                            placeholder="Contoh: Skor 100 jika menjawab runtut dan lengkap, Skor 50 jika sebagian..."
+                            className="w-full p-3 rounded-2xl border-2 border-[#51465B]/20 bg-white text-xs text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
                           />
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-bold text-[#51465B] mb-1">Rubrik Penilaian</label>
-                    <textarea
-                      value={editRubric}
-                      onChange={(e) => setEditRubric(e.target.value)}
-                      rows={3}
-                      className="w-full p-3 rounded-2xl border-2 border-[#51465B]/25 text-xs text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
-                    />
-                  </div>
-                )}
+                      )}
 
-                <div>
-                  <label className="block text-xs font-bold text-[#51465B] mb-1">Penjelasan / Pembahasan</label>
-                  <textarea
-                    value={editExplanation}
-                    onChange={(e) => setEditExplanation(e.target.value)}
-                    rows={3}
-                    className="w-full p-3 rounded-2xl border-2 border-[#51465B]/25 text-xs text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
-                  />
+                      {/* Penjelasan / Pembahasan */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#51465B] mb-1">
+                          Penjelasan / Pembahasan (Opsional)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={it.explanation || ""}
+                          onChange={(e) => handleUpdateItemInEdit(idx, "explanation", e.target.value)}
+                          placeholder="Penjelasan ringkas konsep materi untuk pembahasan guru/siswa..."
+                          className="w-full p-3 rounded-2xl border-2 border-[#51465B]/20 bg-white text-xs text-[#23212A] font-medium leading-relaxed focus:border-[#51465B] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tombol Tambah Butir Soal Baru ke Paket Ini */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF7F3] border-2 border-dashed border-[#51465B]/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-[#23212A] flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-[#51465B]" />
+                      Tambah Butir Soal Baru ke Paket Ini
+                    </h4>
+                    <p className="text-[11px] text-[#756F7A] mt-0.5">
+                      Tambahkan pertanyaan baru (pilihan ganda atau esai) ke dalam paket soal ini.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleAddItemToEdit("multiple_choice")}
+                      className="px-4 py-2 rounded-xl bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>+ Pilihan Ganda</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddItemToEdit("essay")}
+                      className="px-4 py-2 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>+ Esai</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action Bar Bawah untuk Simpan */}
+                <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
+                  <div className="text-xs font-bold text-[#756F7A]">
+                    {editableItems.length} butir soal dirancang dalam paket ini
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingPreview(false);
+                        setEditableItems([]);
+                      }}
+                      className="px-4 py-2 rounded-full bg-slate-200 hover:bg-slate-300 text-[#23212A] text-xs font-bold cursor-pointer transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveEditedQuestion}
+                      className="px-5 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Simpan Semua ({editableItems.length} Soal)</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1035,6 +1425,7 @@ function TeacherQuestionsContent() {
                     <option value="all">Semua Tipe</option>
                     <option value="multiple_choice">Pilihan Ganda</option>
                     <option value="essay">Esai</option>
+                    <option value="mixed">Kombinasi (PG & Esai)</option>
                   </select>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1087,6 +1478,17 @@ function TeacherQuestionsContent() {
                 >
                   Esai
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterType("mixed")}
+                  className={`w-auto px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    filterType === "mixed"
+                      ? "bg-[#51465B] text-[#FFD36D] shadow-sm border border-[#51465B]"
+                      : "bg-white text-[#51465B] hover:bg-[#51465B]/10 border-2 border-[#51465B]/25 shadow-xs"
+                  }`}
+                >
+                  Kombinasi
+                </button>
 
                 <select
                   value={filterSubject}
@@ -1119,22 +1521,55 @@ function TeacherQuestionsContent() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                   {filteredQuestions.map((q) => {
+                    const items = getQuestionItems(q);
+                    const mcCount = items.filter((it) => it.type === "multiple_choice").length;
+                    const essayCount = items.filter((it) => it.type === "essay").length;
+
                     return (
                       <div
                         key={q.id}
-                        className="relative p-5 rounded-[26px] bg-[#FFD36D] text-[#23212A] border-2 border-[#51465B] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[140px]"
+                        className="relative p-5 rounded-[26px] bg-[#FFD36D] text-[#23212A] border-2 border-[#51465B] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden min-h-[160px]"
                       >
                         {/* Ambient Glow */}
                         <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-white/40 blur-xl pointer-events-none" />
 
                         {/* Top: Judul di kiri, ID di kanan tanpa kapsul */}
-                        <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm sm:text-base font-black text-[#23212A] leading-snug line-clamp-2">
-                            {q.topic || q.question_text}
-                          </h3>
-                          <span className="shrink-0 font-mono text-[11px] font-bold text-[#51465B] tracking-wider pt-0.5">
-                            {q.id}
-                          </span>
+                        <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-sm sm:text-base font-black text-[#23212A] leading-snug line-clamp-2">
+                              {q.topic || q.question_text}
+                            </h3>
+                            <span className="shrink-0 font-mono text-[11px] font-bold text-[#51465B] tracking-wider pt-0.5">
+                              {q.id}
+                            </span>
+                          </div>
+
+                          {/* Item count & Composition Badges */}
+                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#51465B]/15 text-[#3D3445] border border-[#51465B]/20">
+                              {items.length} Butir Soal
+                            </span>
+
+                            {mcCount > 0 && essayCount > 0 ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-purple-900/15 text-purple-900 border border-purple-900/20">
+                                {mcCount} PG &amp; {essayCount} Esai
+                              </span>
+                            ) : mcCount > 0 ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-indigo-900/15 text-indigo-900 border border-indigo-900/20">
+                                Pilihan Ganda
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber-950/15 text-amber-950 border border-amber-950/20">
+                                Esai
+                              </span>
+                            )}
+
+                            {q.subject && (
+                              <span className="px-2 py-0.5 rounded-full bg-white/60 text-[#23212A] border border-[#51465B]/15">
+                                {q.subject}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Bottom: Button Bulat */}
@@ -2020,9 +2455,9 @@ function TeacherQuestionsContent() {
                 </div>
                 <div>
                   <h4 className="text-lg sm:text-xl font-black text-white">
-                    {createdQuestionIds.length > 1
-                      ? `${createdQuestionIds.length} Butir Soal Berhasil Disimpan!`
-                      : "Butir Soal Berhasil Disimpan!"}
+                    {questionsList.length > 1
+                      ? `Paket Soal (${questionsList.length} Butir) Berhasil Disimpan!`
+                      : "Paket Soal Berhasil Disimpan!"}
                   </h4>
                   <div className="flex flex-wrap items-center justify-center gap-2 mt-3 max-w-md mx-auto">
                     <span className="text-[11px] text-gray-300">ID Paten:</span>
@@ -2126,15 +2561,13 @@ function TeacherQuestionsContent() {
           regionName={activeSchool?.region_name || "Ponorogo"}
           content={previewQuestion.question_text}
           teacherName={currentUser?.full_name}
-          questions={[
-            {
-              number: 1,
-              type: previewQuestion.type,
-              question_text: previewQuestion.question_text,
-              options: previewQuestion.options,
-              correct_answer: previewQuestion.correct_answer,
-            },
-          ]}
+          questions={getQuestionItems(previewQuestion).map((item, idx) => ({
+            number: idx + 1,
+            type: item.type,
+            question_text: item.question_text,
+            options: item.options,
+            correct_answer: item.correct_answer,
+          }))}
           onClose={() => setIsPrintingQuestion(false)}
         />
       )}

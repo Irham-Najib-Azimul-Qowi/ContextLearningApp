@@ -15,7 +15,7 @@ export interface PrintableDocumentProps {
   roomCode?: string;
   questions?: Array<{
     number: number;
-    type: "multiple_choice" | "essay";
+    type: "multiple_choice" | "essay" | "mixed";
     question_text: string;
     options?: Array<{ key: string; text: string }>;
     correct_answer?: string;

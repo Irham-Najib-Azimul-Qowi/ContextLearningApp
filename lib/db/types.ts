@@ -67,6 +67,21 @@ export interface MediaAsset {
   attribution_text: string;
 }
 
+export interface QuestionItem {
+  id: string;
+  type: "multiple_choice" | "essay";
+  question_text: string;
+  options?: QuestionOption[];
+  correct_answer?: string;
+  explanation?: string;
+  rubric?: string; // For essay questions
+  image_url?: string;
+  image_caption?: string;
+  image_attribution?: string;
+  image_alt?: string;
+  media_asset?: MediaAsset;
+}
+
 export interface Question {
   id: string;
   school_id: string;
@@ -74,12 +89,13 @@ export interface Question {
   subject: "Matematika" | "Bahasa Indonesia" | "IPS";
   grade: number; // 1-6 SD
   topic: string;
-  type: "multiple_choice" | "essay";
+  type: "multiple_choice" | "essay" | "mixed";
   question_text: string;
   options?: QuestionOption[];
   correct_answer: string;
   explanation: string;
   rubric?: string; // For essay questions
+  items?: QuestionItem[]; // Multiple sub-questions (pilgan, essay, or combination)
   is_contextualized: boolean;
   original_question_text?: string;
   context_variables?: QuestionContextVariable[];
@@ -89,6 +105,31 @@ export interface Question {
   image_alt?: string;
   media_asset?: MediaAsset;
   created_at: string;
+}
+
+export function getQuestionItems(q: Question): QuestionItem[] {
+  if (Array.isArray(q.items) && q.items.length > 0) {
+    return q.items.map((it, idx) => ({
+      ...it,
+      id: it.id || `${q.id}-item-${idx + 1}`,
+    }));
+  }
+  return [
+    {
+      id: `${q.id}-item-1`,
+      type: q.type === "essay" ? "essay" : "multiple_choice",
+      question_text: q.question_text || "",
+      options: q.options || [],
+      correct_answer: q.correct_answer || "",
+      explanation: q.explanation || "",
+      rubric: q.rubric || "",
+      image_url: q.image_url,
+      image_caption: q.image_caption,
+      image_attribution: q.image_attribution,
+      image_alt: q.image_alt,
+      media_asset: q.media_asset,
+    },
+  ];
 }
 
 export interface LearningMaterial {

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, getQuestionItems } from "@/lib/db/types";
 
 export default function RoomViewerPage() {
   const params = useParams();
@@ -42,12 +42,12 @@ export default function RoomViewerPage() {
   // Tab State: "material" | "multiple_choice" | "essay"
   const [activeTab, setActiveTab] = useState<"material" | "multiple_choice" | "essay">("material");
 
-  // Multiple Choice Interactive State
-  const [selectedMcAnswer, setSelectedMcAnswer] = useState<string | null>(null);
+  // Multiple Choice Interactive State: support multiple MC sub-questions in a single package
+  const [selectedMcAnswers, setSelectedMcAnswers] = useState<Record<string, string>>({});
   const [isMcSubmitted, setIsMcSubmitted] = useState(false);
 
-  // Essay Interactive State
-  const [essayAnswer, setEssayAnswer] = useState("");
+  // Essay Interactive State: support multiple essay sub-questions in a single package
+  const [essayAnswers, setEssayAnswers] = useState<Record<string, string>>({});
   const [isEssaySubmitted, setIsEssaySubmitted] = useState(false);
 
   // Material Finished State
@@ -101,19 +101,31 @@ export default function RoomViewerPage() {
       );
 
       if (qPrimary) {
-        if (qPrimary.type === "essay") {
-          resolvedEssay = qPrimary;
-        } else {
-          resolvedMc = qPrimary;
+        const qItems = getQuestionItems(qPrimary);
+        const hasMc = qItems.some((it) => it.type === "multiple_choice");
+        const hasEs = qItems.some((it) => it.type === "essay");
+
+        if (hasMc) resolvedMc = qPrimary;
+        if (hasEs) resolvedEssay = qPrimary;
+
+        if (!hasMc && !hasEs) {
+          if (qPrimary.type === "essay") resolvedEssay = qPrimary;
+          else resolvedMc = qPrimary;
         }
       }
 
       // Check if there is an alternative question type for this subject/grade
       if (!resolvedMc) {
-        resolvedMc = allQs.find((q) => q.type === "multiple_choice" && q.grade === foundRoom.grade) || allQs.find((q) => q.type === "multiple_choice") || null;
+        resolvedMc =
+          allQs.find((q) => q.type === "multiple_choice" && q.grade === foundRoom.grade) ||
+          allQs.find((q) => q.type === "multiple_choice") ||
+          null;
       }
       if (!resolvedEssay) {
-        resolvedEssay = allQs.find((q) => q.type === "essay" && q.grade === foundRoom.grade) || allQs.find((q) => q.type === "essay") || null;
+        resolvedEssay =
+          allQs.find((q) => q.type === "essay" && q.grade === foundRoom.grade) ||
+          allQs.find((q) => q.type === "essay") ||
+          null;
       }
 
       setMcQuestion(resolvedMc);
@@ -183,17 +195,22 @@ export default function RoomViewerPage() {
   };
 
   const handleMcSubmit = () => {
-    if (!selectedMcAnswer) return;
+    if (mcItems.length === 0) return;
+    const answeredCount = mcItems.filter((it) => !!selectedMcAnswers[it.id]).length;
+    if (answeredCount === 0) return;
+
     setIsMcSubmitted(true);
 
-    const isCorrect = selectedMcAnswer === mcQuestion?.correct_answer;
-    const score = isCorrect ? 100 : 0;
+    const correctCount = mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length;
+    const score = Math.round((correctCount / mcItems.length) * 100);
+    const isAllCorrect = correctCount === mcItems.length;
+
     if (studentName) {
       repository.recordRoomVisit(roomCode, studentName, score);
       postRoomSubmission({
         action: "submit_mc",
-        mc_answer: selectedMcAnswer,
-        is_mc_correct: isCorrect,
+        mc_answer: JSON.stringify(selectedMcAnswers),
+        is_mc_correct: isAllCorrect,
         mc_score: score,
       });
     }
@@ -201,7 +218,10 @@ export default function RoomViewerPage() {
 
   const handleEssaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!essayAnswer.trim()) return;
+    if (essayItems.length === 0) return;
+    const hasAnyAnswer = essayItems.some((it) => !!essayAnswers[it.id]?.trim());
+    if (!hasAnyAnswer) return;
+
     setIsEssaySubmitted(true);
 
     if (studentName) {
@@ -209,7 +229,7 @@ export default function RoomViewerPage() {
       repository.recordRoomVisit(roomCode, studentName, undefined);
       postRoomSubmission({
         action: "submit_essay",
-        essay_answer: essayAnswer.trim(),
+        essay_answer: JSON.stringify(essayAnswers),
       });
     }
   };
@@ -223,9 +243,9 @@ export default function RoomViewerPage() {
       });
     }
     // Auto-advance to questions if available
-    if (mcQuestion) {
+    if (mcItems.length > 0) {
       setActiveTab("multiple_choice");
-    } else if (essayQuestion) {
+    } else if (essayItems.length > 0) {
       setActiveTab("essay");
     }
   };
@@ -255,9 +275,12 @@ export default function RoomViewerPage() {
     );
   }
 
+  const mcItems = mcQuestion ? getQuestionItems(mcQuestion).filter((it) => it.type === "multiple_choice") : [];
+  const essayItems = essayQuestion ? getQuestionItems(essayQuestion).filter((it) => it.type === "essay") : [];
+
   const hasMaterial = (room.type === "material" || room.type === "both") && !!material;
-  const hasMultipleChoice = (room.type === "question" || room.type === "both") && !!mcQuestion;
-  const hasEssay = (room.type === "question" || room.type === "both") && !!essayQuestion;
+  const hasMultipleChoice = (room.type === "question" || room.type === "both") && mcItems.length > 0;
+  const hasEssay = (room.type === "question" || room.type === "both") && essayItems.length > 0;
 
   return (
     <div className="min-h-screen bg-[#FAF7F3] text-[#23212A] flex flex-col justify-between selection:bg-[#FFD36D] selection:text-[#51465B] relative font-sans">
@@ -466,79 +489,140 @@ export default function RoomViewerPage() {
         {/* ================================================================== */}
         {/* HALAMAN 2: PILIHAN GANDA (BENAR-BENAR BISA PILIH OPSI JAWABAN)     */}
         {/* ================================================================== */}
-        {activeTab === "multiple_choice" && mcQuestion && (
+        {activeTab === "multiple_choice" && mcItems.length > 0 && (
           <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
             {/* Header Question */}
             <div className="border-b border-[#E9E5E8] pb-4 flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
-                  Topik: {mcQuestion.topic}
+                  Topik: {mcQuestion?.topic || "Pilihan Ganda"}
                 </span>
                 <h2 className="text-sm font-bold text-slate-500">
-                  Pilihlah salah satu jawaban yang paling tepat
+                  {mcItems.length > 1
+                    ? `Jawablah ${mcItems.length} butir soal pilihan ganda berikut`
+                    : "Pilihlah salah satu jawaban yang paling tepat"}
                 </h2>
               </div>
 
               <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black">
-                Pilihan Ganda
+                {mcItems.length > 1 ? `${mcItems.length} Butir Soal PG` : "Pilihan Ganda"}
               </span>
             </div>
 
-            {/* Question Text */}
-            <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
-              <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed">
-                {mcQuestion.question_text}
-              </p>
-            </div>
-
-            {/* Interactive Multiple Choice Options (A, B, C, D) */}
-            <div className="space-y-3 pt-2">
-              {mcQuestion.options && mcQuestion.options.map((opt) => {
-                const isSelected = selectedMcAnswer === opt.key;
-                const isCorrect = isMcSubmitted && opt.key === mcQuestion.correct_answer;
-                const isWrong = isMcSubmitted && isSelected && !isCorrect;
+            {/* List of Multiple Choice Items */}
+            <div className="space-y-8">
+              {mcItems.map((item, idx) => {
+                const selectedOpt = selectedMcAnswers[item.id];
+                const isItemCorrect = isMcSubmitted && selectedOpt === item.correct_answer;
+                const isItemWrong = isMcSubmitted && !!selectedOpt && !isItemCorrect;
 
                 return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    disabled={isMcSubmitted}
-                    onClick={() => setSelectedMcAnswer(opt.key)}
-                    className={`w-full p-4 rounded-2xl border-2 flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                      isCorrect
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-950 font-bold"
-                        : isWrong
-                        ? "border-rose-500 bg-rose-50 text-rose-950 font-bold"
-                        : isSelected
-                        ? "border-[#51465B] bg-[#51465B]/5 font-bold shadow-xs"
-                        : "border-[#E9E5E8] hover:border-[#51465B]/40 bg-white"
-                    }`}
-                  >
-                    <span
-                      className={`w-9 h-9 rounded-full font-black text-xs flex items-center justify-center shrink-0 transition-colors ${
-                        isCorrect
-                          ? "bg-emerald-600 text-white"
-                          : isWrong
-                          ? "bg-rose-600 text-white"
-                          : isSelected
-                          ? "bg-[#51465B] text-[#FFD36D]"
-                          : "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {opt.key}
-                    </span>
-                    <span className="text-sm sm:text-base flex-1">{opt.text}</span>
-                  </button>
+                  <div key={item.id} className="space-y-4 pt-2 first:pt-0 border-b border-[#E9E5E8]/60 pb-6 last:border-b-0 last:pb-0">
+                    {/* Item Number & Question Text */}
+                    <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
+                      <div className="flex items-start gap-3">
+                        {mcItems.length > 1 && (
+                          <span className="w-7 h-7 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                        )}
+                        <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed flex-1">
+                          {item.question_text}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Interactive Multiple Choice Options (A, B, C, D) */}
+                    <div className="space-y-2.5 pt-1">
+                      {item.options &&
+                        item.options.map((opt) => {
+                          const isSelected = selectedOpt === opt.key;
+                          const isCorrect = isMcSubmitted && opt.key === item.correct_answer;
+                          const isWrong = isMcSubmitted && isSelected && !isCorrect;
+
+                          return (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              disabled={isMcSubmitted}
+                              onClick={() =>
+                                setSelectedMcAnswers((prev) => ({
+                                  ...prev,
+                                  [item.id]: opt.key,
+                                }))
+                              }
+                              className={`w-full p-3.5 sm:p-4 rounded-2xl border-2 flex items-center gap-3.5 text-left transition-all cursor-pointer ${
+                                isCorrect
+                                  ? "border-emerald-500 bg-emerald-50 text-emerald-950 font-bold"
+                                  : isWrong
+                                  ? "border-rose-500 bg-rose-50 text-rose-950 font-bold"
+                                  : isSelected
+                                  ? "border-[#51465B] bg-[#51465B]/5 font-bold shadow-xs"
+                                  : "border-[#E9E5E8] hover:border-[#51465B]/40 bg-white"
+                              }`}
+                            >
+                              <span
+                                className={`w-9 h-9 rounded-full font-black text-xs flex items-center justify-center shrink-0 transition-colors ${
+                                  isCorrect
+                                    ? "bg-emerald-600 text-white"
+                                    : isWrong
+                                    ? "bg-rose-600 text-white"
+                                    : isSelected
+                                    ? "bg-[#51465B] text-[#FFD36D]"
+                                    : "bg-slate-100 text-slate-700"
+                                }`}
+                              >
+                                {opt.key}
+                              </span>
+                              <span className="text-sm sm:text-base flex-1">{opt.text}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
+
+                    {/* Item Feedback if submitted */}
+                    {isMcSubmitted && (
+                      <div
+                        className={`p-4 rounded-2xl border text-xs sm:text-sm space-y-1.5 ${
+                          isItemCorrect
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                            : "bg-rose-50 border-rose-200 text-rose-950"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 font-black text-sm">
+                          {isItemCorrect ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              <span>Jawaban No. {idx + 1} Tepat!</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-4 h-4 text-rose-600" />
+                              <span>Jawaban No. {idx + 1} Belum Tepat. Kunci Jawaban: {item.correct_answer}</span>
+                            </>
+                          )}
+                        </div>
+                        {item.explanation && (
+                          <p className="leading-relaxed text-slate-800">
+                            <strong>Pembahasan:</strong> {item.explanation}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
 
             {/* Action Submit */}
             {!isMcSubmitted ? (
-              <div className="pt-4 flex justify-end">
+              <div className="pt-4 flex items-center justify-between border-t border-[#E9E5E8]">
+                <span className="text-xs font-semibold text-slate-500">
+                  {Object.keys(selectedMcAnswers).length} dari {mcItems.length} soal terjawab
+                </span>
                 <button
                   type="button"
-                  disabled={!selectedMcAnswer}
+                  disabled={mcItems.some((it) => !selectedMcAnswers[it.id])}
                   onClick={handleMcSubmit}
                   className="px-7 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40"
                 >
@@ -546,31 +630,23 @@ export default function RoomViewerPage() {
                 </button>
               </div>
             ) : (
-              /* Feedback and Explanation */
-              <div className="pt-4 space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                <div
-                  className={`p-5 rounded-2xl border text-xs sm:text-sm space-y-2 ${
-                    selectedMcAnswer === mcQuestion.correct_answer
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-950"
-                      : "bg-rose-50 border-rose-200 text-rose-950"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-black text-sm sm:text-base">
-                    {selectedMcAnswer === mcQuestion.correct_answer ? (
-                      <>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        <span>Jawaban Kamu Tepat Sekali! (+100 Poin)</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-5 h-5 text-rose-600" />
-                        <span>Jawaban Belum Tepat. Kunci Jawaban: {mcQuestion.correct_answer}</span>
-                      </>
-                    )}
+              /* Summary and Next Navigation */
+              <div className="pt-4 space-y-4 border-t border-[#E9E5E8]">
+                <div className="p-5 rounded-2xl bg-[#51465B]/5 border border-[#51465B]/20 text-[#23212A] flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-xs text-slate-600 font-bold block">Skor Pilihan Ganda:</span>
+                    <span className="text-2xl font-black text-[#51465B]">
+                      {Math.round(
+                        (mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length /
+                          mcItems.length) *
+                          100
+                      )}
+                      <span className="text-sm font-bold text-slate-500"> / 100</span>
+                    </span>
                   </div>
-                  <p className="leading-relaxed pt-1 text-slate-800">
-                    <strong>Pembahasan:</strong> {mcQuestion.explanation}
-                  </p>
+                  <span className="text-xs font-bold text-slate-600">
+                    {mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length} dari {mcItems.length} benar
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
@@ -578,7 +654,7 @@ export default function RoomViewerPage() {
                     type="button"
                     onClick={() => {
                       setIsMcSubmitted(false);
-                      setSelectedMcAnswer(null);
+                      setSelectedMcAnswers({});
                     }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
                   >
@@ -604,53 +680,72 @@ export default function RoomViewerPage() {
         {/* ================================================================== */}
         {/* HALAMAN 3: SOAL ESAI (SISWA MENGETIKKAN JAWABAN ESAI)              */}
         {/* ================================================================== */}
-        {activeTab === "essay" && essayQuestion && (
+        {activeTab === "essay" && essayItems.length > 0 && (
           <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
             {/* Header Question */}
             <div className="border-b border-[#E9E5E8] pb-4 flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
-                  Topik: {essayQuestion.topic}
+                  Topik: {essayQuestion?.topic || "Soal Esai"}
                 </span>
                 <h2 className="text-sm font-bold text-slate-500">
-                  Jawablah pertanyaan esai berikut dengan penalaranmu sendiri
+                  {essayItems.length > 1
+                    ? `Jawablah ${essayItems.length} butir pertanyaan esai berikut dengan penalaranmu sendiri`
+                    : "Jawablah pertanyaan esai berikut dengan penalaranmu sendiri"}
                 </h2>
               </div>
 
               <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-900 text-xs font-black">
-                Soal Esai
+                {essayItems.length > 1 ? `${essayItems.length} Butir Soal Esai` : "Soal Esai"}
               </span>
             </div>
 
-            {/* Question Text */}
-            <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
-              <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed">
-                {essayQuestion.question_text}
-              </p>
-            </div>
-
             {/* Essay Form */}
-            <form onSubmit={handleEssaySubmit} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-800 block mb-1.5">
-                  Tuliskan Jawaban & Alasanmu:
-                </label>
-                <textarea
-                  rows={5}
-                  required
-                  disabled={isEssaySubmitted}
-                  placeholder="Ketik jawaban lengkap dan uraian penjelasanmu di sini..."
-                  value={essayAnswer}
-                  onChange={(e) => setEssayAnswer(e.target.value)}
-                  className="w-full p-4 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] text-sm leading-relaxed text-[#23212A] placeholder:text-slate-400 focus:outline-none focus:ring-0 disabled:bg-slate-50 disabled:cursor-not-allowed"
-                />
+            <form onSubmit={handleEssaySubmit} className="space-y-6">
+              <div className="space-y-6">
+                {essayItems.map((item, idx) => (
+                  <div key={item.id} className="space-y-3 pt-2 first:pt-0 border-b border-[#E9E5E8]/60 pb-6 last:border-b-0 last:pb-0">
+                    <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
+                      <div className="flex items-start gap-3">
+                        {essayItems.length > 1 && (
+                          <span className="w-7 h-7 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                        )}
+                        <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed flex-1">
+                          {item.question_text}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-800 block mb-1.5">
+                        Tuliskan Jawaban &amp; Alasanmu {essayItems.length > 1 ? `(Soal #${idx + 1})` : ""}:
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        disabled={isEssaySubmitted}
+                        placeholder="Ketik jawaban lengkap dan uraian penjelasanmu di sini..."
+                        value={essayAnswers[item.id] || ""}
+                        onChange={(e) =>
+                          setEssayAnswers((prev) => ({
+                            ...prev,
+                            [item.id]: e.target.value,
+                          }))
+                        }
+                        className="w-full p-4 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] text-sm leading-relaxed text-[#23212A] placeholder:text-slate-400 focus:outline-none focus:ring-0 disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {!isEssaySubmitted ? (
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-2">
                   <button
                     type="submit"
-                    disabled={!essayAnswer.trim()}
+                    disabled={essayItems.some((it) => !essayAnswers[it.id]?.trim())}
                     className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40"
                   >
                     <Send className="w-4 h-4 text-[#FFD36D]" />
@@ -684,7 +779,7 @@ export default function RoomViewerPage() {
                       href="/room"
                       className="px-5 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs hover:bg-[#3D3445]"
                     >
-                      Selesai & Buka Room Lain &rarr;
+                      Selesai &amp; Buka Room Lain &rarr;
                     </Link>
                   </div>
                 </div>

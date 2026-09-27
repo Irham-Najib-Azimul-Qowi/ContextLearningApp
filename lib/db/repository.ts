@@ -4,6 +4,8 @@ import {
   ClassRoom,
   ClassMembership,
   Question,
+  QuestionItem,
+  getQuestionItems,
   LearningMaterial,
   Exam,
   ExamAttempt,
@@ -155,6 +157,23 @@ const SEED_QUESTIONS: Question[] = [
       },
     ],
     created_at: "2026-09-05T10:00:00Z",
+    items: [
+      {
+        id: "q-pnr-01-item-1",
+        type: "multiple_choice",
+        question_text:
+          "Seorang pedagang hasil bumi di Pasar Legi Ponorogo membeli 20 kg porang dengan harga Rp12.000 per kilogram dari petani di Kecamatan Pudak. Berapakah total uang yang harus dibayarkan pedagang tersebut?",
+        options: [
+          { key: "A", text: "Rp220.000" },
+          { key: "B", text: "Rp240.000" },
+          { key: "C", text: "Rp260.000" },
+          { key: "D", text: "Rp280.000" },
+        ],
+        correct_answer: "B",
+        explanation:
+          "Perhitungan total pembelian: 20 kg × Rp12.000/kg = Rp240.000. Konteks lokal: porang dan sentra pertanian Pudak Ponorogo.",
+      },
+    ],
   },
   {
     id: "q-pnr-02",
@@ -189,6 +208,23 @@ const SEED_QUESTIONS: Question[] = [
       },
     ],
     created_at: "2026-09-05T10:30:00Z",
+    items: [
+      {
+        id: "q-pnr-02-item-1",
+        type: "multiple_choice",
+        question_text:
+          "Kesenian tradisional khas Ponorogo yang terkenal hingga mancanegara menampilkan tokoh Singo Barong dengan topeng bulu merak berbobot puluhan kilogram dinamakan kesenian...",
+        options: [
+          { key: "A", text: "Tari Gandrung" },
+          { key: "B", text: "Reog Ponorogo" },
+          { key: "C", text: "Kuda Lumping" },
+          { key: "D", text: "Wayang Orang" },
+        ],
+        correct_answer: "B",
+        explanation:
+          "Reog Ponorogo adalah kesenian adiluhung asli Ponorogo yang memadukan keperkasaan Singo Barong, penari Jathil, dan Warok.",
+      },
+    ],
   },
   {
     id: "q-pnr-03",
@@ -209,6 +245,83 @@ const SEED_QUESTIONS: Question[] = [
     original_question_text:
       "Jelaskan daya tarik wisata dan tradisi syukuran di daerah danau wisata!",
     created_at: "2026-09-05T11:00:00Z",
+    items: [
+      {
+        id: "q-pnr-03-item-1",
+        type: "essay",
+        question_text:
+          "Jelaskan daya tarik alam dan tradisi Larung Sesaji yang dilakukan masyarakat di sekitar Telaga Ngebel Ponorogo setiap tanggal satu Suro!",
+        correct_answer: "",
+        explanation:
+          "Siswa diharapkan mampu mendeskripsikan Telaga Ngebel sebagai danau alami di kaki Gunung Wilis Ponorogo dan tradisi syukuran Larung Sesaji.",
+        rubric:
+          "Skor 100: Menyebutkan letak Telaga Ngebel dan makna tradisi Larung Sesaji dengan runtut. Skor 75: Menyebutkan salah satu aspek dengan jelas. Skor 50: Menyebutkan deskripsi umum.",
+      },
+    ],
+  },
+  {
+    id: "q-pnr-04",
+    school_id: "sch-ponorogo-01",
+    teacher_id: "usr-teacher-01",
+    subject: "IPS",
+    grade: 5,
+    topic: "Kearifan Budaya & Ekonomi Kerakyatan Ponorogo",
+    type: "mixed",
+    question_text:
+      "Paket Evaluasi Tematik: Kebudayaan Reog dan Potensi Komoditas Peternakan Ponorogo",
+    options: [
+      { key: "A", text: "Kecamatan Pudak" },
+      { key: "B", text: "Kecamatan Babadan" },
+      { key: "C", text: "Kecamatan Kauman" },
+      { key: "D", text: "Kecamatan Sukorejo" },
+    ],
+    correct_answer: "A",
+    explanation:
+      "Kecamatan Pudak di dataran tinggi lereng Wilis terkenal sebagai sentra penghasil susu sapi perah terbesar di Ponorogo.",
+    is_contextualized: true,
+    created_at: "2026-09-06T08:00:00Z",
+    items: [
+      {
+        id: "q-pnr-04-item-1",
+        type: "multiple_choice",
+        question_text:
+          "Kecamatan di Kabupaten Ponorogo yang terletak di dataran tinggi lereng Gunung Wilis dan terkenal sebagai sentra peternakan sapi perah penghasil susu segar adalah...",
+        options: [
+          { key: "A", text: "Kecamatan Pudak" },
+          { key: "B", text: "Kecamatan Babadan" },
+          { key: "C", text: "Kecamatan Kauman" },
+          { key: "D", text: "Kecamatan Sukorejo" },
+        ],
+        correct_answer: "A",
+        explanation:
+          "Kecamatan Pudak berada di dataran tinggi dengan iklim sejuk, sangat cocok untuk peternakan sapi perah.",
+      },
+      {
+        id: "q-pnr-04-item-2",
+        type: "multiple_choice",
+        question_text:
+          "Tokoh dalam kesenian Reog Ponorogo yang melambangkan sosok berilmu, bijaksana, dan berbudi luhur serta mengenakan pakaian serba hitam adalah...",
+        options: [
+          { key: "A", text: "Warok" },
+          { key: "B", text: "Jathil" },
+          { key: "C", text: "Bujang Ganong" },
+          { key: "D", text: "Klono Sewandono" },
+        ],
+        correct_answer: "A",
+        explanation:
+          "Warok adalah figur sentral berwibawa dalam Reog Ponorogo yang memiliki olah kebatinan dan keteguhan budi pekerti.",
+      },
+      {
+        id: "q-pnr-04-item-3",
+        type: "essay",
+        question_text:
+          "Jelaskan bagaimana festival kebudayaan Reog Ponorogo yang diadakan secara rutin dapat mendorong perputaran ekonomi bagi UMKM kuliner dan pedagang oleh-oleh khas daerah!",
+        rubric:
+          "Skor 100 jika menguraikan kedatangan wisatawan, peningkatan omzet pedagang makanan/kuliner lokal (seperti sate Ponorogo dan dawet Jabung), serta cenderamata. Skor 50 jika menyebutkan secara ringkas.",
+        explanation:
+          "Pagelaran Reog berskala nasional/internasional mendatangkan ribuan penonton yang membelanjakan uangnya pada sektor transportasi, penginapan, kuliner khas, dan kerajinan tangan lokal.",
+      },
+    ],
   },
 ];
 
@@ -950,17 +1063,59 @@ class PahamiRepository {
       subject: "Matematika" | "Bahasa Indonesia" | "IPS";
       grade: number;
       topic: string;
-      type: "multiple_choice" | "essay";
-      question_text: string;
-      correct_answer: string;
-      explanation: string;
+      type?: "multiple_choice" | "essay" | "mixed";
+      question_text?: string;
+      correct_answer?: string;
+      explanation?: string;
+      items?: QuestionItem[];
     }
   ): Question {
     const questions = this.getQuestions();
+
+    // Normalize items if present
+    let items = data.items;
+    if (items && items.length > 0) {
+      items = items.map((it, idx) => ({
+        ...it,
+        id: it.id || `item-${Date.now()}-${idx + 1}`,
+      }));
+    }
+
+    // Determine derived type if items exist
+    let resolvedType: "multiple_choice" | "essay" | "mixed" = data.type || "multiple_choice";
+    if (items && items.length > 0) {
+      const hasMc = items.some((it) => it.type === "multiple_choice");
+      const hasEssay = items.some((it) => it.type === "essay");
+      if (hasMc && hasEssay) {
+        resolvedType = "mixed";
+      } else if (hasEssay) {
+        resolvedType = "essay";
+      } else {
+        resolvedType = "multiple_choice";
+      }
+    }
+
+    const firstItem = items && items.length > 0 ? items[0] : null;
+    const resolvedText = data.question_text || (firstItem ? firstItem.question_text : "");
+    const resolvedOptions = data.options || (firstItem && firstItem.type === "multiple_choice" ? firstItem.options : []) || [];
+    const resolvedAnswer = data.correct_answer !== undefined ? data.correct_answer : (firstItem && firstItem.type === "multiple_choice" ? (firstItem.correct_answer || "A") : "");
+    const resolvedExplanation = data.explanation !== undefined ? data.explanation : (firstItem ? (firstItem.explanation || "") : "");
+    const resolvedRubric = data.rubric !== undefined ? data.rubric : (firstItem && firstItem.type === "essay" ? firstItem.rubric : undefined);
+
     if (data.id) {
       const index = questions.findIndex((q) => q.id === data.id);
       if (index !== -1) {
-        const updated = { ...questions[index], ...data } as Question;
+        const updated: Question = {
+          ...questions[index],
+          ...data,
+          type: resolvedType,
+          question_text: resolvedText,
+          options: resolvedOptions,
+          correct_answer: resolvedAnswer,
+          explanation: resolvedExplanation,
+          rubric: resolvedRubric,
+          items: items !== undefined ? items : questions[index].items,
+        };
         questions[index] = updated;
         this.setItem<Question[]>("questions", questions);
         this.removeDeletedId("question", data.id);
@@ -982,13 +1137,19 @@ class PahamiRepository {
       subject: data.subject,
       grade: data.grade,
       topic: data.topic,
-      type: data.type,
-      question_text: data.question_text,
-      options: data.options || [],
-      correct_answer: data.correct_answer,
-      explanation: data.explanation,
-      rubric: data.rubric,
+      type: resolvedType,
+      question_text: resolvedText,
+      options: resolvedOptions,
+      correct_answer: resolvedAnswer,
+      explanation: resolvedExplanation,
+      rubric: resolvedRubric,
+      items: items,
       is_contextualized: data.is_contextualized ?? true,
+      image_url: data.image_url,
+      image_caption: data.image_caption,
+      image_attribution: data.image_attribution,
+      image_alt: data.image_alt,
+      media_asset: data.media_asset,
       created_at: new Date().toISOString(),
     };
     this.setItem<Question[]>("questions", [newQuestion, ...questions]);
