@@ -45,6 +45,7 @@ import {
 } from "@/lib/db/types";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
+import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -103,9 +104,15 @@ function TeacherQuestionsContent() {
   const [isPrintingQuestion, setIsPrintingQuestion] = useState(false);
   const [isExtractingText, setIsExtractingText] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCameraCapture = (file: File) => {
+    setCapturedPhotoName(file.name);
+    handleExtractFromFile(file);
+  };
 
   const handleExtractFromFile = async (file: File) => {
     setIsExtractingText(true);
@@ -2084,20 +2091,31 @@ function TeacherQuestionsContent() {
                 {/* Motret Naskah: Scan Camera & Editor */}
                 {selectedMethod === "camera" && (
                   <div className="space-y-4 p-4 rounded-2xl bg-white/5 border border-white/10">
-                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
+                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-3 bg-[#251E2B]/50">
                       <Camera className="w-8 h-8 text-[#FFD36D] mx-auto" />
                       <p className="text-xs font-bold text-gray-200">
                         {capturedPhotoName ? `Foto terlampir: ${capturedPhotoName}` : "Foto lembar naskah soal fisik untuk diekstraksi OCR"}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => cameraInputRef.current?.click()}
-                        disabled={isExtractingText}
-                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Camera className="w-3.5 h-3.5 text-[#FFD36D]" />}
-                        <span>{isExtractingText ? "Membaca Foto..." : capturedPhotoName ? "Foto Ulang" : "Ambil Foto Sekarang"}</span>
-                      </button>
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsCameraModalOpen(true)}
+                          disabled={isExtractingText}
+                          className="px-4 py-2.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-[#FFD36D] text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                        >
+                          {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Camera className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                          <span>Buka Kamera (Laptop/HP)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          disabled={isExtractingText}
+                          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />
+                          <span>Pilih dari Berkas</span>
+                        </button>
+                      </div>
                     </div>
 
                     {extractionError && (
@@ -2585,6 +2603,15 @@ function TeacherQuestionsContent() {
             setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
           }
         }}
+      />
+
+      {/* Live Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={handleCameraCapture}
+        title="Potret Lembar Naskah Soal"
+        description="Arahkan kamera ke lembar naskah soal fisik secara tegak lurus untuk diekstraksi."
       />
     </TeacherWorkspaceShell>
   );

@@ -21,6 +21,8 @@ import { repository } from "@/lib/db/repository";
 import { geminiProvider } from "@/lib/ai/gemini-provider";
 import { School } from "@/lib/db/types";
 
+import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
+
 function ScanQuestionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,12 +33,15 @@ function ScanQuestionContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
   const [extractedData, setExtractedData] = useState<{
     question_text: string;
     options: { key: string; text: string }[];
     correct_answer: string;
     explanation: string;
   } | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setActiveSchool(repository.getActiveSchool());
@@ -53,6 +58,12 @@ function ScanQuestionContent() {
       }
       setExtractedData(null);
     }
+  };
+
+  const handleCameraCapture = (file: File, url: string) => {
+    setSelectedFile(file);
+    setPreviewUrl(url);
+    setExtractedData(null);
   };
 
   const handleProcessScan = async () => {
@@ -169,26 +180,76 @@ function ScanQuestionContent() {
           </div>
         </div>
 
-        {/* Upload Zone */}
+        {/* Upload & Camera Input Zone */}
         <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-[#E9E5E8] p-6 sm:p-8 shadow-xs">
-          <label className="border-2 border-dashed border-[#E9E5E8] hover:border-[#51465B] rounded-[24px] p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-[#FAF7F3]/60 hover:bg-[#FAF7F3] transition-all block">
-            <input
-              type="file"
-              accept={isPdfMode ? ".pdf,.txt,.docx" : "image/jpeg,image/png,image/webp"}
-              capture={isPdfMode ? undefined : "environment"}
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center mb-3 shadow-xs">
-              {isPdfMode ? <Upload className="w-6 h-6" /> : <Camera className="w-6 h-6" />}
+          {isPdfMode ? (
+            <label className="border-2 border-dashed border-[#E9E5E8] hover:border-[#51465B] rounded-[24px] p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-[#FAF7F3]/60 hover:bg-[#FAF7F3] transition-all block">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt,.docx"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div className="w-12 h-12 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center mb-3 shadow-xs">
+                <Upload className="w-6 h-6" />
+              </div>
+              <span className="font-extrabold text-[#23212A] text-sm block">
+                Klik atau Seret Berkas PDF Soal ke Sini
+              </span>
+              <span className="text-xs text-[#756F7A] mt-1 block">
+                Format .pdf, .txt, .docx (Maks. 10 MB)
+              </span>
+            </label>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <button
+                  type="button"
+                  onClick={() => setIsCameraModalOpen(true)}
+                  className="p-5 rounded-2xl bg-[#51465B] hover:bg-[#3D3445] text-white flex flex-col items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all cursor-pointer group active:scale-95 border border-[#51465B]"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                    <Camera className="w-6 h-6 text-[#FFD36D]" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-extrabold text-[#FFD36D] block">
+                      Buka Kamera Langsung
+                    </span>
+                    <span className="text-[11px] text-gray-300">
+                      Mendukung Laptop Webcam &amp; Kamera HP
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-5 rounded-2xl border-2 border-dashed border-[#51465B]/30 hover:border-[#51465B] bg-[#FAF7F3] hover:bg-[#FAF7F3]/80 text-[#23212A] flex flex-col items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer group active:scale-95"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-[#E9E5E8] flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+                    <Upload className="w-6 h-6 text-[#51465B]" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-extrabold text-[#23212A] block">
+                      Unggah Berkas Foto
+                    </span>
+                    <span className="text-[11px] text-[#756F7A]">
+                      Pilih file JPG, PNG, atau WebP
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="hidden"
+              />
             </div>
-            <span className="font-extrabold text-[#23212A] text-sm block">
-              {isPdfMode ? "Klik atau Seret Berkas PDF Soal ke Sini" : "Pilih Foto Lembar Soal atau Ambil via Kamera"}
-            </span>
-            <span className="text-xs text-[#756F7A] mt-1 block">
-              {isPdfMode ? "Format .pdf, .txt, .docx (Maks. 10 MB)" : "Format JPG, PNG, WebP (Maks. 5 MB)"}
-            </span>
-          </label>
+          )}
 
           {/* Image / File Preview */}
           {selectedFile && (
@@ -308,6 +369,15 @@ function ScanQuestionContent() {
             </div>
           </div>
         )}
+
+        {/* Live Camera Modal */}
+        <CameraCaptureModal
+          isOpen={isCameraModalOpen}
+          onClose={() => setIsCameraModalOpen(false)}
+          onCapture={handleCameraCapture}
+          title="Potret Lembar Naskah Soal"
+          description="Arahkan kamera ke lembar soal dari buku atau lembar kerja untuk diekstraksi."
+        />
       </div>
     </TeacherWorkspaceShell>
   );

@@ -94,18 +94,18 @@ export function DepaskanPrintableDocument({
   )}`;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-sm p-3 sm:p-6 md:p-8 flex justify-center items-start print:p-0 print:static print:bg-white print:overflow-visible print:z-auto">
       {/* Container A4 */}
-      <div className="bg-white text-[#23212A] w-full max-w-4xl rounded-3xl shadow-2xl p-6 sm:p-10 border border-[#E9E5E8] relative print:border-none print:shadow-none print:p-0 print:rounded-none">
+      <div className="bg-white text-[#23212A] w-full max-w-3xl rounded-3xl shadow-2xl p-5 sm:p-8 md:p-10 border border-[#E9E5E8] relative my-3 sm:my-6 print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:rounded-none">
         {/* Screen Action Bar (Hidden when printing) */}
-        <div className="flex items-center justify-between pb-6 mb-6 border-b border-slate-200 print:hidden">
+        <div className="flex items-center justify-between pb-4 sm:pb-6 mb-5 sm:mb-6 border-b border-slate-200 print:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shrink-0 shadow-xs">
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-[#23212A]">Pratinjau Cetak Dokumen A4</h3>
-              <p className="text-xs text-slate-500">
+              <h3 className="text-sm sm:text-base font-black text-[#23212A]">Pratinjau Cetak Dokumen A4</h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
                 Dokumen resmi DEPASKAN dilengkapi QR Token dan nomor penerbitan unik.
               </p>
             </div>
@@ -116,12 +116,12 @@ export function DepaskanPrintableDocument({
               type="button"
               onClick={handlePrint}
               disabled={isIssuing}
-              className="px-5 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-[#FFD36D] text-xs font-black shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-4 sm:px-5 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-[#FFD36D] text-xs font-black shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-all active:scale-95"
             >
               {isIssuing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Menerbitkan Dokumen...</span>
+                  <span>Menerbitkan...</span>
                 </>
               ) : (
                 <>
@@ -135,7 +135,8 @@ export function DepaskanPrintableDocument({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+                title="Tutup Pratinjau"
               >
                 <X className="w-4 h-4" />
               </button>
