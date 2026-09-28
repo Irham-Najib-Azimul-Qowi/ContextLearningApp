@@ -59,10 +59,11 @@ const FEATURE_TITLES: Record<string, { label: string; desc: string; icon: string
 };
 
 const AVAILABLE_MODELS = [
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash (Tercepat & Default)" },
-  { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash (Stabil & Ringan)" },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro (Penalaran Kompleks)" },
-  { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro (Konteks Panjang)" },
+  { id: "gemini-flash-lite-latest", name: "Gemini Flash Lite (Tercepat, Stabil, Kuota Tinggi — Rekomendasi)" },
+  { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash Lite (Ringan & Cepat)" },
+  { id: "gemini-3.7-flash", name: "Gemini 3.7 Flash (Kapasitas Standar)" },
+  { id: "gemini-flash-latest", name: "Gemini Flash Latest (Gemini 3.8 Preview)" },
+  { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash (Preview Terkini)" },
 ];
 
 export default function AdminAIModelsPage() {

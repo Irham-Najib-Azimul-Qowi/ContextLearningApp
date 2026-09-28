@@ -213,7 +213,11 @@ export default function TeacherMaterialsPage() {
       if (json.success && json.extractedText) {
         setManualDraft(json.extractedText);
         // Otomatis kontekstualisasikan naskah materi dari berkas dengan kearifan lokal
-        await handleTriggerAiContextTransformation(json.extractedText);
+        try {
+          await handleTriggerAiContextTransformation(json.extractedText);
+        } catch (ctxErr) {
+          console.warn("Auto-contextualization warning:", ctxErr);
+        }
       } else {
         throw new Error(json.error || "Gagal mengekstrak teks dari berkas.");
       }

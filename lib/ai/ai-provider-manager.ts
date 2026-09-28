@@ -105,6 +105,10 @@ export class AIProviderManager {
       return "INVALID_STRUCTURED_OUTPUT";
     }
 
+    if (status === 404 || msg.includes("not found") || msg.includes("no longer available") || msg.includes("is not supported")) {
+      return "MODEL_UNAVAILABLE";
+    }
+
     return "UNKNOWN_ERROR";
   }
 
@@ -155,8 +159,6 @@ export class AIProviderManager {
   async execute<T = any>(options: AIExecutionOptions): Promise<AIExecutionResult<T>> {
     const startTime = Date.now();
     const modelConfig = adminRepository.getModelByFeature(options.featureKey);
-    let targetModel = modelConfig?.primary_model || "gemini-3.8-flash";
-    const fallbackModel = modelConfig?.fallback_model || "gemini-3.7-flash";
     let isFailover = false;
 
     // Capability check
@@ -165,9 +167,31 @@ export class AIProviderManager {
       requiredCaps.push("image_understanding");
     }
 
+    // Build adaptive candidate models cascade:
+    // Prioritize configured primary & fallback, followed by ultra-reliable high-availability models
+    const candidateModels: string[] = [];
+    if (modelConfig?.primary_model) candidateModels.push(modelConfig.primary_model);
+    if (modelConfig?.fallback_model && !candidateModels.includes(modelConfig.fallback_model)) {
+      candidateModels.push(modelConfig.fallback_model);
+    }
+    const RESILIENT_FALLBACKS = [
+      "gemini-flash-lite-latest",
+      "gemini-3.1-flash-lite",
+      "gemini-3.7-flash",
+      "gemini-flash-latest",
+    ];
+    for (const m of RESILIENT_FALLBACKS) {
+      if (!candidateModels.includes(m)) {
+        candidateModels.push(m);
+      }
+    }
+
     const exhaustedQuotaGroups = new Set<string>();
     let attempts = 0;
     const maxAttempts = 3;
+    let lastErrorMsg = "";
+    let lastClassification: AIErrorClassification = "UNKNOWN_ERROR";
+    let lastModelAttempted = candidateModels[0] || "gemini-flash-lite-latest";
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -189,8 +213,11 @@ export class AIProviderManager {
         plaintextKey = process.env.GEMINI_API_KEY || "";
       }
 
-      if (!plaintextKey) {
-        // No valid credentials available -> trigger high-precision fallback
+      // Check if it's a dummy placeholder key or missing
+      if (!plaintextKey || plaintextKey.includes("DEV_DEMO_KEY")) {
+        lastErrorMsg =
+          "GEMINI_API_KEY belum disetel pada Environment Variables platform Vercel / server. Harap tambahkan GEMINI_API_KEY di dashboard Vercel.";
+        lastClassification = "INVALID_API_KEY";
         break;
       }
 
@@ -198,156 +225,172 @@ export class AIProviderManager {
       const credId = credential?.id || "cred-gemini-primary";
       const quotaGroup = credential?.quota_group || "project_pahami_prod";
 
-      try {
-        const client = new GoogleGenAI({ apiKey: plaintextKey });
-        let responseText = "";
+      const client = new GoogleGenAI({ apiKey: plaintextKey });
+      let credentialHandled = false;
 
-        if (options.imagePart) {
-          const contents = [
-            options.prompt,
-            {
-              inlineData: {
-                data: options.imagePart.base64Data,
-                mimeType: options.imagePart.mimeType,
+      // Try candidate models in order for this credential
+      for (let mIdx = 0; mIdx < candidateModels.length; mIdx++) {
+        const currentModel = candidateModels[mIdx];
+        lastModelAttempted = currentModel;
+
+        try {
+          let responseText = "";
+
+          if (options.imagePart) {
+            const contents = [
+              options.prompt,
+              {
+                inlineData: {
+                  data: options.imagePart.base64Data,
+                  mimeType: options.imagePart.mimeType,
+                },
               },
-            },
-          ];
-          const resp = await client.models.generateContent({
-            model: targetModel,
-            contents,
-          });
-          responseText = resp.text || "";
-        } else {
-          const resp = await client.models.generateContent({
-            model: targetModel,
-            contents: options.prompt,
-          });
-          responseText = resp.text || "";
-        }
-
-        const latencyMs = Date.now() - startTime;
-        const estTokensIn = Math.ceil(options.prompt.length / 4);
-        const estTokensOut = Math.ceil(responseText.length / 4);
-
-        // Success: Reset circuit breaker & record usage
-        if (credential) {
-          adminRepository.updateCredential(credential.id, {
-            consecutive_errors: 0,
-            circuit_state: "CLOSED",
-            health_status: "healthy",
-            last_used_at: new Date().toISOString(),
-          });
-        }
-
-        adminRepository.recordUsageEvent({
-          credential_id: credId,
-          credential_name: credName,
-          quota_group: quotaGroup,
-          feature_key: options.featureKey,
-          model: targetModel,
-          input_tokens: estTokensIn,
-          output_tokens: estTokensOut,
-          total_tokens: estTokensIn + estTokensOut,
-          latency_ms: latencyMs,
-          status: isFailover ? "FAILED_OVER" : "SUCCESS",
-          caller_user_id: options.callerUserId,
-        });
-
-        let parsedData: any = undefined;
-        if (requiredCaps.includes("structured_output")) {
-          parsedData = extractJsonFromAiResponse(responseText);
-        }
-
-        return {
-          success: true,
-          data: parsedData,
-          rawText: responseText,
-          modelUsed: targetModel,
-          credentialUsed: credName,
-          quotaGroupUsed: quotaGroup,
-          isFailover,
-          tokensConsumed: {
-            input: estTokensIn,
-            output: estTokensOut,
-            total: estTokensIn + estTokensOut,
-          },
-          latencyMs,
-        };
-      } catch (err: any) {
-        const latencyMs = Date.now() - startTime;
-        const classification = this.classifyError(err);
-        const errorMsg = err?.message || err?.toString() || "Unknown error";
-
-        console.warn(`[AIProviderManager] Request failed on ${credName} (${classification}):`, errorMsg);
-
-        // Failover to secondary model (e.g. gemini-flash-latest if 3.8-flash has 503 high demand)
-        if (
-          (classification === "MODEL_UNAVAILABLE" || classification === "RATE_LIMITED" || classification === "TIMEOUT") &&
-          targetModel !== fallbackModel
-        ) {
-          console.log(`[AIProviderManager] Switching model from ${targetModel} to fallback ${fallbackModel}`);
-          targetModel = fallbackModel;
-          isFailover = true;
-          // Exponential backoff for transient spikes
-          await new Promise((r) => setTimeout(r, attempts * 1200));
-          continue;
-        } else if (classification === "MODEL_UNAVAILABLE" || classification === "RATE_LIMITED") {
-          // If already on fallback model, brief backoff before final retry attempt
-          await new Promise((r) => setTimeout(r, attempts * 1500));
-        }
-
-        // Update Credential Failure & Circuit Breaker (only trip on fatal auth errors or persistent failures)
-        if (credential) {
-          const newConsecutive = credential.consecutive_errors + 1;
-          let newCircuitState = credential.circuit_state;
-          let circuitOpenedAt = credential.circuit_opened_at;
-
-          // Only open circuit on invalid key or repeated non-transient errors
-          if (classification === "INVALID_API_KEY" || (newConsecutive >= 5 && classification !== "MODEL_UNAVAILABLE")) {
-            newCircuitState = "OPEN";
-            circuitOpenedAt = new Date().toISOString();
+            ];
+            const resp = await client.models.generateContent({
+              model: currentModel,
+              contents,
+            });
+            responseText = resp.text || "";
+          } else {
+            const resp = await client.models.generateContent({
+              model: currentModel,
+              contents: options.prompt,
+            });
+            responseText = resp.text || "";
           }
 
-          adminRepository.updateCredential(credential.id, {
-            consecutive_errors: newConsecutive,
-            circuit_state: newCircuitState,
-            circuit_opened_at: circuitOpenedAt,
-            health_status: classification === "INVALID_API_KEY" ? "invalid" : "degraded",
-            last_error: errorMsg,
-            last_error_at: new Date().toISOString(),
+          const latencyMs = Date.now() - startTime;
+          const estTokensIn = Math.ceil(options.prompt.length / 4);
+          const estTokensOut = Math.ceil(responseText.length / 4);
+
+          // Success: Reset circuit breaker & record usage
+          if (credential) {
+            adminRepository.updateCredential(credential.id, {
+              consecutive_errors: 0,
+              circuit_state: "CLOSED",
+              health_status: "healthy",
+              last_used_at: new Date().toISOString(),
+              last_error: null,
+            });
+          }
+
+          adminRepository.recordUsageEvent({
+            credential_id: credId,
+            credential_name: credName,
+            quota_group: quotaGroup,
+            feature_key: options.featureKey,
+            model: currentModel,
+            input_tokens: estTokensIn,
+            output_tokens: estTokensOut,
+            total_tokens: estTokensIn + estTokensOut,
+            latency_ms: latencyMs,
+            status: isFailover ? "FAILED_OVER" : "SUCCESS",
+            caller_user_id: options.callerUserId,
           });
-        }
 
-        if (classification === "QUOTA_EXCEEDED" && credential) {
-          exhaustedQuotaGroups.add(credential.quota_group);
-        }
+          let parsedData: any = undefined;
+          if (requiredCaps.includes("structured_output")) {
+            parsedData = extractJsonFromAiResponse(responseText);
+          }
 
+          return {
+            success: true,
+            data: parsedData,
+            rawText: responseText,
+            modelUsed: currentModel,
+            credentialUsed: credName,
+            quotaGroupUsed: quotaGroup,
+            isFailover,
+            tokensConsumed: {
+              input: estTokensIn,
+              output: estTokensOut,
+              total: estTokensIn + estTokensOut,
+            },
+            latencyMs,
+          };
+        } catch (err: any) {
+          const classification = this.classifyError(err);
+          const errorMsg = err?.message || err?.toString() || "Unknown error";
+          lastErrorMsg = errorMsg;
+          lastClassification = classification;
+
+          console.warn(
+            `[AIProviderManager] Request failed on ${credName} with model ${currentModel} (${classification}):`,
+            errorMsg
+          );
+
+          // Fatal credential authentication error (API key invalid/forbidden):
+          // Model fallback won't help; mark credential and proceed to next credential if available
+          if (classification === "INVALID_API_KEY" || classification === "PERMISSION_DENIED") {
+            if (credential) {
+              adminRepository.updateCredential(credential.id, {
+                consecutive_errors: credential.consecutive_errors + 1,
+                circuit_state: "OPEN",
+                circuit_opened_at: new Date().toISOString(),
+                health_status: "invalid",
+                last_error: errorMsg,
+                last_error_at: new Date().toISOString(),
+              });
+            }
+            credentialHandled = true;
+            break; // Break model loop, try next credential in outer loop
+          }
+
+          // If current model failed due to QUOTA_EXCEEDED, MODEL_UNAVAILABLE, RATE_LIMITED, TIMEOUT, etc.
+          // Try next model in candidateModels cascade!
+          if (mIdx < candidateModels.length - 1) {
+            isFailover = true;
+            continue;
+          }
+
+          // If all models in the cascade failed on this credential:
+          if (credential) {
+            const newConsecutive = credential.consecutive_errors + 1;
+            adminRepository.updateCredential(credential.id, {
+              consecutive_errors: newConsecutive,
+              health_status: "degraded",
+              last_error: errorMsg,
+              last_error_at: new Date().toISOString(),
+            });
+            if (classification === "QUOTA_EXCEEDED") {
+              exhaustedQuotaGroups.add(credential.quota_group);
+            }
+          }
+          credentialHandled = true;
+        }
+      }
+
+      if (credentialHandled && exhaustedQuotaGroups.has(quotaGroup)) {
         isFailover = true;
       }
     }
 
-    // ALL PROVIDERS / KEYS EXHAUSTED OR OFFLINE -> SAFE PEDAGOGICAL FALLBACK
+    // ALL PROVIDERS / KEYS / MODELS EXHAUSTED OR OFFLINE
     const latencyMs = Date.now() - startTime;
     adminRepository.recordUsageEvent({
       feature_key: options.featureKey,
-      model: targetModel,
+      model: lastModelAttempted,
       input_tokens: 0,
       output_tokens: 0,
       total_tokens: 0,
       latency_ms: latencyMs,
       status: "ERROR",
-      error_type: "QUOTA_EXCEEDED",
-      error_message: "All credentials and quota groups exhausted. Applied safe pedagogical fallback.",
+      error_type: lastClassification === "INVALID_API_KEY" ? "INVALID_API_KEY" : "QUOTA_EXCEEDED",
+      error_message: lastErrorMsg || "All credentials and models exhausted.",
       caller_user_id: options.callerUserId,
     });
 
+    const formattedError = lastErrorMsg.includes("belum disetel")
+      ? lastErrorMsg
+      : `Layanan AI sedang mencapai batas kapasitas atau sedang offline (${lastErrorMsg.slice(0, 120)}).`;
+
     return {
       success: false,
-      modelUsed: targetModel,
+      modelUsed: lastModelAttempted,
       isFailover: true,
       tokensConsumed: { input: 0, output: 0, total: 0 },
       latencyMs,
-      error: "Layanan AI sedang mencapai batas kapasitas atau sedang offline. Sistem menerapkan mode pemulihan terpadu.",
+      error: formattedError,
     };
   }
 
@@ -368,9 +411,9 @@ export class AIProviderManager {
       }
       const client = new GoogleGenAI({ apiKey: plaintextKey });
 
-      // Lightweight test prompt with active Gemini 3.8 Flash model
+      // Lightweight test prompt with active Gemini Flash Lite model
       const resp = await client.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-flash-lite-latest",
         contents: "Balas hanya satu kata: OK",
       });
 

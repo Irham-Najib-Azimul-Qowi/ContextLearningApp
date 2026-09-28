@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
-import { geminiProvider } from "@/lib/ai/gemini-provider";
 import { School } from "@/lib/db/types";
 
 import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
@@ -33,6 +32,7 @@ function ScanQuestionContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
   const [extractedData, setExtractedData] = useState<{
     question_text: string;
@@ -51,6 +51,7 @@ function ScanQuestionContent() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
+      setErrorMessage(null);
       if (file.type.startsWith("image/")) {
         setPreviewUrl(URL.createObjectURL(file));
       } else {
@@ -63,62 +64,85 @@ function ScanQuestionContent() {
   const handleCameraCapture = (file: File, url: string) => {
     setSelectedFile(file);
     setPreviewUrl(url);
+    setErrorMessage(null);
     setExtractedData(null);
   };
 
   const handleProcessScan = async () => {
+    if (!selectedFile) {
+      setErrorMessage("Silakan pilih berkas atau ambil foto naskah terlebih dahulu.");
+      return;
+    }
+
     setIsProcessing(true);
+    setErrorMessage(null);
+    setExtractedData(null);
 
     try {
-      if (isPdfMode) {
-        // PDF parser simulation
-        setTimeout(() => {
-          setExtractedData({
-            question_text:
-              "Di sebuah pasar induk, seorang pedagang buah membeli 15 peti jeruk dengan harga Rp180.000 per peti. Setiap peti berisi 20 kg jeruk. Berapa harga beli jeruk per kilogram?",
-            options: [
-              { key: "A", text: "Rp7.500" },
-              { key: "B", text: "Rp9.000" },
-              { key: "C", text: "Rp10.500" },
-              { key: "D", text: "Rp12.000" },
-            ],
-            correct_answer: "B",
-            explanation:
-              "Total berat = 15 peti × 20 kg = 300 kg. Total harga = 15 × Rp180.000 = Rp2.700.000. Harga per kg = Rp2.700.000 ÷ 300 kg = Rp9.000.",
-          });
-          setIsProcessing(false);
-        }, 1200);
-        return;
+      // 1. Send file to server-side extraction API (OCR / Document Parser)
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const extractRes = await fetch("/api/ai/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      const extractJson = await extractRes.json();
+      if (!extractJson.success || !extractJson.extractedText) {
+        throw new Error(extractJson.error || "Gagal mengekstrak teks dari berkas.");
       }
 
-      // Image Vision OCR
-      let base64 = "";
-      const mimeType = selectedFile ? selectedFile.type : "image/jpeg";
+      const extractedText = extractJson.extractedText;
 
-      if (selectedFile) {
-        const reader = new FileReader();
-        base64 = await new Promise((resolve) => {
-          reader.onloadend = () => {
-            const result = reader.result as string;
-            resolve(result.split(",")[1]);
-          };
-          reader.readAsDataURL(selectedFile);
+      // 2. Parse extracted question items into structured form via contextualize API
+      const ctxRes = await fetch("/api/ai/contextualize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "question",
+          inputMode: isPdfMode ? "pdf" : "camera",
+          rawText: extractedText,
+          subject: "Matematika",
+          grade: 5,
+          regionId: activeSchool?.region_id || "35.02",
+          regionName: activeSchool?.region_name || "Kabupaten Ponorogo",
+        }),
+      });
+
+      const ctxJson = await ctxRes.json();
+      if (ctxJson.success && ctxJson.data?.questions && ctxJson.data.questions.length > 0) {
+        const firstQ = ctxJson.data.questions[0];
+        setExtractedData({
+          question_text: firstQ.question_text || extractedText,
+          options: firstQ.options || [
+            { key: "A", text: "Pilihan A" },
+            { key: "B", text: "Pilihan B" },
+            { key: "C", text: "Pilihan C" },
+            { key: "D", text: "Pilihan D" },
+          ],
+          correct_answer: firstQ.correct_answer || "A",
+          explanation: firstQ.explanation || "Pembahasan butir soal hasil ekstraksi.",
+        });
+      } else {
+        // Fallback to presenting raw extracted text
+        setExtractedData({
+          question_text: extractedText,
+          options: [
+            { key: "A", text: "Pilihan A" },
+            { key: "B", text: "Pilihan B" },
+            { key: "C", text: "Pilihan C" },
+            { key: "D", text: "Pilihan D" },
+          ],
+          correct_answer: "A",
+          explanation: "Hasil pembacaan naskah dokumen.",
         });
       }
-
-      const result = await geminiProvider.scanQuestionImage(base64, mimeType);
-      setExtractedData({
-        question_text: result.question_text,
-        options: result.options || [],
-        correct_answer: result.correct_answer,
-        explanation: result.explanation,
-      });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Scan processing error:", err);
+      setErrorMessage(err.message || "Gagal memproses berkas. Pastikan foto atau dokumen terbaca dengan jelas.");
     } finally {
-      if (!isPdfMode) {
-        setIsProcessing(false);
-      }
+      setIsProcessing(false);
     }
   };
 
@@ -288,6 +312,11 @@ function ScanQuestionContent() {
                     </>
                   )}
                 </button>
+                {errorMessage && (
+                  <div className="mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                    {errorMessage}
+                  </div>
+                )}
               </div>
             </div>
           )}

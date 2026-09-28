@@ -158,7 +158,11 @@ function TeacherQuestionsContent() {
       if (json.success && json.extractedText) {
         setManualQuestionDraft(json.extractedText);
         // Otomatis ekstrak & kontekstualisasikan SELURUH butir soal yang ada di dalam berkas
-        await handleTriggerAiContextTransformation(json.extractedText);
+        try {
+          await handleTriggerAiContextTransformation(json.extractedText);
+        } catch (ctxErr) {
+          console.warn("Auto-contextualization warning:", ctxErr);
+        }
       } else {
         throw new Error(json.error || "Gagal mengekstrak teks dari berkas.");
       }

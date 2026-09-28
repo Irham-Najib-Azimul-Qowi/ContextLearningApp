@@ -73,6 +73,8 @@ function CreateMaterialContent() {
   const [showStudentPreviewModal, setShowStudentPreviewModal] = useState<boolean>(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [isExtractingFile, setIsExtractingFile] = useState<boolean>(false);
+  const [fileExtractError, setFileExtractError] = useState<string | null>(null);
 
   useEffect(() => {
     const school = repository.getActiveSchool();
@@ -173,31 +175,71 @@ function CreateMaterialContent() {
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploadedFileName(file.name);
-    const mockPdfText =
-      `PENGANTAR ILMU PENGETAHUAN SOSIAL KELAS 5 SD\nBab 3: Interaksi Manusia dengan Lingkungan Alam dan Sosial\n\nManusia senantiasa berinteraksi dengan lingkungan hidupnya untuk memenuhi kebutuhan harian. Bentang alam seperti pegunungan, perbukitan, dataran rendah, serta pesisir pantai melahirkan ragam mata pencaharian yang khas. Pada daerah dataran tinggi, masyarakat banyak membudidayakan sayur-mayur dan ternak, sedangkan di kawasan dataran rendah masyarakat aktif dalam kegiatan perniagaan dan perdagangan umum.`;
+    setFileExtractError(null);
+    setIsExtractingFile(true);
 
-    const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-    setTitle(`Materi Ajar: ${cleanTitle}`);
-    setOriginalContent(mockPdfText);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/ai/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!json.success || !json.extractedText) {
+        throw new Error(json.error || "Gagal mengekstrak teks dari berkas PDF.");
+      }
+
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      setTitle(`Materi Ajar: ${cleanTitle}`);
+      setOriginalContent(json.extractedText);
+    } catch (err: any) {
+      console.error("PDF extract error:", err);
+      setFileExtractError(err.message || "Gagal membaca berkas PDF. Pastikan format berkas terbaca.");
+    } finally {
+      setIsExtractingFile(false);
+    }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setPhotoPreviewUrl(URL.createObjectURL(file));
     setUploadedFileName(file.name);
+    setFileExtractError(null);
+    setIsExtractingFile(true);
 
-    const mockOcrText =
-      `HASIL VISION OCR BUKU TEMATIK KELAS 5\nTema: Usaha Ekonomi yang Dikelola Sendiri dan Kelompok\n\nUsaha ekonomi masyarakat terbagi menjadi usaha perseorangan dan kelompok. Contoh usaha perseorangan antara lain pertanian skala keluarga, industri kerajinan rakyat, dan pedagang keliling. Hasil panen pertanian biasanya dijual kepada para pengepul atau dibawa langsung ke pasar desa.`;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    setTitle("Materi Buku Siswa (Hasil Scan Kamera)");
-    setOriginalContent(mockOcrText);
+      const res = await fetch("/api/ai/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!json.success || !json.extractedText) {
+        throw new Error(json.error || "Gagal mengekstrak teks dari foto.");
+      }
+
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      setTitle(cleanTitle ? `Materi: ${cleanTitle}` : "Materi Hasil Pindai Kamera");
+      setOriginalContent(json.extractedText);
+    } catch (err: any) {
+      console.error("Photo OCR error:", err);
+      setFileExtractError(err.message || "Gagal mengekstrak teks dari gambar/foto.");
+    } finally {
+      setIsExtractingFile(false);
+    }
   };
 
   const handleSaveAndPublish = (asDraft: boolean = false) => {
@@ -501,26 +543,53 @@ function CreateMaterialContent() {
                     </span>
                   </label>
 
-                  {uploadedFileName && (
-                    <div className="p-4 rounded-[20px] bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileCheck className="w-6 h-6 text-emerald-600" />
-                        <div>
-                          <span className="text-xs font-bold text-emerald-950 block">Dokumen Berhasil Diekstraksi:</span>
-                          <span className="text-[11px] text-emerald-800 font-mono">{uploadedFileName}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAnalyzeManualOrUploaded(originalContent, title)}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
-                      >
-                        Kontekstualkan Naskah PDF
-                      </button>
+                  {isExtractingFile && (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />
+                      <span>Sedang mengekstrak teks dari berkas PDF dengan AI Parser...</span>
                     </div>
                   )}
 
-                  {!uploadedFileName && (
+                  {fileExtractError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                      {fileExtractError}
+                    </div>
+                  )}
+
+                  {uploadedFileName && originalContent && (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-[20px] bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileCheck className="w-6 h-6 text-emerald-600 shrink-0" />
+                          <div>
+                            <span className="text-xs font-bold text-emerald-950 block">Dokumen Berhasil Diekstraksi:</span>
+                            <span className="text-[11px] text-emerald-800 font-mono">{uploadedFileName}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleAnalyzeManualOrUploaded(originalContent, title)}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                        >
+                          Kontekstualkan Naskah PDF
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#23212A] mb-1">
+                          Naskah Hasil Ekstraksi PDF (Dapat Diedit):
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={originalContent}
+                          onChange={(e) => setOriginalContent(e.target.value)}
+                          className="w-full p-3.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-medium text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20 leading-relaxed"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {!uploadedFileName && !isExtractingFile && (
                     <div className="text-center pt-2">
                       <button
                         type="button"
@@ -562,24 +631,51 @@ function CreateMaterialContent() {
                     </span>
                   </label>
 
-                  {photoPreviewUrl && (
-                    <div className="p-4 rounded-[20px] bg-slate-50 border border-[#E9E5E8] flex flex-col sm:flex-row items-center gap-4">
-                      <img
-                        src={photoPreviewUrl}
-                        alt="Pratinjau Foto"
-                        className="w-24 h-24 object-cover rounded-xl border border-slate-200 shrink-0"
-                      />
-                      <div className="flex-1 text-xs">
-                        <span className="font-bold text-[#23212A] block mb-1">Foto Berhasil Dipindai:</span>
-                        <p className="text-[#756F7A] text-[11px] line-clamp-2">{originalContent}</p>
+                  {isExtractingFile && (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />
+                      <span>Sedang membaca teks foto dengan Gemini Vision OCR...</span>
+                    </div>
+                  )}
+
+                  {fileExtractError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                      {fileExtractError}
+                    </div>
+                  )}
+
+                  {photoPreviewUrl && originalContent && (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-[20px] bg-slate-50 border border-[#E9E5E8] flex flex-col sm:flex-row items-center gap-4">
+                        <img
+                          src={photoPreviewUrl}
+                          alt="Pratinjau Foto"
+                          className="w-24 h-24 object-cover rounded-xl border border-slate-200 shrink-0"
+                        />
+                        <div className="flex-1 text-xs">
+                          <span className="font-bold text-[#23212A] block mb-1">Foto Berhasil Dipindai:</span>
+                          <span className="text-[#756F7A] text-[11px] font-mono block">{uploadedFileName}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleAnalyzeManualOrUploaded(originalContent, title)}
+                          className="px-4 py-2 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-bold text-xs shadow-xs"
+                        >
+                          Kontekstualkan Hasil Foto
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAnalyzeManualOrUploaded(originalContent, title)}
-                        className="px-4 py-2 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-bold text-xs shadow-xs"
-                      >
-                        Kontekstualkan Hasil Foto
-                      </button>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#23212A] mb-1">
+                          Naskah Hasil Scan Foto (Dapat Diedit):
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={originalContent}
+                          onChange={(e) => setOriginalContent(e.target.value)}
+                          className="w-full p-3.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-medium text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20 leading-relaxed"
+                        />
+                      </div>
                     </div>
                   )}
 
