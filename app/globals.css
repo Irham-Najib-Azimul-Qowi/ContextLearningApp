@@ -210,6 +210,13 @@ button:disabled {
     display: none !important;
   }
 
+  .print-include,
+  .print-include * {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
   /* When DepaskanPrintableDocument modal is mounted, hide everything else in the body */
   body.depaskan-print-modal-active > *:not(.depaskan-printable-portal) {
     display: none !important;

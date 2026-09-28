@@ -11,6 +11,7 @@ interface PahamiPuzzleLogoProps {
   href?: string;
   onClick?: (e: React.MouseEvent) => void;
   asButton?: boolean;
+  asDiv?: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ export function PahamiPuzzleLogo({
   href = "/",
   onClick,
   asButton = false,
+  asDiv = false,
 }: PahamiPuzzleLogoProps) {
   // Dimensions scale
   const sizeMap = {
@@ -66,14 +68,14 @@ export function PahamiPuzzleLogo({
     <>
       {/* Puzzle D SVG Icon (Acts as the capital letter 'D') */}
       <div
-        className="relative shrink-0 select-none group-hover:-translate-y-0.5 transition-transform duration-200 flex items-center justify-center"
+        className="relative shrink-0 select-none group-hover:-translate-y-0.5 transition-transform duration-200 flex items-center justify-center print:transform-none"
         style={{ width: currentSize.icon, height: currentSize.icon }}
       >
         <svg
           viewBox="0 0 108 108"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full drop-shadow-xs"
+          className="w-full h-full drop-shadow-xs print:drop-shadow-none"
         >
           {/* 1. Exact Puzzle Silhouette Hard Offset Shadow (Bottom-Right translation) */}
           <path
@@ -113,7 +115,7 @@ export function PahamiPuzzleLogo({
         <span
           className={`font-black tracking-tight leading-none lowercase select-none -ml-0.5 ${currentSize.text} ${
             theme === "dark" ? "text-white" : "text-[#51465B]"
-          }`}
+          } print:text-[#51465B]`}
           style={{ transform: "translateY(-3px)" }}
         >
           epaskan
@@ -122,12 +124,23 @@ export function PahamiPuzzleLogo({
     </>
   );
 
+  if (asDiv) {
+    return (
+      <div
+        className={`inline-flex items-center gap-1 print-include ${className}`}
+        aria-label="Logo Depaskan"
+      >
+        {logoInner}
+      </div>
+    );
+  }
+
   if (asButton || onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 cursor-pointer ${className}`}
+        className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 cursor-pointer print-include ${className}`}
         aria-label="Logo Depaskan"
       >
         {logoInner}
@@ -138,7 +151,7 @@ export function PahamiPuzzleLogo({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 ${className}`}
+      className={`inline-flex items-center gap-1 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#51465B] rounded-2xl p-1 transition-transform active:scale-95 print-include ${className}`}
       aria-label="Beranda Depaskan"
     >
       {logoInner}

@@ -104,9 +104,9 @@ function TeacherRoomsContent() {
     setCurrentUser(user);
     const allRooms = repository.getRooms(user?.id);
     setRooms(allRooms);
-    const mats = repository.getMaterials(school?.id);
+    const mats = repository.getMaterials();
     setMaterials(mats);
-    const qs = repository.getQuestions({ schoolId: school?.id });
+    const qs = repository.getQuestions();
     setQuestions(qs);
   };
 
@@ -261,20 +261,18 @@ function TeacherRoomsContent() {
     ? (previewRoom.type === "material" || previewRoom.type === "both"
       ? materials.find(
           (m) => m.id === (isEditingPreview ? editRoomResourceId : previewRoom.resource_id)
-        )
+        ) || (previewRoom.resource_id ? repository.getMaterial(isEditingPreview ? editRoomResourceId : previewRoom.resource_id) : null) || null
       : null)
     : null;
 
+  const secQuestionId = isEditingPreview ? editRoomSecondaryId : (previewRoom?.secondary_resource_id || "");
+  const priQuestionId = isEditingPreview ? editRoomResourceId : (previewRoom?.resource_id || "");
+
   const attachedQuestion = previewRoom
     ? (previewRoom.type === "question"
-      ? questions.find(
-          (q) => q.id === (isEditingPreview ? editRoomResourceId : previewRoom.resource_id)
-        )
+      ? questions.find((q) => q.id === priQuestionId) || (priQuestionId ? repository.getQuestion(priQuestionId) : null) || null
       : previewRoom.type === "both"
-      ? questions.find(
-          (q) =>
-            q.id === (isEditingPreview ? editRoomSecondaryId : previewRoom.secondary_resource_id)
-        )
+      ? questions.find((q) => q.id === secQuestionId) || (secQuestionId ? repository.getQuestion(secQuestionId) : null) || null
       : null)
     : null;
 

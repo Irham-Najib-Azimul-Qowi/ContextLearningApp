@@ -17,8 +17,9 @@ import {
   Loader2,
   FileText,
   AlertCircle,
+  FileQuestion,
 } from "lucide-react";
-import { LearningRoom, Question, LearningMaterial, RoomVisitor } from "@/lib/db/types";
+import { LearningRoom, Question, LearningMaterial, RoomVisitor, getQuestionItems } from "@/lib/db/types";
 
 export interface RoomDashboardViewProps {
   room: LearningRoom;
@@ -268,7 +269,155 @@ export function RoomDashboardView({
       </div>
 
       {/* ============================================================== */}
-      {/* 2. REKAP PESERTA & FILTER PENCARIAN                            */}
+      {/* 2. PRATINJAU KONTEN & BUTIR SOAL DI ROOM INI                    */}
+      {/* ============================================================== */}
+      {question && (() => {
+        const qItems = getQuestionItems(question);
+        const mcCount = qItems.filter((i) => i.type === "multiple_choice").length;
+        const essayCount = qItems.filter((i) => i.type === "essay").length;
+
+        return (
+          <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-5 sm:p-7 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] flex items-center gap-1.5">
+                  <FileQuestion className="w-3.5 h-3.5 text-[#51465B]" />
+                  Paket Soal Terhubung di Room Ini
+                </span>
+                <h3 className="text-base font-black text-[#23212A] tracking-tight">
+                  {question.topic || "Latihan Mandiri"}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-[#51465B] text-[#FFD36D]">
+                  Total {qItems.length} Butir Soal
+                </span>
+                {mcCount > 0 && (
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                    {mcCount} Pilihan Ganda
+                  </span>
+                )}
+                {essayCount > 0 && (
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                    {essayCount} Esai
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Stimulus wacana if present */}
+            {question.question_text &&
+              qItems.length > 1 &&
+              question.question_text !== qItems[0]?.question_text && (
+                <div className="p-3.5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-medium text-[#23212A] leading-relaxed">
+                  <span className="text-[10px] font-black uppercase text-[#51465B] block mb-1">
+                    Wacana / Stimulus Kontekstual:
+                  </span>
+                  {question.question_text}
+                </div>
+              )}
+
+            {/* List of items */}
+            <div className="space-y-4 pt-1">
+              {qItems.map((item, idx) => {
+                const isMc = item.type === "multiple_choice";
+                const isEs = item.type === "essay";
+
+                return (
+                  <div
+                    key={item.id || idx}
+                    className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3"
+                  >
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-black text-[#23212A]">
+                          Soal Nomor {idx + 1}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                          isEs
+                            ? "bg-purple-100 text-purple-900 border border-purple-200"
+                            : "bg-amber-100 text-amber-900 border border-amber-200"
+                        }`}
+                      >
+                        {isEs ? "Soal Uraian / Esai" : "Pilihan Ganda"}
+                      </span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm font-bold text-[#23212A] leading-relaxed">
+                      {item.question_text}
+                    </p>
+
+                    {/* Options if Multiple Choice */}
+                    {isMc && item.options && item.options.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {item.options.map((opt) => {
+                          const isCorrect =
+                            item.correct_answer === opt.key || item.correct_answer === opt.text;
+                          return (
+                            <div
+                              key={opt.key}
+                              className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 ${
+                                isCorrect
+                                  ? "bg-emerald-50 border-emerald-400 text-emerald-950 font-bold shadow-2xs"
+                                  : "bg-white border-slate-200 text-[#23212A]"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                    isCorrect ? "bg-emerald-600 text-white" : "bg-slate-100 text-[#23212A]"
+                                  }`}
+                                >
+                                  {opt.key}
+                                </span>
+                                <span>{opt.text}</span>
+                              </div>
+                              {isCorrect && (
+                                <span className="text-[9px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-full">
+                                  Kunci Jawaban
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Rubrik if Essay */}
+                    {isEs && item.rubric && (
+                      <div className="p-3 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 font-medium space-y-1">
+                        <span className="font-bold block text-purple-900">Rubrik Penilaian:</span>
+                        <p className="leading-relaxed">{item.rubric}</p>
+                      </div>
+                    )}
+
+                    {/* Explanation if available */}
+                    {item.explanation && (
+                      <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 font-medium space-y-1">
+                        <span className="font-bold flex items-center gap-1.5 text-amber-900">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          Pembahasan Guru:
+                        </span>
+                        <p className="leading-relaxed text-slate-800">{item.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ============================================================== */}
+      {/* 3. REKAP PESERTA & FILTER PENCARIAN                            */}
       {/* ============================================================== */}
       <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-5 sm:p-7 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -478,19 +627,51 @@ export function RoomDashboardView({
             </div>
 
             {/* Pertanyaan Soal */}
-            {question && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-                  Pertanyaan Esai:
-                </span>
-                <p className="font-bold text-[#23212A]">{question.question_text}</p>
-                {question.rubric && (
-                  <p className="text-[11px] text-slate-600 pt-1 border-t border-slate-200">
-                    <strong>Rubrik:</strong> {question.rubric}
-                  </p>
-                )}
-              </div>
-            )}
+            {question && (() => {
+              const allItems = getQuestionItems(question);
+              const essayItems = allItems.filter((it) => it.type === "essay");
+              const mcItems = allItems.filter((it) => it.type === "multiple_choice");
+
+              return (
+                <div className="space-y-2">
+                  {essayItems.length > 0 ? (
+                    essayItems.map((esItem, esIdx) => (
+                      <div key={esItem.id || esIdx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                        <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                          <span className="text-[10px] text-purple-900 font-bold uppercase tracking-wider">
+                            Pertanyaan Esai {essayItems.length > 1 ? `#${esIdx + 1}` : ""}:
+                          </span>
+                        </div>
+                        <p className="font-bold text-[#23212A] pt-0.5">{esItem.question_text}</p>
+                        {esItem.rubric && (
+                          <p className="text-[11px] text-slate-600 pt-1 border-t border-slate-200">
+                            <strong>Rubrik Penilaian:</strong> {esItem.rubric}
+                          </p>
+                        )}
+                        {esItem.explanation && (
+                          <p className="text-[11px] text-slate-600">
+                            <strong>Pembahasan:</strong> {esItem.explanation}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                        Pertanyaan Soal:
+                      </span>
+                      <p className="font-bold text-[#23212A]">{question.question_text}</p>
+                    </div>
+                  )}
+
+                  {mcItems.length > 0 && (
+                    <div className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-medium">
+                      Paket ini juga mencakup {mcItems.length} butir Soal Pilihan Ganda (Skor PG Siswa: {gradingSubmission.mc_score !== undefined ? `${gradingSubmission.mc_score}/100` : "Tersinkron"}).
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Jawaban Siswa */}
             <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 text-xs space-y-1">

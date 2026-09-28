@@ -202,7 +202,7 @@ export function DepaskanPrintableDocument({
           {/* HEADER: Logo & Brand Kiri, QR Code & Doc ID Kanan */}
           <div className="flex items-start justify-between pb-4 border-b-2 border-[#51465B] print:flex-row print:justify-between print:items-start print:border-slate-900 break-inside-avoid">
             <div className="flex flex-col items-start">
-              <PahamiPuzzleLogo size="md" asButton className="pointer-events-none p-0" />
+              <PahamiPuzzleLogo size="md" asDiv className="pointer-events-none p-0 print-include" />
               <div className="mt-1.5 space-y-0.5">
                 <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider leading-tight">
                   Platform Asesmen & Bahan Ajar Kontekstual Berbasis Kearifan Lokal
