@@ -94,67 +94,93 @@ function createSeedCredential(
   };
 }
 
-const envKeys = (process.env.GEMINI_API_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+export function collectGeminiApiKeys(): string[] {
+  const keys: string[] = [];
 
-const key1 = process.env.GEMINI_API_KEY_1 || envKeys[0] || process.env.GEMINI_API_KEY || "AIzaSy_DEV_DEMO_KEY_MADIUN_2026";
-const key2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_BACKUP_KEY_1 || envKeys[1] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey1_2026";
-const key3 = process.env.GEMINI_API_KEY_3 || process.env.GEMINI_BACKUP_KEY_2 || envKeys[2] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey2_2026";
-const key4 = process.env.GEMINI_API_KEY_4 || process.env.GEMINI_BACKUP_KEY_3 || envKeys[3] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey3_2026";
-const key5 = process.env.GEMINI_API_KEY_5 || process.env.GEMINI_BACKUP_KEY_4 || envKeys[4] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey4_2026";
+  const addKey = (val?: string) => {
+    if (!val) return;
+    const items = val
+      .split(/[\n,;]+/)
+      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+    for (const item of items) {
+      if (
+        item &&
+        item.length > 10 &&
+        !item.includes("DEV_DEMO_KEY") &&
+        !item.includes("AIzaSyBackupStandbyKey") &&
+        !item.includes("your-gemini-api-key") &&
+        !keys.includes(item)
+      ) {
+        keys.push(item);
+      }
+    }
+  };
 
-const INITIAL_AI_CREDENTIALS: AICredential[] = [
-  createSeedCredential(
-    "cred-gemini-primary",
-    "Gemini Primary Production",
-    key1,
-    "project_pahami_prod",
-    1,
-    "API Key utama proyek DEPASKAN dari Google AI Studio"
-  ),
-  createSeedCredential(
-    "cred-gemini-backup-1",
-    "Gemini Standby Backup #1",
-    key2,
-    "project_pahami_backup_1",
-    2,
-    "Kredensial cadangan slot 1 untuk automatic failover"
-  ),
-  createSeedCredential(
-    "cred-gemini-backup-2",
-    "Gemini Standby Backup #2",
-    key3,
-    "project_pahami_backup_2",
-    3,
-    "Kredensial cadangan slot 2 untuk beban puncak / rotasi kuota"
-  ),
-  createSeedCredential(
-    "cred-gemini-backup-3",
-    "Gemini Standby Backup #3",
-    key4,
-    "project_pahami_backup_3",
-    4,
-    "Kredensial cadangan slot 3 untuk ketahanan layanan"
-  ),
-  createSeedCredential(
-    "cred-gemini-backup-4",
-    "Gemini Standby Backup #4",
-    key5,
-    "project_pahami_backup_4",
-    5,
-    "Kredensial cadangan slot 4 untuk mitigasi batas kuota harian"
-  ),
-];
+  // 1. Plural environment variables
+  addKey(process.env.GEMINI_API_KEYS);
+  addKey(process.env.GEMINI_KEYS);
+  addKey(process.env.GOOGLE_API_KEYS);
+
+  // 2. Numbered keys 1 through 10
+  for (let i = 1; i <= 10; i++) {
+    addKey(process.env[`GEMINI_API_KEY_${i}`]);
+    addKey(process.env[`GEMINI_API_KEY${i}`]);
+    addKey(process.env[`GEMINI_KEY_${i}`]);
+    addKey(process.env[`GEMINI_KEY${i}`]);
+    addKey(process.env[`GEMINI_BACKUP_KEY_${i}`]);
+    addKey(process.env[`GEMINI_BACKUP_KEY${i}`]);
+    addKey(process.env[`GOOGLE_API_KEY_${i}`]);
+    addKey(process.env[`GOOGLE_API_KEY${i}`]);
+  }
+
+  // 3. Single key variables
+  addKey(process.env.GEMINI_API_KEY);
+  addKey(process.env.GOOGLE_API_KEY);
+  addKey(process.env.GEMINI_KEY);
+
+  return keys;
+}
+
+export function generateInitialCredentials(): AICredential[] {
+  const discoveredKeys = collectGeminiApiKeys();
+
+  if (discoveredKeys.length === 0) {
+    return [
+      createSeedCredential(
+        "cred-gemini-primary",
+        "Gemini Primary Production",
+        "AIzaSy_DEV_DEMO_KEY_MADIUN_2026",
+        "project_pahami_prod",
+        1,
+        "Placeholder key: Tambahkan GEMINI_API_KEY di dashboard atau environment variables"
+      ),
+    ];
+  }
+
+  return discoveredKeys.map((k, idx) => {
+    const slotNum = idx + 1;
+    const isPrimary = slotNum === 1;
+    return createSeedCredential(
+      isPrimary ? "cred-gemini-primary" : `cred-gemini-backup-${slotNum - 1}`,
+      isPrimary ? "Gemini Primary Key #1" : `Gemini Backup Key #${slotNum}`,
+      k,
+      `project_pahami_slot_${slotNum}`,
+      slotNum,
+      `API Key slot #${slotNum} aktif dari environment variables (terkoneksi multi-key rotation)`
+    );
+  });
+}
+
+const INITIAL_AI_CREDENTIALS: AICredential[] = generateInitialCredentials();
 
 const INITIAL_AI_MODELS: AIModelConfig[] = [
   {
     id: "model-cfg-qgen",
     feature_key: "question_generation",
     provider: "gemini",
-    primary_model: "gemini-3.7-flash",
-    fallback_model: "gemini-flash-latest",
+    primary_model: "gemini-3.6-flash",
+    fallback_model: "gemini-3-flash-preview",
     required_capabilities: ["text_generation", "structured_output"],
     timeout_ms: 35000,
     temperature: 0.2,
@@ -167,8 +193,8 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-qscan",
     feature_key: "question_scan",
     provider: "gemini",
-    primary_model: "gemini-3.7-flash",
-    fallback_model: "gemini-flash-latest",
+    primary_model: "gemini-3.6-flash",
+    fallback_model: "gemini-3-flash-preview",
     required_capabilities: ["text_generation", "image_understanding"],
     timeout_ms: 45000,
     temperature: 0.1,
@@ -181,8 +207,8 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-matgen",
     feature_key: "material_generation",
     provider: "gemini",
-    primary_model: "gemini-3.7-flash",
-    fallback_model: "gemini-flash-latest",
+    primary_model: "gemini-3.6-flash",
+    fallback_model: "gemini-3-flash-preview",
     required_capabilities: ["text_generation", "structured_output"],
     timeout_ms: 45000,
     temperature: 0.2,
@@ -195,8 +221,8 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-rewrite",
     feature_key: "contextual_rewriting",
     provider: "gemini",
-    primary_model: "gemini-3.7-flash",
-    fallback_model: "gemini-flash-latest",
+    primary_model: "gemini-3.6-flash",
+    fallback_model: "gemini-3-flash-preview",
     required_capabilities: ["text_generation", "structured_output"],
     timeout_ms: 35000,
     temperature: 0.2,
@@ -209,8 +235,8 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-val",
     feature_key: "educational_validation",
     provider: "gemini",
-    primary_model: "gemini-3.7-flash",
-    fallback_model: "gemini-flash-latest",
+    primary_model: "gemini-3.6-flash",
+    fallback_model: "gemini-3-flash-preview",
     required_capabilities: ["text_generation", "structured_output"],
     timeout_ms: 25000,
     temperature: 0.1,
@@ -327,7 +353,7 @@ function getAdminGlobalStore(): GlobalAdminStore {
     g.__pahami_admin_data = {
       accounts: [...INITIAL_ADMIN_ACCOUNTS],
       sessions: [],
-      credentials: [...INITIAL_AI_CREDENTIALS],
+      credentials: generateInitialCredentials(),
       models: [...INITIAL_AI_MODELS],
       usageEvents: [...INITIAL_AI_USAGE_EVENTS],
       failoverEvents: [],
@@ -335,6 +361,17 @@ function getAdminGlobalStore(): GlobalAdminStore {
       settings: { ...INITIAL_SYSTEM_SETTINGS },
       notifications: [...INITIAL_SYSTEM_NOTIFICATIONS],
     };
+  } else {
+    // Re-check discovered keys in case env vars were loaded dynamically
+    const discovered = collectGeminiApiKeys();
+    if (discovered.length > 0) {
+      const hasOnlyDemo = g.__pahami_admin_data.credentials.every(
+        (c) => !c.masked_key || c.masked_key.includes("DEMO") || c.masked_key.includes("AIzaSy...2026")
+      );
+      if (hasOnlyDemo || g.__pahami_admin_data.credentials.length < discovered.length) {
+        g.__pahami_admin_data.credentials = generateInitialCredentials();
+      }
+    }
   }
   return g.__pahami_admin_data;
 }

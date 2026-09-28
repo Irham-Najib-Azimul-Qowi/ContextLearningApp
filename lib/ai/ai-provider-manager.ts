@@ -177,16 +177,16 @@ export class AIProviderManager {
           });
           return cred;
         }
-        // If it's the primary key and we have GEMINI_API_KEY in env, auto-recover
-        if (process.env.GEMINI_API_KEY && cred.id === "cred-gemini-primary") {
+        // Only auto-recover primary if it is the ONLY credential configured
+        if (creds.length === 1 && process.env.GEMINI_API_KEY && cred.id === "cred-gemini-primary") {
           return cred;
         }
         continue;
       }
 
       if (cred.health_status === "invalid" || cred.health_status === "disabled") {
-        // If it's the primary credential and GEMINI_API_KEY is in env, heal it
-        if (process.env.GEMINI_API_KEY && cred.id === "cred-gemini-primary") {
+        // Only heal primary if it is the ONLY credential in the system
+        if (creds.length === 1 && process.env.GEMINI_API_KEY && cred.id === "cred-gemini-primary") {
           return cred;
         }
         continue;
@@ -236,12 +236,14 @@ export class AIProviderManager {
       candidateModels.push(modelConfig.fallback_model);
     }
     const RESILIENT_FALLBACKS = [
-      "gemini-3.7-flash",
-      "gemini-flash-latest",
+      "gemini-3.6-flash",
+      "gemini-3-flash-preview",
       "gemini-3.8-flash",
-      "gemini-pro-latest",
+      "gemini-3.7-flash",
       "gemini-3.5-flash",
+      "gemini-flash-latest",
       "gemini-flash-lite-latest",
+      "gemini-pro-latest",
     ];
     for (const m of RESILIENT_FALLBACKS) {
       if (!candidateModels.includes(m)) {
@@ -462,6 +464,17 @@ export class AIProviderManager {
 
           // If current model failed due to QUOTA_EXCEEDED, RATE_LIMITED:
           if (classification === "QUOTA_EXCEEDED" || classification === "RATE_LIMITED") {
+            // First check if there are other candidate models to try on this key!
+            // In Google AI Studio, a rate limit / 429 on one model (e.g. 3.8-flash) does not affect other models (e.g. 3.6-flash).
+            if (mIdx < candidateModels.length - 1) {
+              console.warn(
+                `[AI Failover] Model ${currentModel} hit ${classification} on ${credential?.name || credId}. Cascading to next model: ${candidateModels[mIdx + 1]}...`
+              );
+              isFailover = true;
+              continue;
+            }
+
+            // Only if ALL models failed on this key, rotate to next credential
             if (credential) {
               const cooldownSecs = credential.cooldown_seconds || 60;
               const cooldownUntil = new Date(Date.now() + cooldownSecs * 1000).toISOString();
