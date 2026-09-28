@@ -22,6 +22,15 @@ const TRADITION_PATTERNS = ["kesenian tradisional", "tarian daerah", "upacara ad
 const GEOGRAPHY_PATTERNS = ["danau wisata", "pegunungan", "sungai besar", "pantai wisata", "danau alami", "bukit"];
 const OCCUPATION_PATTERNS = ["petani", "pedagang", "nelayan", "pengrajin", "peternak sapi"];
 
+import {
+  isSectionHeaderOrMetadata,
+  cleanDocumentPreambleAndHeaders,
+  extractMeaningfulTitle,
+  parseRawQuestionsToDraft,
+} from "./document-parser";
+
+export { isSectionHeaderOrMetadata };
+
 export class ContextualAIEngine {
   private retriever: LocalContextRetriever;
 
@@ -38,8 +47,19 @@ export class ContextualAIEngine {
     const prompt = (input.prompt || "").trim();
     const title = (input.title || "").trim();
     const rawTopic = (input.topic || "").trim();
-    const effectiveText = raw || prompt || rawTopic || title;
-    const topic = rawTopic || title || prompt || (effectiveText ? "Materi Tematik Kontekstual" : "");
+
+    // Clean section headers and exam metadata from raw text for questions
+    let cleanRaw = raw;
+    if (input.contentType === "question" && raw) {
+      cleanRaw = cleanDocumentPreambleAndHeaders(raw);
+    }
+
+    const effectiveText = cleanRaw || prompt || rawTopic || title;
+    const topic =
+      rawTopic ||
+      title ||
+      prompt ||
+      extractMeaningfulTitle(effectiveText, "Materi Tematik Kontekstual");
 
     let questionCount = Number(input.questionCount) || 0;
     if (questionCount <= 0 && prompt) {
@@ -48,18 +68,10 @@ export class ContextualAIEngine {
         questionCount = Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10);
       }
     }
-    if (questionCount <= 0 && raw) {
-      const qMatches = raw.split(/\r?\n/).filter((line) => {
-        const trimmed = line.trim();
-        if (/^(?:(?:\([A-Ea-e]\))|[A-Ea-e][\.\:\)])\s+/i.test(trimmed)) return false;
-        return (
-          /^(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]/i.test(trimmed) ||
-          /^#+\s*(?:(?:soal|nomor|no)\.?\s*)?\d+/i.test(trimmed) ||
-          /^(?:pertanyaan|butir\s*soal)\s*\d+/i.test(trimmed)
-        );
-      });
-      if (qMatches.length > 0) {
-        questionCount = Math.min(Math.max(qMatches.length, 1), 15);
+    if (questionCount <= 0 && cleanRaw) {
+      const parsedDrafts = parseRawQuestionsToDraft(cleanRaw);
+      if (parsedDrafts.length > 0) {
+        questionCount = Math.min(Math.max(parsedDrafts.length, 1), 15);
       }
     }
     if (questionCount <= 0) {
@@ -590,18 +602,24 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
       };
     });
 
+    // Discard any question items that are actually document headers or too short
+    const validQuestions = processedQuestions.filter(
+      (q) => !isSectionHeaderOrMetadata(q.question_text) && q.question_text.trim().length >= 5
+    );
+    const finalQuestions = validQuestions.length > 0 ? validQuestions : processedQuestions;
+
     const overallValidation = {
-      is_valid: processedQuestions.every((q) => q.validation.is_valid),
-      status: (processedQuestions.every((q) => q.validation.status === "VALID")
+      is_valid: finalQuestions.every((q) => q.validation.is_valid),
+      status: (finalQuestions.every((q) => q.validation.status === "VALID")
         ? "VALID"
-        : processedQuestions.some((q) => q.validation.status === "INVALID")
+        : finalQuestions.some((q) => q.validation.status === "INVALID")
         ? "INVALID"
         : "WARNING") as "VALID" | "WARNING" | "INVALID",
       competency_preserved: true,
       answer_key_preserved: true,
-      local_context_grounded: processedQuestions.some((q) => q.validation.local_context_grounded),
-      math_numbers_strictly_preserved: processedQuestions.every((q) => q.validation.math_numbers_strictly_preserved),
-      warnings: processedQuestions.flatMap((q) => q.validation.warnings),
+      local_context_grounded: finalQuestions.some((q) => q.validation.local_context_grounded),
+      math_numbers_strictly_preserved: finalQuestions.every((q) => q.validation.math_numbers_strictly_preserved),
+      warnings: finalQuestions.flatMap((q) => q.validation.warnings),
       pedagogical_notes: "Seluruh butir soal diverifikasi dengan prinsip 'Konteks berubah, kompetensi tetap'.",
     };
 
@@ -609,7 +627,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
       type: "question",
       questions: {
         topic: parsedQ.topic || normalized.topic,
-        questions: processedQuestions,
+        questions: finalQuestions,
         validation: overallValidation,
       },
       retrievedEntities,

@@ -51,6 +51,12 @@ import {
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
+import {
+  parseRawQuestionsToDraft,
+  cleanDocumentPreambleAndHeaders,
+  extractMeaningfulTitle,
+  isSectionHeaderOrMetadata,
+} from "@/lib/context-engine/document-parser";
 
 function deriveQuestionRoomCode(id: string): string {
   const digits = (id || "").replace(/[^0-9]/g, "");
@@ -168,10 +174,13 @@ function TeacherQuestionsContent() {
       });
       const json = await res.json();
       if (json.success && json.extractedText) {
-        setManualQuestionDraft(json.extractedText);
+        const cleanedText = cleanDocumentPreambleAndHeaders(json.extractedText);
+        setManualQuestionDraft(cleanedText || json.extractedText);
+        const derivedTopic = extractMeaningfulTitle(json.extractedText, topic || "Asesmen Dokumen");
+        setTopic(derivedTopic);
         // Otomatis ekstrak & kontekstualisasikan SELURUH butir soal yang ada di dalam berkas
         try {
-          await handleTriggerAiContextTransformation(json.extractedText);
+          await handleTriggerAiContextTransformation(cleanedText || json.extractedText, derivedTopic);
         } catch (ctxErr) {
           console.warn("Auto-contextualization warning:", ctxErr);
         }
@@ -547,162 +556,6 @@ function TeacherQuestionsContent() {
     handleOpenWizard("from_material", target);
   };
 
-  // Parser bantuan: Ubah naskah teks mentah menjadi array QuestionDraftItem terstruktur
-  const parseRawQuestionsToDraft = (rawText: string, defaultTopic: string = ""): QuestionDraftItem[] => {
-    if (!rawText || !rawText.trim()) {
-      return [
-        {
-          id: `q-draft-${Date.now()}-1`,
-          type: "multiple_choice",
-          question_text: defaultTopic ? `Berdasarkan topik ${defaultTopic}, jawablah pertanyaan berikut:` : "",
-          options: [
-            { key: "A", text: "" },
-            { key: "B", text: "" },
-            { key: "C", text: "" },
-            { key: "D", text: "" },
-          ],
-          correct_answer: "A",
-          explanation: "",
-          rubric: "",
-        },
-      ];
-    }
-
-    const isOptionLine = (line: string) => {
-      const trimmed = line.trim();
-      return /^(?:(?:\([A-Ea-e]\))|[A-Ea-e][\.\:\)])\s+/i.test(trimmed);
-    };
-
-    const isQuestionStart = (line: string) => {
-      const trimmed = line.trim();
-      if (isOptionLine(trimmed)) return false;
-      return (
-        /^(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]/i.test(trimmed) ||
-        /^#+\s*(?:(?:soal|nomor|no)\.?\s*)?\d+/i.test(trimmed) ||
-        /^(?:pertanyaan|butir\s*soal)\s*\d+/i.test(trimmed)
-      );
-    };
-
-    const lines = rawText.split(/\r?\n/);
-    const chunks: string[] = [];
-    let currentChunk: string[] = [];
-
-    for (const line of lines) {
-      if (isQuestionStart(line) && currentChunk.length > 0) {
-        chunks.push(currentChunk.join("\n").trim());
-        currentChunk = [line];
-      } else {
-        currentChunk.push(line);
-      }
-    }
-    if (currentChunk.length > 0) {
-      chunks.push(currentChunk.join("\n").trim());
-    }
-
-    let candidateChunks = chunks.filter((c) => c.trim().length > 0);
-    if (candidateChunks.length === 0) {
-      const paragraphs = rawText
-        .split(/\n\s*\n+/)
-        .map((p) => p.trim())
-        .filter(Boolean);
-      candidateChunks = paragraphs.length > 0 ? paragraphs : [rawText.trim()];
-    }
-
-    return candidateChunks.map((chunk, idx) => {
-      const chunkLines = chunk.split("\n").map((l) => l.trim()).filter(Boolean);
-      const options: { key: string; text: string }[] = [];
-      let correctAnswer = "A";
-      let explanation = "";
-      let rubric = "";
-      let isEssay = false;
-
-      const questionTextLines: string[] = [];
-      for (const cl of chunkLines) {
-        const optMatch = cl.match(/^(?:(?:\(([A-Ea-e])\))|([A-Ea-e])[\.\:\)])\s*(.*)$/);
-        const ansMatch = cl.match(/^(?:kunci|jawaban|kunci jawaban|ans|answer)[\s:]+(.*)$/i);
-        const expMatch = cl.match(/^(?:pembahasan|penjelasan|alasan)[\s:]+(.*)$/i);
-        const rubMatch = cl.match(/^(?:rubrik|pedoman penskoran)[\s:]+(.*)$/i);
-
-        if (ansMatch) {
-          const rawAns = ansMatch[1].trim();
-          const singleLetter = rawAns.match(/\b([A-Ea-e])\b/);
-          if (singleLetter) {
-            correctAnswer = singleLetter[1].toUpperCase();
-          } else {
-            correctAnswer = rawAns;
-            isEssay = true;
-          }
-        } else if (expMatch) {
-          explanation = expMatch[1].trim();
-        } else if (rubMatch) {
-          rubric = rubMatch[1].trim();
-          isEssay = true;
-        } else if (optMatch) {
-          options.push({
-            key: (optMatch[1] || optMatch[2]).toUpperCase(),
-            text: optMatch[3].trim(),
-          });
-        } else {
-          if (options.length === 0) {
-            questionTextLines.push(cl);
-          } else {
-            if (options.length > 0) {
-              options[options.length - 1].text += " " + cl;
-            }
-          }
-        }
-      }
-
-      let questionText = questionTextLines
-        .join("\n")
-        .replace(/^(?:#+\s*)?(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]\s*/i, "")
-        .trim();
-
-      if (!questionText && chunkLines.length > 0) {
-        questionText = chunkLines[0]
-          .replace(/^(?:#+\s*)?(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]\s*/i, "")
-          .trim();
-      }
-
-      const type: "multiple_choice" | "essay" =
-        options.length >= 2 && !isEssay ? "multiple_choice" : "essay";
-
-      let finalExplanation = explanation.trim();
-      if (!finalExplanation) {
-        if (type === "multiple_choice") {
-          const selectedOpt = options.find((o) => o.key === correctAnswer);
-          finalExplanation = `Kunci jawaban yang tepat adalah ${correctAnswer}${selectedOpt?.text ? ` (${selectedOpt.text})` : ""}. Pembahasan: Berdasarkan konsep materi ${defaultTopic || "terkait"}, jawaban yang sesuai adalah opsi ${correctAnswer}.`;
-        } else {
-          finalExplanation = `Pembahasan esai: Siswa menguraikan penjelasan terkait konsep ${defaultTopic || "materi"} secara runtut, logis, dan mengaitkannya dengan fenomena atau contoh di lingkungan nyata.`;
-        }
-      }
-
-      let finalRubric = rubric.trim();
-      if (!finalRubric && type === "essay") {
-        finalRubric = "Kriteria Penilaian Esai (Skor 0-4):\n- Skor 4: Jawaban sangat lengkap, analisis akurat, dan mencantumkan contoh kontekstual yang relevan di daerah setempat.\n- Skor 3: Jawaban tepat dan runtut, namun penjelasan pendukung kurang mendalam.\n- Skor 2: Jawaban benar sebagian atau hanya menyebutkan konsep inti tanpa penjelasan.\n- Skor 1: Jawaban kurang tepat, tetapi siswa telah berusaha menuliskan konsep terkait.\n- Skor 0: Tidak menjawab atau jawaban tidak relevan.";
-      }
-
-      return {
-        id: `q-draft-${Date.now()}-${idx + 1}`,
-        type,
-        original_question_text: chunk,
-        question_text: questionText || `Butir Soal ${idx + 1}`,
-        options:
-          options.length >= 2
-            ? options
-            : [
-                { key: "A", text: "" },
-                { key: "B", text: "" },
-                { key: "C", text: "" },
-                { key: "D", text: "" },
-              ],
-        correct_answer: correctAnswer,
-        explanation: finalExplanation,
-        rubric: finalRubric,
-      };
-    });
-  };
-
   // Step 2 -> Step 3: Validasi Identitas & Masuk Form Konten Soal
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -713,8 +566,7 @@ function TeacherQuestionsContent() {
       if (aiPrompt.trim()) {
         effectiveTopic = aiPrompt.trim().slice(0, 60);
       } else if (manualQuestionDraft.trim()) {
-        const firstLine = manualQuestionDraft.trim().split("\n")[0].replace(/^[\d\.\-\s]+/, "").slice(0, 60);
-        effectiveTopic = firstLine || "Asesmen Tematik";
+        effectiveTopic = extractMeaningfulTitle(manualQuestionDraft, "Asesmen Tematik Kontekstual");
       } else {
         effectiveTopic = "Asesmen Tematik Kontekstual";
       }
@@ -794,9 +646,12 @@ function TeacherQuestionsContent() {
     try {
       const activeTopic = overrideTopic || topic || aiPrompt || "Asesmen Tematik";
       let textToUse = typeof overrideText === "string" ? overrideText : manualQuestionDraft;
-      if (!textToUse && questionsList.some((q) => q.question_text.trim())) {
+      if (textToUse) {
+        textToUse = cleanDocumentPreambleAndHeaders(textToUse);
+      }
+      if (!textToUse && questionsList.some((q) => q.question_text.trim() && !isSectionHeaderOrMetadata(q.question_text))) {
         textToUse = questionsList
-          .filter((q) => q.question_text.trim())
+          .filter((q) => q.question_text.trim() && !isSectionHeaderOrMetadata(q.question_text))
           .map((q, idx) => {
             let itemStr = `Soal ${idx + 1} (${q.type === "essay" ? "Esai" : "Pilihan Ganda"}):\n${q.question_text.trim()}`;
             if (q.type === "multiple_choice" && q.options && q.options.length > 0) {
@@ -858,7 +713,12 @@ function TeacherQuestionsContent() {
           setOverallValidation(json.data.validation);
         }
         if (json.data.questions && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
-          const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => {
+          const validAiItems = json.data.questions.filter((q: any) => {
+            const txt = (q.question_text || q.question || "").trim();
+            return !isSectionHeaderOrMetadata(txt) && txt.length >= 3;
+          });
+          const listToMap = validAiItems.length > 0 ? validAiItems : json.data.questions;
+          const mapped: QuestionDraftItem[] = listToMap.map((q: any, idx: number) => {
             const itemType: "multiple_choice" | "essay" = q.type === "essay" ? "essay" : "multiple_choice";
             const cAns = itemType === "multiple_choice" ? (q.correct_answer || q.correctAnswer || "A").toString().trim() : "";
             const opts = q.options && Array.isArray(q.options)
@@ -932,7 +792,9 @@ function TeacherQuestionsContent() {
       setTopic(effectiveTopic);
     }
 
-    let validQuestions = questionsList.filter((q) => q.question_text.trim());
+    let validQuestions = questionsList.filter(
+      (q) => q.question_text.trim() && !isSectionHeaderOrMetadata(q.question_text)
+    );
     if (validQuestions.length === 0) {
       alert("Harap masukkan minimal satu butir pertanyaan soal sebelum menyimpan.");
       return;
@@ -988,7 +850,12 @@ function TeacherQuestionsContent() {
         }
 
         if (json && json.success && json.data && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
-          const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => ({
+          const validAiItems = json.data.questions.filter((q: any) => {
+            const txt = (q.question_text || q.question || "").trim();
+            return !isSectionHeaderOrMetadata(txt) && txt.length >= 3;
+          });
+          const listToMap = validAiItems.length > 0 ? validAiItems : json.data.questions;
+          const mapped: QuestionDraftItem[] = listToMap.map((q: any, idx: number) => ({
             id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
             type: q.type === "essay" ? "essay" : "multiple_choice",
             original_question_text: q.original_question_text || validQuestions[idx]?.question_text || "",

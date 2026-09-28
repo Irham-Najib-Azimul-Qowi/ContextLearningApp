@@ -27,6 +27,11 @@ import {
   AlertCircle,
   FileCheck,
 } from "lucide-react";
+import {
+  cleanDocumentPreambleAndHeaders,
+  extractMeaningfulTitle,
+  isSectionHeaderOrMetadata,
+} from "@/lib/context-engine/document-parser";
 
 const REGION_OPTIONS = [
   { id: "35.77", name: "Kota Madiun", desc: "Kota Pendekar & Sentra Industri Kereta Api (INKA)" },
@@ -119,6 +124,10 @@ function CreateMaterialContent() {
         return;
       }
 
+      const cleanedText = sourceType === "generate" ? "" : cleanDocumentPreambleAndHeaders(textToUse);
+      const effectiveTitle =
+        customTitle || title || topic || extractMeaningfulTitle(textToUse, "Materi Pembelajaran Kontekstual");
+
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -126,8 +135,8 @@ function CreateMaterialContent() {
           type: "material",
           inputMode: sourceType === "image" ? "camera" : sourceType === "generate" ? "ai" : sourceType,
           prompt: sourceType === "generate" ? (topic || "Kearifan lokal dan bentang alam") : "",
-          rawText: textToUse,
-          title: customTitle || title || topic || "Materi Pembelajaran Kontekstual",
+          rawText: cleanedText || textToUse,
+          title: effectiveTitle,
           subject,
           grade,
           regionName: targetRegion,
@@ -220,8 +229,10 @@ function CreateMaterialContent() {
       }
 
       const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      setTitle(`Materi Ajar: ${cleanTitle}`);
-      setOriginalContent(json.extractedText);
+      const derivedTitle = extractMeaningfulTitle(json.extractedText, `Materi Ajar: ${cleanTitle}`);
+      setTitle(derivedTitle);
+      const cleaned = cleanDocumentPreambleAndHeaders(json.extractedText);
+      setOriginalContent(cleaned || json.extractedText);
     } catch (err: any) {
       console.error("PDF extract error:", err);
       setFileExtractError({
@@ -262,8 +273,10 @@ function CreateMaterialContent() {
       }
 
       const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      setTitle(cleanTitle ? `Materi: ${cleanTitle}` : "Materi Hasil Pindai Kamera");
-      setOriginalContent(json.extractedText);
+      const derivedTitle = extractMeaningfulTitle(json.extractedText, cleanTitle ? `Materi: ${cleanTitle}` : "Materi Hasil Pindai Kamera");
+      setTitle(derivedTitle);
+      const cleaned = cleanDocumentPreambleAndHeaders(json.extractedText);
+      setOriginalContent(cleaned || json.extractedText);
     } catch (err: any) {
       console.error("Photo OCR error:", err);
       setFileExtractError({

@@ -22,6 +22,11 @@ import { repository } from "@/lib/db/repository";
 import { School } from "@/lib/db/types";
 
 import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
+import {
+  cleanDocumentPreambleAndHeaders,
+  isSectionHeaderOrMetadata,
+  extractMeaningfulTitle,
+} from "@/lib/context-engine/document-parser";
 
 function ScanQuestionContent() {
   const router = useRouter();
@@ -129,6 +134,12 @@ function ScanQuestionContent() {
     setIsContextualizing(true);
     setErrorMessage(null);
 
+    const cleanedText = cleanDocumentPreambleAndHeaders(extractedRawText);
+    const derivedTopic = extractMeaningfulTitle(
+      extractedRawText,
+      isPdfMode ? "Ekstraksi Dokumen PDF" : "Ekstraksi Foto Lembar Soal"
+    );
+
     try {
       const ctxRes = await fetch("/api/ai/contextualize", {
         method: "POST",
@@ -136,7 +147,8 @@ function ScanQuestionContent() {
         body: JSON.stringify({
           type: "question",
           inputMode: isPdfMode ? "pdf" : "camera",
-          rawText: extractedRawText,
+          rawText: cleanedText || extractedRawText,
+          topic: derivedTopic,
           subject: "Matematika",
           grade: 5,
           regionId: activeSchool?.region_id || "35.02",
@@ -166,7 +178,13 @@ function ScanQuestionContent() {
         return;
       }
 
-      const mapped = ctxJson.data.questions.map((q: any, idx: number) => {
+      const validAiQuestions = ctxJson.data.questions.filter((q: any) => {
+        const txt = (q.question_text || q.question || "").trim();
+        return !isSectionHeaderOrMetadata(txt) && txt.length >= 3;
+      });
+      const listToMap = validAiQuestions.length > 0 ? validAiQuestions : ctxJson.data.questions;
+
+      const mapped = listToMap.map((q: any, idx: number) => {
         const itemType = q.type === "essay" ? "essay" : "multiple_choice";
         const cAns = itemType === "multiple_choice" ? (q.correct_answer || q.correctAnswer || "A").toString().trim() : "";
         const opts = q.options && Array.isArray(q.options)
@@ -220,12 +238,16 @@ function ScanQuestionContent() {
 
     const teacher = repository.getCurrentUser();
     const firstQ = questionsList[0];
+    const derivedTopic = extractMeaningfulTitle(
+      extractedRawText,
+      isPdfMode ? "Ekstraksi & Kontekstualisasi Dokumen PDF" : "Ekstraksi & Kontekstualisasi Vision OCR"
+    );
     const saved = repository.saveQuestion({
       school_id: activeSchool.id,
       teacher_id: teacher.id,
       subject: "Matematika",
       grade: 5,
-      topic: isPdfMode ? "Ekstraksi & Kontekstualisasi Dokumen PDF" : "Ekstraksi & Kontekstualisasi Vision OCR",
+      topic: derivedTopic,
       type: questionsList.length > 1 ? "mixed" : firstQ.type,
       question_text: firstQ.question_text,
       options: firstQ.options,

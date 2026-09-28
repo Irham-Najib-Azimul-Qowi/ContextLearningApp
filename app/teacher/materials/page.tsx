@@ -38,6 +38,11 @@ import { LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/ty
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
+import {
+  cleanDocumentPreambleAndHeaders,
+  extractMeaningfulTitle,
+  isSectionHeaderOrMetadata,
+} from "@/lib/context-engine/document-parser";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -214,10 +219,14 @@ export default function TeacherMaterialsPage() {
       });
       const json = await res.json();
       if (json.success && json.extractedText) {
-        setManualDraft(json.extractedText);
+        const cleanedText = cleanDocumentPreambleAndHeaders(json.extractedText);
+        setManualDraft(cleanedText || json.extractedText);
+        const derivedTitle = extractMeaningfulTitle(json.extractedText, title || "Materi Pembelajaran Kontekstual");
+        setTitle(derivedTitle);
+        setPreviewTitle(derivedTitle);
         // Otomatis kontekstualisasikan naskah materi dari berkas dengan kearifan lokal
         try {
-          await handleTriggerAiContextTransformation(json.extractedText);
+          await handleTriggerAiContextTransformation(cleanedText || json.extractedText, derivedTitle);
         } catch (ctxErr) {
           console.warn("Auto-contextualization warning:", ctxErr);
         }
@@ -243,8 +252,7 @@ export default function TeacherMaterialsPage() {
     let effectiveTitle = title.trim();
     if (!effectiveTitle) {
       if (manualDraft.trim()) {
-        const firstLine = manualDraft.trim().split("\n")[0].replace(/^[\d\.\-\#\s]+/, "").slice(0, 60);
-        effectiveTitle = firstLine || "Materi Pembelajaran Kontekstual";
+        effectiveTitle = extractMeaningfulTitle(manualDraft, "Materi Pembelajaran Kontekstual");
       } else if (aiPrompt.trim()) {
         effectiveTitle = aiPrompt.trim().slice(0, 60);
       } else {
@@ -269,7 +277,10 @@ export default function TeacherMaterialsPage() {
     setAiError(null);
     const effectiveTitle = customTitle || title || aiPrompt || "Modul Ajar Tematik";
     try {
-      const textToUse = typeof overrideText === "string" ? overrideText : manualDraft;
+      let textToUse = typeof overrideText === "string" ? overrideText : manualDraft;
+      if (textToUse) {
+        textToUse = cleanDocumentPreambleAndHeaders(textToUse);
+      }
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -277,7 +288,7 @@ export default function TeacherMaterialsPage() {
           type: "material",
           inputMode: selectedMethod,
           prompt: selectedMethod === "ai" ? (aiPrompt || effectiveTitle) : "",
-          rawText: textToUse,
+          rawText: textToUse || effectiveTitle,
           title: effectiveTitle,
           subject,
           grade,
