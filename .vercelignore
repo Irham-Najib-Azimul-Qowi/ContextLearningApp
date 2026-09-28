@@ -2,7 +2,7 @@
 data-pipeline/
 docs/
 scratch/
-supabase/
+/supabase/
 .agents/
 tests/
 *.md
