@@ -212,6 +212,8 @@ export default function TeacherMaterialsPage() {
       const json = await res.json();
       if (json.success && json.extractedText) {
         setManualDraft(json.extractedText);
+        // Otomatis kontekstualisasikan naskah materi dari berkas dengan kearifan lokal
+        await handleTriggerAiContextTransformation(json.extractedText);
       } else {
         throw new Error(json.error || "Gagal mengekstrak teks dari berkas.");
       }
@@ -234,17 +236,18 @@ export default function TeacherMaterialsPage() {
     if (!title.trim() && selectedMethod !== "ai") return;
     if (selectedMethod === "ai" && !aiPrompt.trim() && !title.trim()) return;
 
-    if (selectedMethod === "ai") {
+    if (selectedMethod === "ai" || manualDraft.trim()) {
       await handleTriggerAiContextTransformation();
     }
     setWizardStep(3);
   };
 
   // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
-  const handleTriggerAiContextTransformation = async () => {
+  const handleTriggerAiContextTransformation = async (overrideText?: string | React.MouseEvent) => {
     setIsAiGenerating(true);
     setAiError(null);
     try {
+      const textToUse = typeof overrideText === "string" ? overrideText : manualDraft;
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -252,7 +255,7 @@ export default function TeacherMaterialsPage() {
           type: "material",
           inputMode: selectedMethod,
           prompt: selectedMethod === "ai" ? (aiPrompt || title) : "",
-          rawText: manualDraft,
+          rawText: textToUse,
           title: title || aiPrompt || "Modul Ajar Tematik",
           subject,
           grade,
@@ -291,28 +294,67 @@ export default function TeacherMaterialsPage() {
     }
   };
 
-  // Submit Step 3: Simpan Modul Materi dari Form Konten
-  const handleStep3Save = () => {
+  // Submit Step 3: Simpan Modul Materi dari Form Konten (Semua Input Dikontekstualisasikan)
+  const handleStep3Save = async () => {
     if (!activeSchool || !title.trim()) return;
 
-    let content = manualDraft;
-    if (selectedMethod === "camera") {
-      content = capturedPhotoName ? `Naskah hasil pindai: ${capturedPhotoName}\n\n${manualDraft}` : manualDraft;
-    } else if (selectedMethod === "pdf") {
-      content = uploadedFileName ? `Berkas dokumen: ${uploadedFileName}\n\n${manualDraft}` : manualDraft;
-    } else if (selectedMethod === "ai") {
-      content = previewNarrative || manualDraft;
+    let finalContent = previewNarrative.trim();
+    let finalTitle = previewTitle || title.trim();
+    let finalOrig = originalContent || (previewNarrative.trim() ? manualDraft : undefined);
+    let finalCv = materialContextVariables;
+    let finalVal = materialValidation;
+
+    // Jika belum dikontekstualisasikan oleh AI (misal input manual langsung klik simpan), jalankan kontekstualisasi AI otomatis sekarang
+    if (!finalContent && manualDraft.trim()) {
+      setIsAiGenerating(true);
+      try {
+        const res = await fetch("/api/ai/contextualize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "material",
+            inputMode: selectedMethod,
+            prompt: "",
+            rawText: manualDraft,
+            title: title.trim(),
+            subject,
+            grade,
+            regionId: activeSchool.region_id || "35.02",
+            regionName: region,
+          }),
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          finalContent = json.data.content || manualDraft.trim();
+          if (json.data.title) finalTitle = json.data.title;
+          finalOrig = json.data.original_content || manualDraft;
+          finalCv = json.data.context_variables || [];
+          finalVal = json.data.validation;
+        } else {
+          finalContent = manualDraft.trim();
+        }
+      } catch (e) {
+        console.error("Auto-contextualize fallback on save:", e);
+        finalContent = manualDraft.trim();
+      } finally {
+        setIsAiGenerating(false);
+      }
     }
+
+    if (!finalContent) return;
 
     const newMat = repository.saveMaterial({
       id: patentMaterialId || undefined,
       school_id: activeSchool.id,
       teacher_id: currentUser?.id || "usr-teacher-01",
-      title: (selectedMethod === "ai" && previewTitle) ? previewTitle : title.trim(),
+      title: finalTitle,
       subject,
       grade,
-      content: content || "Bahan ajar tematik Kurikulum Merdeka berbasis kearifan lokal.",
+      content: finalContent,
       is_contextualized: true,
+      original_content: finalOrig,
+      context_variables: finalCv,
+      validation: finalVal || undefined,
       published_to_classes: [],
     });
 
@@ -906,6 +948,27 @@ export default function TeacherMaterialsPage() {
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
                       placeholder="Modul ajar IPAS ekosistem persawahan dan panen padi di Ponorogo untuk siswa SD..."
+                      className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
+                    />
+                  </div>
+                )}
+
+                {/* Draf Teks Materi jika metode Manual */}
+                {selectedMethod === "manual" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-gray-200">
+                        Naskah / Draf Materi Ajar (Opsional)
+                      </label>
+                      <span className="text-[11px] text-gray-400">
+                        Tempelkan draf materi di sini untuk dikontekstualisasikan otomatis
+                      </span>
+                    </div>
+                    <textarea
+                      rows={4}
+                      value={manualDraft}
+                      onChange={(e) => setManualDraft(e.target.value)}
+                      placeholder="Opsional: Tulis atau tempelkan naskah materi mentah di sini. Sistem akan otomatis mengontekstualisasikannya dengan kearifan lokal..."
                       className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
                     />
                   </div>

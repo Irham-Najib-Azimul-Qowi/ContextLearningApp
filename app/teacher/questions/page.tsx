@@ -127,6 +127,8 @@ function TeacherQuestionsContent() {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [capturedPhotoName, setCapturedPhotoName] = useState<string | null>(null);
+  const [aiQuestionCount, setAiQuestionCount] = useState<number>(3);
+  const [aiQuestionType, setAiQuestionType] = useState<"multiple_choice" | "essay" | "mixed">("multiple_choice");
   const [isPrintingQuestion, setIsPrintingQuestion] = useState(false);
   const [isExtractingText, setIsExtractingText] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
@@ -155,6 +157,8 @@ function TeacherQuestionsContent() {
       const json = await res.json();
       if (json.success && json.extractedText) {
         setManualQuestionDraft(json.extractedText);
+        // Otomatis ekstrak & kontekstualisasikan SELURUH butir soal yang ada di dalam berkas
+        await handleTriggerAiContextTransformation(json.extractedText);
       } else {
         throw new Error(json.error || "Gagal mengekstrak teks dari berkas.");
       }
@@ -533,7 +537,7 @@ function TeacherQuestionsContent() {
     if (!topic.trim() && selectedMethod !== "ai") return;
     if (selectedMethod === "ai" && !aiPrompt.trim() && !topic.trim()) return;
 
-    if (selectedMethod === "ai") {
+    if (selectedMethod === "ai" || manualQuestionDraft.trim()) {
       await handleTriggerAiContextTransformation();
       return;
     }
@@ -571,10 +575,27 @@ function TeacherQuestionsContent() {
   };
 
   // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
-  const handleTriggerAiContextTransformation = async () => {
+  const handleTriggerAiContextTransformation = async (overrideText?: string | React.MouseEvent) => {
     setIsAiGenerating(true);
     setAiError(null);
     try {
+      let textToUse = typeof overrideText === "string" ? overrideText : manualQuestionDraft;
+      if (!textToUse && questionsList.some((q) => q.question_text.trim())) {
+        textToUse = questionsList
+          .filter((q) => q.question_text.trim())
+          .map((q, idx) => {
+            let itemStr = `Soal ${idx + 1} (${q.type === "essay" ? "Esai" : "Pilihan Ganda"}):\n${q.question_text.trim()}`;
+            if (q.type === "multiple_choice" && q.options && q.options.length > 0) {
+              itemStr += "\n" + q.options.map((o) => `${o.key}. ${o.text}`).join("\n");
+              itemStr += `\nKunci Jawaban: ${q.correct_answer || "A"}`;
+            }
+            if (q.rubric) {
+              itemStr += `\nRubrik: ${q.rubric}`;
+            }
+            return itemStr;
+          })
+          .join("\n\n");
+      }
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -582,12 +603,14 @@ function TeacherQuestionsContent() {
           type: "question",
           inputMode: selectedMethod,
           prompt: selectedMethod === "ai" ? (aiPrompt || topic) : "",
-          rawText: manualQuestionDraft,
+          rawText: textToUse,
           topic: topic || aiPrompt || "Asesmen Tematik",
           subject,
           grade,
           regionId: activeSchool?.region_id || "35.02",
           regionName: region,
+          questionCount: selectedMethod === "ai" ? aiQuestionCount : undefined,
+          questionType: selectedMethod === "ai" ? aiQuestionType : undefined,
         }),
       });
 
@@ -636,12 +659,81 @@ function TeacherQuestionsContent() {
     }
   };
 
-  // Step 3 Save: Simpan Butir Soal dari Form Konten (Mendukung Multi-Soal Sekaligus)
-  const handleStep3Save = () => {
+  // Step 3 Save: Simpan Butir Soal dari Form Konten (Mendukung Multi-Soal Sekaligus & Otomatis Terkontekstualisasi)
+  const handleStep3Save = async () => {
     if (!activeSchool || !topic.trim()) return;
 
-    const validQuestions = questionsList.filter((q) => q.question_text.trim());
+    let validQuestions = questionsList.filter((q) => q.question_text.trim());
     if (validQuestions.length === 0) return;
+
+    // Jika belum pernah dikontekstualisasikan sama sekali (misal input manual tanpa klik tombol AI), jalankan kontekstualisasi otomatis sekarang
+    if (!overallValidation && selectedMethod === "manual") {
+      setIsAiGenerating(true);
+      try {
+        const rawItemsText = validQuestions
+          .map((q, idx) => {
+            let itemStr = `Soal ${idx + 1} (${q.type === "essay" ? "Esai" : "Pilihan Ganda"}):\n${q.question_text.trim()}`;
+            if (q.type === "multiple_choice" && q.options && q.options.length > 0) {
+              itemStr += "\n" + q.options.map((o) => `${o.key}. ${o.text}`).join("\n");
+              itemStr += `\nKunci Jawaban: ${q.correct_answer || "A"}`;
+            }
+            if (q.rubric) {
+              itemStr += `\nRubrik: ${q.rubric}`;
+            }
+            return itemStr;
+          })
+          .join("\n\n");
+
+        const res = await fetch("/api/ai/contextualize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "question",
+            inputMode: selectedMethod,
+            prompt: "",
+            rawText: rawItemsText,
+            topic: topic.trim(),
+            subject,
+            grade,
+            regionId: activeSchool.region_id || "35.02",
+            regionName: region,
+          }),
+        });
+
+        const json = await res.json();
+        if (json.success && json.data && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
+          const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => ({
+            id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
+            type: q.type === "essay" ? "essay" : "multiple_choice",
+            original_question_text: q.original_question_text || "",
+            question_text: q.question_text || q.question || "",
+            options: q.options && Array.isArray(q.options)
+              ? q.options.map((o: any, oIdx: number) => ({
+                  key: o.key || String.fromCharCode(65 + oIdx),
+                  text: o.text || String(o),
+                }))
+              : [
+                  { key: "A", text: "" },
+                  { key: "B", text: "" },
+                  { key: "C", text: "" },
+                  { key: "D", text: "" },
+                ],
+            correct_answer: q.correct_answer || q.correctAnswer || "A",
+            explanation: q.explanation || "",
+            rubric: q.rubric || "",
+            context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
+            validation: q.validation || undefined,
+          }));
+          validQuestions = mapped;
+          setQuestionsList(mapped);
+          if (json.data.validation) setOverallValidation(json.data.validation);
+        }
+      } catch (err) {
+        console.error("Auto-contextualize fallback on save:", err);
+      } finally {
+        setIsAiGenerating(false);
+      }
+    }
 
     const itemsToSave: QuestionItem[] = validQuestions.map((q, idx) => ({
       id: `item-${Date.now()}-${idx + 1}`,
@@ -1931,17 +2023,80 @@ function TeacherQuestionsContent() {
 
                 {/* AI Prompt Area jika metode Generate AI */}
                 {selectedMethod === "ai" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#FFD36D] mb-1 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Apa yang ingin dibuat?</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        required
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        placeholder="Contoh: Buatkan 5 soal dengan variasi pilihan ganda dan esai tentang operasi hitung belanja di Pasar Legi Ponorogo..."
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Pengaturan Jumlah & Variasi Bentuk Soal */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-white/5 border border-white/10">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                          Target Jumlah Soal: <span className="text-[#FFD36D] font-mono">{aiQuestionCount} Butir</span>
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          {[1, 3, 5, 10].map((num) => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => setAiQuestionCount(num)}
+                              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                aiQuestionCount === num
+                                  ? "bg-[#FFD36D] text-[#251E2B] shadow-xs font-black"
+                                  : "bg-white/10 text-white hover:bg-white/20"
+                              }`}
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-200 mb-1.5">
+                          Bentuk / Variasi Soal
+                        </label>
+                        <select
+                          value={aiQuestionType}
+                          onChange={(e: any) => setAiQuestionType(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-white text-xs font-bold focus:border-[#FFD36D] focus:outline-none cursor-pointer"
+                        >
+                          <option value="multiple_choice">Pilihan Ganda (A, B, C, D)</option>
+                          <option value="essay">Uraian / Esai</option>
+                          <option value="mixed">Campuran (Pilgan & Esai)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Naskah Teks Mentah jika metode Manual */}
+                {selectedMethod === "manual" && (
                   <div>
-                    <label className="block text-xs font-bold text-[#FFD36D] mb-1 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Apa yang ingin dibuat?</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-gray-200">
+                        Naskah / Draf Soal Mentah (Opsional)
+                      </label>
+                      <span className="text-[11px] text-gray-400">
+                        Tempelkan 1 atau banyak butir soal untuk diekstrak otomatis
+                      </span>
+                    </div>
                     <textarea
-                      rows={3}
-                      required
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Buat 3 soal pilihan ganda operasi hitung belanja di Pasar Legi Ponorogo untuk kelas 5 SD..."
+                      rows={4}
+                      value={manualQuestionDraft}
+                      onChange={(e) => setManualQuestionDraft(e.target.value)}
+                      placeholder="Opsional: Tempelkan 1 atau banyak soal di sini (misal nomor 1, 2, 3... lengkap dengan opsi atau esai). Sistem akan otomatis mengekstrak seluruh butir soal dan mengontekstualisasikannya!"
                       className="w-full px-4 py-3 rounded-2xl border-2 border-white/20 bg-[#251E2B]/80 focus:border-[#FFD36D] text-xs sm:text-sm font-medium text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed"
                     />
                   </div>
@@ -2235,6 +2390,27 @@ function TeacherQuestionsContent() {
                     >
                       {isAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                       <span>{isAiGenerating ? "Merumuskan..." : "Generate AI Ulang"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Manual Method Contextualize Helper Bar */}
+                {selectedMethod === "manual" && (
+                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="text-xs">
+                      <span className="font-bold text-[#FFD36D] block">Kearifan Lokal Wilayah: {region}</span>
+                      <span className="text-[11px] text-gray-300">
+                        Kontekstualisasikan seluruh {questionsList.length} butir soal dengan data riil {region} menggunakan Gemini AI.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerAiContextTransformation()}
+                      disabled={isAiGenerating || questionsList.every((q) => !q.question_text.trim())}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {isAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      <span>{isAiGenerating ? "Mengontekstualisasikan..." : "Kontekstualisasikan Seluruh Soal"}</span>
                     </button>
                   </div>
                 )}

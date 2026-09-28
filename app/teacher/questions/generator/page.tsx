@@ -25,7 +25,8 @@ export default function QuestionGeneratorPage() {
   const [subject, setSubject] = useState<"Matematika" | "Bahasa Indonesia" | "IPS">("Matematika");
   const [grade, setGrade] = useState<number>(5);
   const [topic, setTopic] = useState<string>("Aritmetika Sosial & Perkalian Bilangan Bulat");
-  const [type, setType] = useState<"multiple_choice" | "essay">("multiple_choice");
+  const [type, setType] = useState<"multiple_choice" | "essay" | "mixed">("multiple_choice");
+  const [questionCount, setQuestionCount] = useState<number>(3);
   const [useLocalContext, setUseLocalContext] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,32 +43,43 @@ export default function QuestionGeneratorPage() {
     setErrorMessage(null);
 
     try {
-      // 1. Generate base question via Gemini Provider (with real AI and LKB grounding)
-      const generated = await geminiProvider.generateQuestion({
-        subject,
-        grade,
-        topic,
-        type,
-        localContextRegion: useLocalContext ? activeSchool.region_name : undefined,
+      // 1. Generate multi-question package via contextualize API
+      const res = await fetch("/api/ai/contextualize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "question",
+          inputMode: "ai",
+          prompt: topic,
+          topic,
+          subject,
+          grade,
+          regionId: activeSchool.region_id || "35.02",
+          regionName: useLocalContext ? activeSchool.region_name : "Karesidenan Madiun",
+          questionCount,
+          questionType: type,
+        }),
       });
 
-      // 2. Save into repository as draft question
+      const json = await res.json();
+      if (!json.success || !json.data || !Array.isArray(json.data.questions)) {
+        throw new Error(json.error || "Gagal menghasilkan paket butir soal.");
+      }
+
+      // 2. Save into repository with all generated items
       const teacher = repository.getCurrentUser();
       const savedQuestion = repository.saveQuestion({
         school_id: activeSchool.id,
         teacher_id: teacher.id,
-        subject: generated.subject,
-        grade: generated.grade,
-        topic: generated.topic,
-        type: generated.type,
-        question_text: generated.question_text,
-        options: generated.options,
-        correct_answer: generated.correct_answer,
-        explanation: generated.explanation,
-        is_contextualized: false,
+        subject,
+        grade,
+        topic: json.data.topic || topic,
+        type: type,
+        items: json.data.questions,
+        is_contextualized: true,
       });
 
-      // 3. Navigate to Contextual Preview Screen for review & variable mapping
+      // 3. Navigate to Contextual Preview Screen for review
       router.push(`/teacher/questions/context-preview?id=${savedQuestion.id}`);
     } catch (err: any) {
       console.error("Failed to generate question:", err);
@@ -157,12 +169,39 @@ export default function QuestionGeneratorPage() {
               <label className="font-bold text-[#23212A] block mb-1.5">Bentuk Soal</label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value as "multiple_choice" | "essay")}
+                onChange={(e) => setType(e.target.value as "multiple_choice" | "essay" | "mixed")}
                 className="w-full px-3.5 py-2.5 rounded-2xl border border-[#E9E5E8] bg-[#FAF7F3] font-bold text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20 cursor-pointer"
               >
                 <option value="multiple_choice">Pilihan Ganda (4 Opsi)</option>
                 <option value="essay">Uraian / Esai Terbuka</option>
+                <option value="mixed">Campuran / Variasi (Pilgan & Esai)</option>
               </select>
+            </div>
+          </div>
+
+          {/* Question Count Selector */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-bold text-[#23212A] block">Target Jumlah Soal</label>
+              <span className="text-xs font-black text-[#51465B] bg-[#51465B]/10 px-2.5 py-0.5 rounded-full">
+                {questionCount} Butir Soal
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 3, 5, 10].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setQuestionCount(num)}
+                  className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+                    questionCount === num
+                      ? "bg-[#51465B] text-[#FFD36D] border-[#51465B] shadow-xs"
+                      : "bg-[#FAF7F3] text-[#756F7A] border-[#E9E5E8] hover:bg-slate-100"
+                  }`}
+                >
+                  {num} Soal
+                </button>
+              ))}
             </div>
           </div>
 

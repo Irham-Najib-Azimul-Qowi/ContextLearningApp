@@ -142,6 +142,8 @@ export interface LearningMaterial {
   content: string;
   is_contextualized: boolean;
   original_content?: string;
+  context_variables?: any[];
+  validation?: any;
   published_to_classes: string[]; // Class IDs
   image_url?: string;
   image_caption?: string;

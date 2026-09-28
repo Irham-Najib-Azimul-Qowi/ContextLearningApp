@@ -1274,6 +1274,9 @@ class PahamiRepository {
       teacher_id: data.teacher_id || current?.id || "teacher-1",
       content: data.content,
       is_contextualized: data.is_contextualized ?? true,
+      original_content: data.original_content,
+      context_variables: data.context_variables,
+      validation: data.validation,
       published_to_classes: data.published_to_classes || [],
       created_at: new Date().toISOString(),
     };

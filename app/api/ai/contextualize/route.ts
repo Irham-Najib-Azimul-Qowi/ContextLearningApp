@@ -150,6 +150,21 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA BERIKUT:
     }
 
     // 3. Branch: QUESTION Contextualization / Generation (Unified Normalized Schema)
+    // Resolve requested question count & variation
+    let requestedCount = Number(body.questionCount) || 0;
+    if (requestedCount <= 0 && userPrompt) {
+      const countMatch = userPrompt.match(/(\d+)\s*(?:butir\s*)?soal/i);
+      if (countMatch) {
+        requestedCount = Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10);
+      }
+    }
+    if (requestedCount <= 0) {
+      requestedCount = inputMode === "ai" ? 3 : 1;
+    }
+
+    const requestedType: "multiple_choice" | "essay" | "mixed" =
+      body.questionType || (userPrompt.toLowerCase().includes("esai") && userPrompt.toLowerCase().includes("pilgan") ? "mixed" : "multiple_choice");
+
     // Extract numbers from original question text if provided (for strict deterministic validation)
     const baseQuestionText = rawText || userPrompt || topic;
     const originalNumbers = contextEngine.extractNumbers(baseQuestionText);
@@ -169,35 +184,57 @@ PARAMETER SOAL:
 - Jenjang: SD Kelas ${grade}
 - Wilayah Konteks: ${regionName}
 - Topik Pembelajaran: ${topic || title || "Pemecahan Masalah Tematik"}
-- Tipe Soal: ${questionType === "multiple_choice" ? "Pilihan Ganda (4 Opsi: A, B, C, D)" : "Uraian / Esai"}
+- Target Jumlah Soal: ${requestedCount} butir
+- Target Tipe Soal: ${requestedType === "mixed" ? "Campuran / Variasi (Pilihan Ganda & Esai)" : requestedType === "essay" ? "Uraian / Esai" : "Pilihan Ganda (4 Opsi: A, B, C, D)"}
 
 FAKTA TERVERIFIKASI WILAYAH DARI BASIS PENGETAHUAN (LKB):
 ${localFactsContext}
 
 ${
   inputMode === "ai"
-    ? `INSTRUKSI: Buatkan 1 butir soal berkualitas tinggi berbasis konteks nyata di ${regionName} sesuai topik/prompt guru:\n"${userPrompt || topic}"`
-    : `INSTRUKSI: Kontekstualisasikan butir soal asli guru berikut agar berlatar kehidupan nyata di ${regionName}. Pertahankan angka-angka hitungan dan kunci jawaban asli:\nNaskah Soal Asli: "${rawText}"\n${initialOptions.length > 0 ? `Opsi Asli: ${JSON.stringify(initialOptions)}` : ""}\nKunci Jawaban Asli: "${initialCorrectAnswer}"`
+    ? `INSTRUKSI GENERATE SOAL DENGAN AI:
+1. Buatkan PERSIS ${requestedCount} BUTIR SOAL berkualitas tinggi yang bervariasi berbasis kearifan lokal di ${regionName}.
+2. Variasi Bentuk Soal (${requestedType}):
+   ${
+     requestedType === "mixed"
+       ? `- KARENA DIMINTA VARIASI / CAMPURAN: Kombinasikan secara berimbang antara butir Pilihan Ganda (dengan 4 opsi A, B, C, D dan 1 kunci jawaban) dan butir Uraian / Esai (dengan rubrik penilaian langkah pengerjaan). Tentukan tipe masing-masing pada properti "type": "multiple_choice" atau "essay".`
+       : requestedType === "essay"
+       ? `- Seluruh ${requestedCount} butir soal harus bertipe "essay" (uraian) lengkap dengan rubrik penilaian langkah pengerjaan bertahap.`
+       : `- Seluruh ${requestedCount} butir soal harus bertipe "multiple_choice" (pilihan ganda) dengan 4 opsi (A, B, C, D) dan 1 kunci jawaban benar.`
+   }
+3. Pastikan seluruh butir soal selaras dengan Mata Pelajaran: ${subject}, Jenjang SD Kelas ${grade}, dan Topik: ${topic || userPrompt}.
+4. Permintaan khusus guru yang wajib dipenuhi:\n"${userPrompt || topic}"`
+    : `INSTRUKSI EKSTRAKSI & KONTEKSTUALISASI DARI NASKAH ASLI GURU:
+1. PARSING LENGKAP SELURUH BUTIR SOAL:
+   Periksa naskah asli berikut (yang berasal dari ${inputMode === "pdf" ? "dokumen PDF" : inputMode === "camera" ? "foto OCR naskah" : "input manual guru"}).
+   JIKA NASKAH MEMUAT LEBIH DARI 1 BUTIR SOAL (misalnya ada nomor 1, 2, 3, dst., atau beberapa pertanyaan terpisah), ANDA WAJIB MENGEKSTRAK DAN MENGONTEKSTUALISASIKAN SEMUA BUTIR SOAL TERSEBUT!
+   JANGAN HANYA MEMBUAT ATAU MENGAMBIL SATU SOAL! Setiap butir soal harus menjadi 1 objek tersendiri di dalam array "questions".
+2. Pertahankan tipe masing-masing butir soal asli: jika berupa pilihan ganda jadikan "multiple_choice", jika berupa uraian/pertanyaan terbuka jadikan "essay".
+3. Pertahankan angka-angka hitungan dan kunci jawaban asli ("Konteks berubah, kompetensi tetap").
+4. Naskah Asli Guru:
+"""
+${rawText}
+"""
+${initialOptions.length > 0 ? `Opsi Asli Awal (jika ada): ${JSON.stringify(initialOptions)}` : ""}
+${initialCorrectAnswer ? `Kunci Jawaban Awal: "${initialCorrectAnswer}"` : ""}`
 }
 
 KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR:
 {
+  "topic": "${topic || title || "Asesmen Tematik Kontekstual"}",
   "questions": [
     {
-      "original_question_text": "${inputMode === "ai" ? "" : rawText.replace(/"/g, '\\"')}",
+      "original_question_text": "Teks naskah asli butir soal ini (jika ada)",
       "question_text": "Teks soal lengkap berbasis konteks nyata di ${regionName}",
-      "type": "${questionType}",
-      ${
-        questionType === "multiple_choice"
-          ? `"options": [
+      "type": "multiple_choice atau essay",
+      "options": [
         {"key": "A", "text": "Teks opsi A yang disesuaikan"},
         {"key": "B", "text": "Teks opsi B yang disesuaikan"},
         {"key": "C", "text": "Teks opsi C yang disesuaikan"},
         {"key": "D", "text": "Teks opsi D yang disesuaikan"}
       ],
-      "correct_answer": "${initialCorrectAnswer || "A"}",`
-          : `"rubric": "Rubrik penilaian langkah pengerjaan dan skor maksimal esai",`
-      }
+      "correct_answer": "A",
+      "rubric": "Rubrik penilaian jika tipe essay",
       "explanation": "Pembahasan langkah penyelesaian runtut sesuai kurikulum SD",
       "points": 10,
       "context_variables": [
@@ -235,13 +272,21 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR:
     const processedQuestions = qData.questions.map((q: any, idx: number) => {
       const qText = q.question_text || "Teks soal kontekstual.";
       const origText = q.original_question_text || rawText || qText;
+      const itemType: "multiple_choice" | "essay" =
+        q.type === "essay"
+          ? "essay"
+          : q.type === "multiple_choice"
+          ? "multiple_choice"
+          : requestedType === "essay"
+          ? "essay"
+          : "multiple_choice";
 
       // Mathematical preservation check
       const mathValidation = contextEngine.validateEducationalIntegrity(origText, qText);
 
       // Verify options structure
       let optionsList = q.options;
-      if (questionType === "multiple_choice") {
+      if (itemType === "multiple_choice") {
         if (!Array.isArray(optionsList) || optionsList.length < 2) {
           optionsList = [
             { key: "A", text: "Pilihan A" },
@@ -249,7 +294,14 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR:
             { key: "C", text: "Pilihan C" },
             { key: "D", text: "Pilihan D" },
           ];
+        } else {
+          optionsList = optionsList.map((o: any, oIdx: number) => ({
+            key: o.key || String.fromCharCode(65 + oIdx),
+            text: o.text || String(o),
+          }));
         }
+      } else {
+        optionsList = undefined;
       }
 
       // Check local context grounding
@@ -266,7 +318,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR:
 
       const warnings: string[] = [...mathValidation.warnings];
       if (!hasLocalGrounding) {
-        warnings.push(`Peringatan: Teks soal belum mencantumkan entitas spesifik dari ${regionName}.`);
+        warnings.push(`Peringatan: Teks butir soal nomor ${idx + 1} belum mencantumkan entitas spesifik dari ${regionName}.`);
       }
 
       const isValid = (mathValidation.is_valid || inputMode === "ai") && qText.trim().length > 10;
@@ -286,11 +338,11 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN STRUKTUR:
         id: `q-item-${Date.now()}-${idx + 1}`,
         original_question_text: origText,
         question_text: qText,
-        type: questionType,
+        type: itemType,
         options: optionsList,
-        correct_answer: q.correct_answer || (questionType === "multiple_choice" ? "A" : ""),
+        correct_answer: itemType === "multiple_choice" ? (q.correct_answer || "A") : "",
         explanation: q.explanation || "Pembahasan terperinci sesuai kurikulum.",
-        rubric: q.rubric || (questionType === "essay" ? "Rubrik penilaian pengerjaan esai bertahap." : undefined),
+        rubric: itemType === "essay" ? (q.rubric || "Rubrik penilaian pengerjaan esai bertahap.") : undefined,
         points: q.points || 10,
         context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
         validation: itemValidation,
