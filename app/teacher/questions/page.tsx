@@ -568,14 +568,24 @@ function TeacherQuestionsContent() {
       ];
     }
 
-    const lines = rawText.split("\n");
-    const chunks: string[] = [];
-    let currentChunk: string[] = [];
+    const isOptionLine = (line: string) => {
+      const trimmed = line.trim();
+      return /^(?:(?:\([A-Ea-e]\))|[A-Ea-e][\.\:\)])\s+/i.test(trimmed);
+    };
 
     const isQuestionStart = (line: string) => {
       const trimmed = line.trim();
-      return /^(?:soal\s*)?(?:\d+|[a-z])[\.\)]/i.test(trimmed) || /^#+\s*Soal\s*\d+/i.test(trimmed);
+      if (isOptionLine(trimmed)) return false;
+      return (
+        /^(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]/i.test(trimmed) ||
+        /^#+\s*(?:(?:soal|nomor|no)\.?\s*)?\d+/i.test(trimmed) ||
+        /^(?:pertanyaan|butir\s*soal)\s*\d+/i.test(trimmed)
+      );
     };
+
+    const lines = rawText.split(/\r?\n/);
+    const chunks: string[] = [];
+    let currentChunk: string[] = [];
 
     for (const line of lines) {
       if (isQuestionStart(line) && currentChunk.length > 0) {
@@ -589,9 +599,16 @@ function TeacherQuestionsContent() {
       chunks.push(currentChunk.join("\n").trim());
     }
 
-    const actualChunks = chunks.length > 0 ? chunks : [rawText.trim()];
+    let candidateChunks = chunks.filter((c) => c.trim().length > 0);
+    if (candidateChunks.length === 0) {
+      const paragraphs = rawText
+        .split(/\n\s*\n+/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      candidateChunks = paragraphs.length > 0 ? paragraphs : [rawText.trim()];
+    }
 
-    return actualChunks.map((chunk, idx) => {
+    return candidateChunks.map((chunk, idx) => {
       const chunkLines = chunk.split("\n").map((l) => l.trim()).filter(Boolean);
       const options: { key: string; text: string }[] = [];
       let correctAnswer = "A";
@@ -601,17 +618,18 @@ function TeacherQuestionsContent() {
 
       const questionTextLines: string[] = [];
       for (const cl of chunkLines) {
-        const optMatch = cl.match(/^([A-D])[\.\)]\s*(.*)$/i);
-        const ansMatch = cl.match(/^(?:kunci|jawaban|kunci jawaban)[\s:]+(.*)$/i);
+        const optMatch = cl.match(/^(?:(?:\(([A-Ea-e])\))|([A-Ea-e])[\.\:\)])\s*(.*)$/);
+        const ansMatch = cl.match(/^(?:kunci|jawaban|kunci jawaban|ans|answer)[\s:]+(.*)$/i);
         const expMatch = cl.match(/^(?:pembahasan|penjelasan|alasan)[\s:]+(.*)$/i);
         const rubMatch = cl.match(/^(?:rubrik|pedoman penskoran)[\s:]+(.*)$/i);
 
         if (ansMatch) {
-          const val = ansMatch[1].trim().toUpperCase();
-          if (/^[A-D]$/.test(val)) {
-            correctAnswer = val;
+          const rawAns = ansMatch[1].trim();
+          const singleLetter = rawAns.match(/\b([A-Ea-e])\b/);
+          if (singleLetter) {
+            correctAnswer = singleLetter[1].toUpperCase();
           } else {
-            correctAnswer = val;
+            correctAnswer = rawAns;
             isEssay = true;
           }
         } else if (expMatch) {
@@ -621,8 +639,8 @@ function TeacherQuestionsContent() {
           isEssay = true;
         } else if (optMatch) {
           options.push({
-            key: optMatch[1].toUpperCase(),
-            text: optMatch[2].trim(),
+            key: (optMatch[1] || optMatch[2]).toUpperCase(),
+            text: optMatch[3].trim(),
           });
         } else {
           if (options.length === 0) {
@@ -635,12 +653,19 @@ function TeacherQuestionsContent() {
         }
       }
 
-      let questionText = questionTextLines.join("\n").replace(/^(?:soal\s*)?(?:\d+|[a-z])[\.\)]\s*/i, "").trim();
+      let questionText = questionTextLines
+        .join("\n")
+        .replace(/^(?:#+\s*)?(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]\s*/i, "")
+        .trim();
+
       if (!questionText && chunkLines.length > 0) {
-        questionText = chunkLines[0].replace(/^(?:soal\s*)?(?:\d+|[a-z])[\.\)]\s*/i, "").trim();
+        questionText = chunkLines[0]
+          .replace(/^(?:#+\s*)?(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]\s*/i, "")
+          .trim();
       }
 
-      const type: "multiple_choice" | "essay" = options.length >= 2 && !isEssay ? "multiple_choice" : "essay";
+      const type: "multiple_choice" | "essay" =
+        options.length >= 2 && !isEssay ? "multiple_choice" : "essay";
 
       return {
         id: `q-draft-${Date.now()}-${idx + 1}`,
@@ -770,6 +795,16 @@ function TeacherQuestionsContent() {
           })
           .join("\n\n");
       }
+
+      let detectedCount: number | undefined = undefined;
+      if (textToUse && textToUse.trim()) {
+        const detectedDrafts = parseRawQuestionsToDraft(textToUse, activeTopic);
+        if (detectedDrafts.length > 0) {
+          detectedCount = detectedDrafts.length;
+        }
+      }
+      const effectiveQuestionCount = selectedMethod === "ai" ? aiQuestionCount : detectedCount;
+
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -783,7 +818,7 @@ function TeacherQuestionsContent() {
           grade,
           regionId: activeSchool?.region_id || "35.02",
           regionName: region,
-          questionCount: selectedMethod === "ai" ? aiQuestionCount : undefined,
+          questionCount: effectiveQuestionCount,
           questionType: selectedMethod === "ai" ? aiQuestionType : undefined,
         }),
       });

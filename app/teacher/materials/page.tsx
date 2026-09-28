@@ -240,19 +240,34 @@ export default function TeacherMaterialsPage() {
   // Submit Step 2: Validasi Identitas & Masuk Form Konten
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() && selectedMethod !== "ai") return;
-    if (selectedMethod === "ai" && !aiPrompt.trim() && !title.trim()) return;
+    let effectiveTitle = title.trim();
+    if (!effectiveTitle) {
+      if (manualDraft.trim()) {
+        const firstLine = manualDraft.trim().split("\n")[0].replace(/^[\d\.\-\#\s]+/, "").slice(0, 60);
+        effectiveTitle = firstLine || "Materi Pembelajaran Kontekstual";
+      } else if (aiPrompt.trim()) {
+        effectiveTitle = aiPrompt.trim().slice(0, 60);
+      } else {
+        effectiveTitle = "Materi Pembelajaran Kontekstual";
+      }
+      setTitle(effectiveTitle);
+      setPreviewTitle(effectiveTitle);
+    }
 
     if (selectedMethod === "ai" || manualDraft.trim()) {
-      await handleTriggerAiContextTransformation();
+      await handleTriggerAiContextTransformation(undefined, effectiveTitle);
     }
     setWizardStep(3);
   };
 
   // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
-  const handleTriggerAiContextTransformation = async (overrideText?: string | React.MouseEvent) => {
+  const handleTriggerAiContextTransformation = async (
+    overrideText?: string | React.MouseEvent,
+    customTitle?: string
+  ) => {
     setIsAiGenerating(true);
     setAiError(null);
+    const effectiveTitle = customTitle || title || aiPrompt || "Modul Ajar Tematik";
     try {
       const textToUse = typeof overrideText === "string" ? overrideText : manualDraft;
       const res = await fetch("/api/ai/contextualize", {
@@ -261,9 +276,9 @@ export default function TeacherMaterialsPage() {
         body: JSON.stringify({
           type: "material",
           inputMode: selectedMethod,
-          prompt: selectedMethod === "ai" ? (aiPrompt || title) : "",
+          prompt: selectedMethod === "ai" ? (aiPrompt || effectiveTitle) : "",
           rawText: textToUse,
-          title: title || aiPrompt || "Modul Ajar Tematik",
+          title: effectiveTitle,
           subject,
           grade,
           regionId: activeSchool?.region_id || "35.02",
@@ -305,10 +320,18 @@ export default function TeacherMaterialsPage() {
       } else {
         const errMsg = json?.error?.message || json?.error || "Gagal mengontekstualisasikan modul materi.";
         setAiError(errMsg);
+        if (manualDraft.trim() && !previewNarrative.trim()) {
+          setPreviewNarrative(manualDraft);
+          setPreviewTitle(effectiveTitle);
+        }
       }
     } catch (err: any) {
       console.error("AI Contextualization error:", err);
       setAiError(err.message || "Gagal memproses materi dengan AI. Silakan coba kembali.");
+      if (manualDraft.trim() && !previewNarrative.trim()) {
+        setPreviewNarrative(manualDraft);
+        setPreviewTitle(effectiveTitle);
+      }
     } finally {
       setIsAiGenerating(false);
     }

@@ -33,7 +33,12 @@ export async function GET(
       for (const row of rows) {
         if (Array.isArray(row.rooms)) {
           for (const r of row.rooms) {
-            if (isIdOrCodeMatch(r.code, code, "room") || isIdOrCodeMatch(r.id, code, "room")) {
+            if (
+              isIdOrCodeMatch(r.code, cleanCode, "room") ||
+              isIdOrCodeMatch(r.id, cleanCode, "room") ||
+              isIdOrCodeMatch(r.code, code, "room") ||
+              isIdOrCodeMatch(r.id, code, "room")
+            ) {
               matchedRoom = r;
               matchedTeacherRow = row;
               break;
@@ -46,7 +51,7 @@ export async function GET(
 
     // 2. Fallback to repository seed rooms if not in user_synced_data
     if (!matchedRoom) {
-      matchedRoom = repository.getRoomByCode(code) || null;
+      matchedRoom = repository.getRoomByCode(cleanCode) || repository.getRoomByCode(code) || null;
     }
 
     if (!matchedRoom) {

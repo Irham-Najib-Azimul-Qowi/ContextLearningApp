@@ -47,6 +47,20 @@ export class ContextualAIEngine {
         questionCount = Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10);
       }
     }
+    if (questionCount <= 0 && raw) {
+      const qMatches = raw.split(/\r?\n/).filter((line) => {
+        const trimmed = line.trim();
+        if (/^(?:(?:\([A-Ea-e]\))|[A-Ea-e][\.\:\)])\s+/i.test(trimmed)) return false;
+        return (
+          /^(?:(?:soal|nomor|no)\.?\s*)?\d+[\.\:\)]/i.test(trimmed) ||
+          /^#+\s*(?:(?:soal|nomor|no)\.?\s*)?\d+/i.test(trimmed) ||
+          /^(?:pertanyaan|butir\s*soal)\s*\d+/i.test(trimmed)
+        );
+      });
+      if (qMatches.length > 0) {
+        questionCount = Math.min(Math.max(qMatches.length, 1), 15);
+      }
+    }
     if (questionCount <= 0) {
       questionCount = input.sourceType === "ai" || input.sourceType === "generate" ? 3 : 1;
     }
@@ -393,7 +407,9 @@ ${
     : `INSTRUKSI ADAPTASI DARI NASKAH ASLI GURU:
 1. PARSING LENGKAP SEMUA BUTIR SOAL:
    Periksa naskah asli berikut (sumber: ${normalized.sourceType}).
-   JIKA NASKAH MEMUAT LEBIH DARI 1 BUTIR SOAL, ANDA WAJIB MENGEKSTRAK DAN MENGONTEKSTUALISASIKAN SEMUA BUTIR SOAL TERSEBUT!
+   Naskah asli guru memuat ${normalized.questionCount} butir soal.
+   ANDA WAJIB MENGHASILKAN PERSIS ${normalized.questionCount} BUTIR SOAL yang dikontekstualisasikan!
+   DILARANG MENGURANGI (jangan hanya buat 1 soal) DAN DILARANG MEMECAH OPSI MENJADI SOAL BARU.
 2. Pertahankan tipe soal masing-masing butir (multiple_choice atau essay).
 3. Pertahankan angka-angka hitungan dan kunci jawaban asli.
 4. Naskah Asli Guru:
