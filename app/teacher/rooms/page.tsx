@@ -24,6 +24,7 @@ import {
   BarChart3,
   Printer,
   Sparkles,
+  Share2,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -42,6 +43,7 @@ function TeacherRoomsContent() {
   const [activeSchool, setActiveSchool] = useState<School | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "material" | "question" | "both">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -146,7 +148,14 @@ function TeacherRoomsContent() {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
+    setTimeout(() => setCopiedCode(null), 2500);
+  };
+
+  const handleCopyLink = (code: string) => {
+    const url = `${window.location.origin}/room/${code}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(code);
+    setTimeout(() => setCopiedLink(null), 2500);
   };
 
   // Custom Delete Confirmation Modal State
@@ -372,28 +381,47 @@ function TeacherRoomsContent() {
                     </h1>
                   </div>
 
-                  {/* Code Share box */}
-                  <div className="flex items-center gap-3 shrink-0 bg-white/10 p-2.5 px-4 rounded-2xl border border-white/20">
-                    <div className="text-center">
+                  {/* Code & URL Share box */}
+                  <div className="flex items-center gap-2.5 shrink-0 bg-white/10 p-2 sm:p-2.5 px-3 sm:px-4 rounded-2xl border border-white/20 flex-wrap">
+                    <div className="text-center pr-2 border-r border-white/20">
                       <span className="text-[10px] text-white/70 block uppercase font-bold">Kode Room</span>
-                      <span className="font-mono text-lg sm:text-xl font-black text-[#FFD36D] tracking-widest">
+                      <span className="font-mono text-base sm:text-xl font-black text-[#FFD36D] tracking-widest">
                         {previewRoom.code}
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleCopyCode(previewRoom.code)}
-                      className="px-3.5 py-1.5 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                      className="px-3.5 py-1.5 rounded-full bg-[#FFD36D] hover:bg-[#FFE085] text-[#23212A] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
+                      title="Salin Kode Akses Room"
                     >
                       {copiedCode === previewRoom.code ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-700" />
-                          <span className="text-emerald-800">Tersalin</span>
+                          <Check className="w-3.5 h-3.5 text-emerald-800 stroke-[2.5]" />
+                          <span className="text-emerald-900 font-extrabold">Kode Tersalin!</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Salin</span>
+                          <span>Salin Kode</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyLink(previewRoom.code)}
+                      className="px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
+                      title="Salin Tautan Lengkap untuk Siswa"
+                    >
+                      {copiedLink === previewRoom.code ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                          <span className="text-emerald-300 font-extrabold">URL Tersalin!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5 text-[#FFD36D]" />
+                          <span>Salin URL</span>
                         </>
                       )}
                     </button>
@@ -1272,14 +1300,20 @@ function TeacherRoomsContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        const url = `${window.location.origin}/room/${createdRoom.code}`;
-                        handleCopyCode(url);
-                      }}
+                      onClick={() => handleCopyLink(createdRoom.code)}
                       className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-gray-300" />
-                      <span>Salin Link</span>
+                      {copiedLink === createdRoom.code ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-300">URL Tersalin</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5 text-gray-300" />
+                          <span>Salin URL</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

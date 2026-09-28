@@ -19,6 +19,7 @@ import {
   FileText,
   Send,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
@@ -33,6 +34,7 @@ export default function RoomViewerPage() {
   const [material, setMaterial] = useState<LearningMaterial | null>(null);
   const [mcQuestion, setMcQuestion] = useState<Question | null>(null);
   const [essayQuestion, setEssayQuestion] = useState<Question | null>(null);
+  const [isLoadingRoom, setIsLoadingRoom] = useState<boolean>(true);
 
   // Student name state (no login, just name)
   const [studentName, setStudentName] = useState<string>("");
@@ -55,93 +57,132 @@ export default function RoomViewerPage() {
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
-    if (!roomCode) return;
-
-    const foundRoom = repository.getRoomByCode(roomCode);
-    if (!foundRoom) {
-      setRoom(null);
+    if (!roomCode) {
+      setIsLoadingRoom(false);
       return;
     }
-    setRoom(foundRoom);
 
-    // Check existing stored name
-    let storedName = "";
-    try {
-      storedName =
-        localStorage.getItem(`depaskan_reader_name_${roomCode}`) ||
-        localStorage.getItem("depaskan_last_reader_name") ||
-        "";
-    } catch {
-      // Ignore
-    }
+    let isMounted = true;
 
-    if (storedName) {
-      setStudentName(storedName);
-      repository.recordRoomVisit(roomCode, storedName);
-    } else {
-      setIsNamePromptOpen(true);
-    }
+    async function resolveRoomData() {
+      setIsLoadingRoom(true);
 
-    // Load related resources
-    const allMats = repository.getMaterials();
-    const allQs = repository.getQuestions();
+      // 1. Fast local resolution
+      const localRoom = repository.getRoomByCode(roomCode);
+      if (localRoom) {
+        setRoom(localRoom);
+        const allMats = repository.getMaterials();
+        const allQs = repository.getQuestions();
 
-    let resolvedMat: LearningMaterial | null = null;
-    let resolvedMc: Question | null = null;
-    let resolvedEssay: Question | null = null;
+        if (localRoom.type === "material" || localRoom.type === "both") {
+          const m = allMats.find((item) => item.id === localRoom.resource_id) || allMats[0] || null;
+          setMaterial(m);
+        }
 
-    if (foundRoom.type === "material" || foundRoom.type === "both") {
-      resolvedMat = allMats.find((m) => m.id === foundRoom.resource_id) || allMats[0] || null;
-      setMaterial(resolvedMat);
-    }
-
-    if (foundRoom.type === "question" || foundRoom.type === "both") {
-      const qPrimary = allQs.find(
-        (item) => item.id === (foundRoom.type === "both" ? foundRoom.secondary_resource_id : foundRoom.resource_id)
-      );
-
-      if (qPrimary) {
-        const qItems = getQuestionItems(qPrimary);
-        const hasMc = qItems.some((it) => it.type === "multiple_choice");
-        const hasEs = qItems.some((it) => it.type === "essay");
-
-        if (hasMc) resolvedMc = qPrimary;
-        if (hasEs) resolvedEssay = qPrimary;
-
-        if (!hasMc && !hasEs) {
-          if (qPrimary.type === "essay") resolvedEssay = qPrimary;
-          else resolvedMc = qPrimary;
+        if (localRoom.type === "question" || localRoom.type === "both") {
+          const qId = localRoom.type === "both" ? localRoom.secondary_resource_id : localRoom.resource_id;
+          const qPrimary = allQs.find((item) => item.id === qId);
+          if (qPrimary) {
+            const qItems = getQuestionItems(qPrimary);
+            const hasMc = qItems.some((it) => it.type === "multiple_choice");
+            const hasEs = qItems.some((it) => it.type === "essay");
+            if (hasMc) setMcQuestion(qPrimary);
+            if (hasEs) setEssayQuestion(qPrimary);
+            if (!hasMc && !hasEs) {
+              if (qPrimary.type === "essay") setEssayQuestion(qPrimary);
+              else setMcQuestion(qPrimary);
+            }
+          }
         }
       }
 
-      // Check if there is an alternative question type for this subject/grade
-      if (!resolvedMc) {
-        resolvedMc =
-          allQs.find((q) => q.type === "multiple_choice" && q.grade === foundRoom.grade) ||
-          allQs.find((q) => q.type === "multiple_choice") ||
-          null;
-      }
-      if (!resolvedEssay) {
-        resolvedEssay =
-          allQs.find((q) => q.type === "essay" && q.grade === foundRoom.grade) ||
-          allQs.find((q) => q.type === "essay") ||
-          null;
-      }
+      // 2. Authoritative Cloud Fetch (Supabase via API) for anonymous students on mobile/other devices
+      try {
+        const res = await fetch(`/api/room/${encodeURIComponent(roomCode)}`);
+        const json = await res.json();
 
-      setMcQuestion(resolvedMc);
-      setEssayQuestion(resolvedEssay);
+        if (isMounted && json.success && json.room) {
+          const cloudRoom: LearningRoom = json.room;
+          setRoom(cloudRoom);
+
+          if (json.material) {
+            setMaterial(json.material);
+            try {
+              repository.saveMaterial(json.material);
+            } catch {
+              // ignore
+            }
+          }
+
+          if (json.question) {
+            const qItems = getQuestionItems(json.question);
+            const hasMc = qItems.some((it) => it.type === "multiple_choice");
+            const hasEs = qItems.some((it) => it.type === "essay");
+
+            if (hasMc) setMcQuestion(json.question);
+            if (hasEs) setEssayQuestion(json.question);
+            if (!hasMc && !hasEs) {
+              if (json.question.type === "essay") setEssayQuestion(json.question);
+              else setMcQuestion(json.question);
+            }
+
+            try {
+              repository.saveQuestion(json.question);
+            } catch {
+              // ignore
+            }
+          }
+
+          try {
+            repository.createRoom(cloudRoom);
+          } catch {
+            // ignore
+          }
+
+          // Check existing stored name
+          let storedName = "";
+          try {
+            storedName =
+              localStorage.getItem(`depaskan_reader_name_${roomCode}`) ||
+              localStorage.getItem("depaskan_last_reader_name") ||
+              "";
+          } catch {
+            // ignore
+          }
+
+          if (storedName) {
+            setStudentName(storedName);
+            repository.recordRoomVisit(roomCode, storedName);
+          } else {
+            setIsNamePromptOpen(true);
+          }
+
+          // Initial Tab setup
+          if (cloudRoom.type === "material") {
+            setActiveTab("material");
+          } else if (cloudRoom.type === "question") {
+            setActiveTab(json.question?.type === "essay" ? "essay" : "multiple_choice");
+          } else {
+            setActiveTab("material");
+          }
+        } else if (!localRoom && isMounted) {
+          setRoom(null);
+        }
+      } catch (err) {
+        console.warn("Could not fetch room from API:", err);
+        if (!localRoom && isMounted) {
+          setRoom(null);
+        }
+      } finally {
+        if (isMounted) setIsLoadingRoom(false);
+      }
     }
 
-    // Set initial active tab
-    if (foundRoom.type === "material") {
-      setActiveTab("material");
-    } else if (foundRoom.type === "question") {
-      if (resolvedMc) setActiveTab("multiple_choice");
-      else if (resolvedEssay) setActiveTab("essay");
-    } else {
-      // both: start with material
-      setActiveTab("material");
-    }
+    resolveRoomData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [roomCode]);
 
   const postRoomSubmission = async (payload: {
@@ -249,6 +290,21 @@ export default function RoomViewerPage() {
       setActiveTab("essay");
     }
   };
+
+  // Loading Room State
+  if (isLoadingRoom) {
+    return (
+      <div className="min-h-screen bg-[#FAF7F3] flex flex-col justify-center items-center p-4 font-sans text-center">
+        <div className="max-w-md mx-auto bg-white rounded-3xl border border-[#E9E5E8] p-8 shadow-xl space-y-4">
+          <Loader2 className="w-10 h-10 text-[#51465B] animate-spin mx-auto" />
+          <h2 className="text-lg font-black text-[#23212A]">Memuat Ruang Belajar...</h2>
+          <p className="text-xs text-[#756F7A]">
+            Menghubungkan ke ruang <strong>&quot;{roomCode}&quot;</strong>...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // 404 Room Not Found State
   if (!room) {

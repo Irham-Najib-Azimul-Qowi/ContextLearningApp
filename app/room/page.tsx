@@ -16,7 +16,7 @@ export default function RoomAccessPortalPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Step 1: Validate Room Code
-  const handleValidateCode = (e: React.FormEvent) => {
+  const handleValidateCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
@@ -27,7 +27,29 @@ export default function RoomAccessPortalPage() {
     }
 
     setIsLoading(true);
-    const room = repository.getRoomByCode(cleanCode);
+
+    // 1. Check local cache first
+    let room = repository.getRoomByCode(cleanCode);
+
+    // 2. If not found locally, query authoritative cloud API
+    if (!room) {
+      try {
+        const res = await fetch(`/api/room/${encodeURIComponent(cleanCode)}`);
+        const json = await res.json();
+        if (json.success && json.room) {
+          room = json.room;
+          try {
+            repository.createRoom(json.room);
+            if (json.material) repository.saveMaterial(json.material);
+            if (json.question) repository.saveQuestion(json.question);
+          } catch {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.warn("Could not validate room from API:", err);
+      }
+    }
 
     if (!room) {
       setErrorMsg(`Kode room "${cleanCode}" tidak ditemukan. Pastikan kodenya benar.`);
