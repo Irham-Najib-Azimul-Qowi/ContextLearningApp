@@ -127,7 +127,7 @@ function TeacherQuestionsContent() {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [capturedPhotoName, setCapturedPhotoName] = useState<string | null>(null);
-  const [aiQuestionCount, setAiQuestionCount] = useState<number>(3);
+  const [aiQuestionCount, setAiQuestionCount] = useState<number>(1);
   const [aiQuestionType, setAiQuestionType] = useState<"multiple_choice" | "essay" | "mixed">("multiple_choice");
   const [isPrintingQuestion, setIsPrintingQuestion] = useState(false);
   const [isExtractingText, setIsExtractingText] = useState(false);
@@ -2039,20 +2039,39 @@ function TeacherQuestionsContent() {
                       />
                     </div>
 
-                    {/* Variasi Soal */}
-                    <div>
-                      <label className="block text-xs font-bold text-gray-200 mb-1">
-                        Variasi Soal
-                      </label>
-                      <select
-                        value={aiQuestionType}
-                        onChange={(e: any) => setAiQuestionType(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none cursor-pointer"
-                      >
-                        <option value="multiple_choice">Pilihan Ganda (A, B, C, D)</option>
-                        <option value="essay">Uraian / Esai</option>
-                        <option value="mixed">Campuran (Pilgan & Esai)</option>
-                      </select>
+                    {/* Variasi Soal & Jumlah Soal */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-200 mb-1">
+                          Variasi Soal
+                        </label>
+                        <select
+                          value={aiQuestionType}
+                          onChange={(e: any) => setAiQuestionType(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none cursor-pointer"
+                        >
+                          <option value="multiple_choice">Pilihan Ganda (A, B, C, D)</option>
+                          <option value="essay">Uraian / Esai</option>
+                          <option value="mixed">Campuran (Pilgan & Esai)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-200 mb-1">
+                          Jumlah Soal
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={aiQuestionCount}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            setAiQuestionCount(isNaN(val) ? 1 : Math.max(1, Math.min(10, val)));
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

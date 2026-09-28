@@ -47,6 +47,24 @@ export async function POST(request: Request) {
       if (!existingSub) {
         updatedStatus = "Sedang mengerjakan";
       }
+    } else if (action === "submit_all" || action === "submit_questions") {
+      if (mc_answer !== undefined) {
+        const numericMcScore = mc_score !== undefined ? mc_score : is_mc_correct ? 100 : 0;
+        updatedMcScore = numericMcScore;
+        answersObj.mc = mc_answer;
+        answersObj.is_mc_correct = is_mc_correct;
+      }
+      if (essay_answer !== undefined) {
+        answersObj.essay = essay_answer;
+      }
+
+      if (essay_answer !== undefined) {
+        updatedStatus = "Belum dinilai";
+        updatedScore = updatedMcScore;
+      } else {
+        updatedStatus = "Selesai";
+        updatedScore = updatedMcScore;
+      }
     } else if (action === "submit_mc") {
       const numericMcScore = mc_score !== undefined ? mc_score : is_mc_correct ? 100 : 0;
       updatedMcScore = numericMcScore;

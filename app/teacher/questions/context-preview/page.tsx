@@ -364,6 +364,90 @@ function ContextPreviewContent() {
         </div>
       </div>
 
+      {/* If Multi-Question Package: Display All Items in Package */}
+      {question.items && question.items.length > 1 && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4 mb-8">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+            <div>
+              <h3 className="text-sm font-black text-[#23212A] uppercase tracking-wider">
+                Daftar Seluruh Butir Soal dalam Paket Ini ({question.items.length} Butir Soal)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Paket ini memuat variasi butir soal pilihan ganda dan esai yang telah dikontekstualisasikan.
+              </p>
+            </div>
+            <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-purple-50 text-[#51465B] border border-purple-200">
+              {question.type === "mixed" ? "Campuran (Pilgan & Esai)" : question.type === "essay" ? "Esai" : "Pilihan Ganda"}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {question.items.map((item, idx) => (
+              <div key={item.id || idx} className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-black text-[#23212A]">Soal {idx + 1}</span>
+                  </div>
+                  <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                    item.type === "essay" ? "bg-purple-100 text-purple-900 border border-purple-200" : "bg-amber-100 text-amber-900 border border-amber-200"
+                  }`}>
+                    {item.type === "essay" ? "Uraian / Esai" : "Pilihan Ganda"}
+                  </span>
+                </div>
+
+                <p className="text-xs sm:text-sm font-bold text-[#23212A] leading-relaxed">
+                  {item.question_text}
+                </p>
+
+                {item.type === "multiple_choice" && item.options && item.options.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {item.options.map((opt) => {
+                      const isCorrect = item.correct_answer === opt.key || item.correct_answer === opt.text;
+                      return (
+                        <div key={opt.key} className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 ${
+                          isCorrect ? "bg-emerald-50 border-emerald-400 text-emerald-950 font-bold" : "bg-white border-slate-200 text-[#23212A]"
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                              isCorrect ? "bg-emerald-600 text-white" : "bg-slate-100 text-[#23212A]"
+                            }`}>
+                              {opt.key}
+                            </span>
+                            <span>{opt.text}</span>
+                          </div>
+                          {isCorrect && (
+                            <span className="text-[9px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-full">
+                              Kunci
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {item.type === "essay" && item.rubric && (
+                  <div className="p-3 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 font-medium space-y-1">
+                    <span className="font-bold block text-purple-900">Rubrik Penilaian:</span>
+                    <p className="leading-relaxed">{item.rubric}</p>
+                  </div>
+                )}
+
+                {item.explanation && (
+                  <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 font-medium space-y-1">
+                    <span className="font-bold text-amber-900">Pembahasan:</span>
+                    <p className="leading-relaxed text-slate-800">{item.explanation}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Extracted Context Variables & Alternative Selection */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Variables List */}

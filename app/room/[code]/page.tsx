@@ -32,25 +32,25 @@ export default function RoomViewerPage() {
 
   const [room, setRoom] = useState<LearningRoom | null>(null);
   const [material, setMaterial] = useState<LearningMaterial | null>(null);
-  const [mcQuestion, setMcQuestion] = useState<Question | null>(null);
-  const [essayQuestion, setEssayQuestion] = useState<Question | null>(null);
+  const [question, setQuestion] = useState<Question | null>(null);
   const [isLoadingRoom, setIsLoadingRoom] = useState<boolean>(true);
 
-  // Student name state (no login, just name)
+  // Student name state (no login required, just student name)
   const [studentName, setStudentName] = useState<string>("");
   const [isNamePromptOpen, setIsNamePromptOpen] = useState(false);
   const [inputName, setInputName] = useState("");
 
-  // Tab State: "material" | "multiple_choice" | "essay"
-  const [activeTab, setActiveTab] = useState<"material" | "multiple_choice" | "essay">("material");
+  // Tab State: "material" | "questions"
+  const [activeTab, setActiveTab] = useState<"material" | "questions">("material");
 
-  // Multiple Choice Interactive State: support multiple MC sub-questions in a single package
+  // Interactive Answers:
+  // Multiple Choice answers: itemId -> selectedKey (e.g. "A", "B", ...)
   const [selectedMcAnswers, setSelectedMcAnswers] = useState<Record<string, string>>({});
-  const [isMcSubmitted, setIsMcSubmitted] = useState(false);
-
-  // Essay Interactive State: support multiple essay sub-questions in a single package
+  // Essay answers: itemId -> student text
   const [essayAnswers, setEssayAnswers] = useState<Record<string, string>>({});
-  const [isEssaySubmitted, setIsEssaySubmitted] = useState(false);
+  
+  // Unified submission state
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
   // Material Finished State
   const [isMaterialCompleted, setIsMaterialCompleted] = useState(false);
@@ -81,18 +81,8 @@ export default function RoomViewerPage() {
 
         if (localRoom.type === "question" || localRoom.type === "both") {
           const qId = localRoom.type === "both" ? localRoom.secondary_resource_id : localRoom.resource_id;
-          const qPrimary = allQs.find((item) => item.id === qId);
-          if (qPrimary) {
-            const qItems = getQuestionItems(qPrimary);
-            const hasMc = qItems.some((it) => it.type === "multiple_choice");
-            const hasEs = qItems.some((it) => it.type === "essay");
-            if (hasMc) setMcQuestion(qPrimary);
-            if (hasEs) setEssayQuestion(qPrimary);
-            if (!hasMc && !hasEs) {
-              if (qPrimary.type === "essay") setEssayQuestion(qPrimary);
-              else setMcQuestion(qPrimary);
-            }
-          }
+          const qPrimary = allQs.find((item) => item.id === qId) || null;
+          setQuestion(qPrimary);
         }
       }
 
@@ -115,17 +105,7 @@ export default function RoomViewerPage() {
           }
 
           if (json.question) {
-            const qItems = getQuestionItems(json.question);
-            const hasMc = qItems.some((it) => it.type === "multiple_choice");
-            const hasEs = qItems.some((it) => it.type === "essay");
-
-            if (hasMc) setMcQuestion(json.question);
-            if (hasEs) setEssayQuestion(json.question);
-            if (!hasMc && !hasEs) {
-              if (json.question.type === "essay") setEssayQuestion(json.question);
-              else setMcQuestion(json.question);
-            }
-
+            setQuestion(json.question);
             try {
               repository.saveQuestion(json.question);
             } catch {
@@ -161,7 +141,7 @@ export default function RoomViewerPage() {
           if (cloudRoom.type === "material") {
             setActiveTab("material");
           } else if (cloudRoom.type === "question") {
-            setActiveTab(json.question?.type === "essay" ? "essay" : "multiple_choice");
+            setActiveTab("questions");
           } else {
             setActiveTab("material");
           }
@@ -186,7 +166,7 @@ export default function RoomViewerPage() {
   }, [roomCode]);
 
   const postRoomSubmission = async (payload: {
-    action: "visit" | "submit_mc" | "submit_essay" | "submit_material";
+    action: "visit" | "submit_mc" | "submit_essay" | "submit_material" | "submit_all";
     mc_answer?: string;
     is_mc_correct?: boolean;
     mc_score?: number;
@@ -235,42 +215,41 @@ export default function RoomViewerPage() {
     }
   };
 
-  const handleMcSubmit = () => {
-    if (mcItems.length === 0) return;
-    const answeredCount = mcItems.filter((it) => !!selectedMcAnswers[it.id]).length;
-    if (answeredCount === 0) return;
+  const questionItems = question ? getQuestionItems(question) : [];
+  const mcItems = questionItems.filter((it) => it.type === "multiple_choice");
+  const essayItems = questionItems.filter((it) => it.type === "essay");
 
-    setIsMcSubmitted(true);
+  const hasMaterial = (room?.type === "material" || room?.type === "both") && !!material;
+  const hasQuestions = (room?.type === "question" || room?.type === "both") && questionItems.length > 0;
 
-    const correctCount = mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length;
-    const score = Math.round((correctCount / mcItems.length) * 100);
-    const isAllCorrect = correctCount === mcItems.length;
+  // Single unified submission for all questions on one page
+  const handleSubmitAll = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (questionItems.length === 0) return;
 
-    if (studentName) {
-      repository.recordRoomVisit(roomCode, studentName, score);
-      postRoomSubmission({
-        action: "submit_mc",
-        mc_answer: JSON.stringify(selectedMcAnswers),
-        is_mc_correct: isAllCorrect,
-        mc_score: score,
-      });
+    // Check if at least some answers were provided
+    const mcAnsweredCount = mcItems.filter((it) => !!selectedMcAnswers[it.id]).length;
+    const essayAnsweredCount = essayItems.filter((it) => !!essayAnswers[it.id]?.trim()).length;
+
+    if (mcAnsweredCount === 0 && essayAnsweredCount === 0) {
+      return;
     }
-  };
 
-  const handleEssaySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (essayItems.length === 0) return;
-    const hasAnyAnswer = essayItems.some((it) => !!essayAnswers[it.id]?.trim());
-    if (!hasAnyAnswer) return;
+    setIsSubmitted(true);
 
-    setIsEssaySubmitted(true);
+    const correctMcCount = mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length;
+    const mcScore = mcItems.length > 0 ? Math.round((correctMcCount / mcItems.length) * 100) : undefined;
+    const isAllMcCorrect = mcItems.length > 0 ? correctMcCount === mcItems.length : undefined;
 
     if (studentName) {
-      // Record visit without fake automatic score; status is awaiting teacher grading
-      repository.recordRoomVisit(roomCode, studentName, undefined);
+      // If there are essays, teacher must grade them so overall score is awaiting review
+      repository.recordRoomVisit(roomCode, studentName, essayItems.length > 0 ? undefined : mcScore);
       postRoomSubmission({
-        action: "submit_essay",
-        essay_answer: JSON.stringify(essayAnswers),
+        action: "submit_all",
+        mc_answer: mcItems.length > 0 ? JSON.stringify(selectedMcAnswers) : undefined,
+        is_mc_correct: isAllMcCorrect,
+        mc_score: mcScore,
+        essay_answer: essayItems.length > 0 ? JSON.stringify(essayAnswers) : undefined,
       });
     }
   };
@@ -283,11 +262,9 @@ export default function RoomViewerPage() {
         action: "submit_material",
       });
     }
-    // Auto-advance to questions if available
-    if (mcItems.length > 0) {
-      setActiveTab("multiple_choice");
-    } else if (essayItems.length > 0) {
-      setActiveTab("essay");
+    // Auto-advance to questions tab if available
+    if (hasQuestions) {
+      setActiveTab("questions");
     }
   };
 
@@ -331,12 +308,10 @@ export default function RoomViewerPage() {
     );
   }
 
-  const mcItems = mcQuestion ? getQuestionItems(mcQuestion).filter((it) => it.type === "multiple_choice") : [];
-  const essayItems = essayQuestion ? getQuestionItems(essayQuestion).filter((it) => it.type === "essay") : [];
-
-  const hasMaterial = (room.type === "material" || room.type === "both") && !!material;
-  const hasMultipleChoice = (room.type === "question" || room.type === "both") && mcItems.length > 0;
-  const hasEssay = (room.type === "question" || room.type === "both") && essayItems.length > 0;
+  // Total answers progress calculation
+  const totalAnswered =
+    mcItems.filter((it) => !!selectedMcAnswers[it.id]).length +
+    essayItems.filter((it) => !!essayAnswers[it.id]?.trim()).length;
 
   return (
     <div className="min-h-screen bg-[#FAF7F3] text-[#23212A] flex flex-col justify-between selection:bg-[#FFD36D] selection:text-[#51465B] relative font-sans">
@@ -421,14 +396,14 @@ export default function RoomViewerPage() {
         </div>
 
         {/* ================================================================== */}
-        {/* TAB NAVIGATION: HALAMAN BEDA-BEDA (MATERI, PILIHAN GANDA, ESAI)    */}
+        {/* TAB NAVIGATION: JIKA ADA MATERI DAN SOAL                           */}
         {/* ================================================================== */}
-        <div className="flex items-center gap-2 p-1.5 rounded-full bg-white border border-[#E9E5E8] shadow-xs overflow-x-auto">
-          {hasMaterial && (
+        {hasMaterial && hasQuestions && (
+          <div className="flex items-center gap-2 p-1.5 rounded-full bg-white border border-[#E9E5E8] shadow-xs overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab("material")}
-              className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 min-w-[140px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 activeTab === "material"
                   ? "bg-[#51465B] text-white shadow-md"
                   : "text-[#756F7A] hover:text-[#23212A] hover:bg-[#FAF7F3]"
@@ -438,45 +413,27 @@ export default function RoomViewerPage() {
               <span>1. Modul Materi</span>
               {isMaterialCompleted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
             </button>
-          )}
 
-          {hasMultipleChoice && (
             <button
               type="button"
-              onClick={() => setActiveTab("multiple_choice")}
-              className={`flex-1 min-w-[130px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                activeTab === "multiple_choice"
+              onClick={() => setActiveTab("questions")}
+              className={`flex-1 min-w-[150px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                activeTab === "questions"
                   ? "bg-[#51465B] text-white shadow-md"
                   : "text-[#756F7A] hover:text-[#23212A] hover:bg-[#FAF7F3]"
               }`}
             >
               <Brain className="w-4 h-4" />
-              <span>2. Pilihan Ganda</span>
-              {isMcSubmitted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
+              <span>2. Latihan Soal ({questionItems.length} Butir)</span>
+              {isSubmitted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
             </button>
-          )}
-
-          {hasEssay && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("essay")}
-              className={`flex-1 min-w-[110px] py-2.5 px-4 rounded-full text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                activeTab === "essay"
-                  ? "bg-[#51465B] text-white shadow-md"
-                  : "text-[#756F7A] hover:text-[#23212A] hover:bg-[#FAF7F3]"
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>3. Soal Esai</span>
-              {isEssaySubmitted && <CheckCircle2 className="w-3.5 h-3.5 text-[#FFD36D]" />}
-            </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ================================================================== */}
-        {/* HALAMAN 1: KONTEN MATERI                                           */}
+        {/* BAGIAN 1: KONTEN MATERI (BILA TAB MATERI AKTIF)                    */}
         {/* ================================================================== */}
-        {activeTab === "material" && material && (
+        {((activeTab === "material" && hasMaterial) || (!hasQuestions && hasMaterial)) && material && (
           <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
             <div className="border-b border-[#E9E5E8] pb-4">
               <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
@@ -522,20 +479,20 @@ export default function RoomViewerPage() {
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#FFD36D] stroke-[2.5]" />
                   <span>
-                    {hasMultipleChoice || hasEssay
+                    {hasQuestions
                       ? "Selesai Membaca & Lanjut ke Latihan Soal"
                       : "Saya Sudah Selesai Membaca"}
                   </span>
                 </button>
               )}
 
-              {(hasMultipleChoice || hasEssay) && (
+              {hasQuestions && (
                 <button
                   type="button"
-                  onClick={() => setActiveTab(hasMultipleChoice ? "multiple_choice" : "essay")}
+                  onClick={() => setActiveTab("questions")}
                   className="text-xs font-bold text-[#51465B] hover:underline"
                 >
-                  Langsung ke Soal &rarr;
+                  Langsung ke Soal ({questionItems.length} Butir) &rarr;
                 </button>
               )}
             </div>
@@ -543,125 +500,220 @@ export default function RoomViewerPage() {
         )}
 
         {/* ================================================================== */}
-        {/* HALAMAN 2: PILIHAN GANDA (BENAR-BENAR BISA PILIH OPSI JAWABAN)     */}
+        {/* BAGIAN 2: SATU HALAMAN SOAL (PILGAN & ESAI SESUAI URUTAN SOAL)      */}
         {/* ================================================================== */}
-        {activeTab === "multiple_choice" && mcItems.length > 0 && (
-          <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
-            {/* Header Question */}
-            <div className="border-b border-[#E9E5E8] pb-4 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
-                  Topik: {mcQuestion?.topic || "Pilihan Ganda"}
+        {((activeTab === "questions" && hasQuestions) || (!hasMaterial && hasQuestions)) && (
+          <form
+            onSubmit={handleSubmitAll}
+            className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-8 animate-in fade-in duration-200"
+          >
+            {/* Header Soal Terpadu */}
+            <div className="border-b border-[#E9E5E8] pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block">
+                  Topik: {question?.topic || "Latihan Mandiri"}
                 </span>
-                <h2 className="text-sm font-bold text-slate-500">
-                  {mcItems.length > 1
-                    ? `Jawablah ${mcItems.length} butir soal pilihan ganda berikut`
-                    : "Pilihlah salah satu jawaban yang paling tepat"}
+                <h2 className="text-base sm:text-lg font-black text-[#23212A]">
+                  Lembar Pengerjaan Soal Terpadu ({questionItems.length} Butir Soal)
                 </h2>
+                <p className="text-xs text-[#756F7A]">
+                  Kerjakan seluruh butir soal pilihan ganda dan esai di bawah ini secara berurutan.
+                </p>
               </div>
 
-              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black">
-                {mcItems.length > 1 ? `${mcItems.length} Butir Soal PG` : "Pilihan Ganda"}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black">
+                  Total {questionItems.length} Butir
+                </span>
+                {mcItems.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-bold">
+                    {mcItems.length} PG
+                  </span>
+                )}
+                {essayItems.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-900 text-[11px] font-bold">
+                    {essayItems.length} Esai
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* List of Multiple Choice Items */}
+            {/* Stimulus Wacana Umum jika ada pengantar soal */}
+            {question?.question_text &&
+              questionItems.length > 1 &&
+              question.question_text !== questionItems[0]?.question_text && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs sm:text-sm font-medium text-[#23212A] leading-relaxed">
+                  <span className="text-[11px] font-black uppercase text-[#51465B] block mb-1">
+                    Wacana / Stimulus Kontekstual:
+                  </span>
+                  {question.question_text}
+                </div>
+              )}
+
+            {/* DAFTAR SELURUH BUTIR SOAL SECARA BERURUTAN DALAM SATU HALAMAN */}
             <div className="space-y-8">
-              {mcItems.map((item, idx) => {
+              {questionItems.map((item, idx) => {
+                const isMc = item.type === "multiple_choice";
+                const isEs = item.type === "essay";
+
+                // Multiple Choice states
                 const selectedOpt = selectedMcAnswers[item.id];
-                const isItemCorrect = isMcSubmitted && selectedOpt === item.correct_answer;
-                const isItemWrong = isMcSubmitted && !!selectedOpt && !isItemCorrect;
+                const isItemCorrect = isSubmitted && isMc && selectedOpt === item.correct_answer;
+                const isItemWrong = isSubmitted && isMc && !!selectedOpt && !isItemCorrect;
 
                 return (
-                  <div key={item.id} className="space-y-4 pt-2 first:pt-0 border-b border-[#E9E5E8]/60 pb-6 last:border-b-0 last:pb-0">
-                    {/* Item Number & Question Text */}
-                    <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
-                      <div className="flex items-start gap-3">
-                        {mcItems.length > 1 && (
-                          <span className="w-7 h-7 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
-                            {idx + 1}
-                          </span>
-                        )}
-                        <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed flex-1">
-                          {item.question_text}
-                        </p>
+                  <div
+                    key={item.id || idx}
+                    className="p-5 sm:p-6 rounded-2xl border-2 border-[#E9E5E8] bg-white shadow-2xs space-y-4 transition-all"
+                  >
+                    {/* Header Butir Soal: Nomor Urut & Tipe Soal */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0 shadow-2xs">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-black text-[#23212A]">
+                          Soal Nomor {idx + 1}
+                        </span>
                       </div>
+
+                      <span
+                        className={`text-[11px] px-3 py-1 rounded-full font-black ${
+                          isEs
+                            ? "bg-purple-100 text-purple-900 border border-purple-200"
+                            : "bg-amber-100 text-amber-900 border border-amber-200"
+                        }`}
+                      >
+                        {isEs ? "Soal Uraian / Esai" : "Pilihan Ganda"}
+                      </span>
                     </div>
 
-                    {/* Interactive Multiple Choice Options (A, B, C, D) */}
-                    <div className="space-y-2.5 pt-1">
-                      {item.options &&
-                        item.options.map((opt) => {
-                          const isSelected = selectedOpt === opt.key;
-                          const isCorrect = isMcSubmitted && opt.key === item.correct_answer;
-                          const isWrong = isMcSubmitted && isSelected && !isCorrect;
+                    {/* Pertanyaan Stem */}
+                    <p className="text-sm sm:text-base font-bold text-[#23212A] leading-relaxed">
+                      {item.question_text}
+                    </p>
+
+                    {/* ============================================================== */}
+                    {/* JIKA SOAL PILIHAN GANDA: OPSI JAWABAN INTERAKTIF (A, B, C, D)  */}
+                    {/* ============================================================== */}
+                    {isMc && item.options && item.options.length > 0 && (
+                      <div className="space-y-2.5 pt-1">
+                        {item.options.map((opt, optIdx) => {
+                          const optKey = opt.key || String.fromCharCode(65 + optIdx);
+                          const isSelected = selectedOpt === optKey;
+                          const isOptionCorrect = isSubmitted && optKey === item.correct_answer;
+                          const isOptionWrong = isSubmitted && isSelected && !isOptionCorrect;
 
                           return (
                             <button
-                              key={opt.key}
+                              key={optKey}
                               type="button"
-                              disabled={isMcSubmitted}
+                              disabled={isSubmitted}
                               onClick={() =>
                                 setSelectedMcAnswers((prev) => ({
                                   ...prev,
-                                  [item.id]: opt.key,
+                                  [item.id]: optKey,
                                 }))
                               }
                               className={`w-full p-3.5 sm:p-4 rounded-2xl border-2 flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                                isCorrect
+                                isOptionCorrect
                                   ? "border-emerald-500 bg-emerald-50 text-emerald-950 font-bold"
-                                  : isWrong
+                                  : isOptionWrong
                                   ? "border-rose-500 bg-rose-50 text-rose-950 font-bold"
                                   : isSelected
                                   ? "border-[#51465B] bg-[#51465B]/5 font-bold shadow-xs"
                                   : "border-[#E9E5E8] hover:border-[#51465B]/40 bg-white"
-                              }`}
+                              } ${isSubmitted ? "cursor-default" : ""}`}
                             >
                               <span
-                                className={`w-9 h-9 rounded-full font-black text-xs flex items-center justify-center shrink-0 transition-colors ${
-                                  isCorrect
+                                className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center shrink-0 transition-colors ${
+                                  isOptionCorrect
                                     ? "bg-emerald-600 text-white"
-                                    : isWrong
+                                    : isOptionWrong
                                     ? "bg-rose-600 text-white"
                                     : isSelected
                                     ? "bg-[#51465B] text-[#FFD36D]"
                                     : "bg-slate-100 text-slate-700"
                                 }`}
                               >
-                                {opt.key}
+                                {optKey}
                               </span>
-                              <span className="text-sm sm:text-base flex-1">{opt.text}</span>
+                              <span className="text-xs sm:text-sm flex-1 leading-normal">
+                                {opt.text}
+                              </span>
                             </button>
                           );
                         })}
-                    </div>
 
-                    {/* Item Feedback if submitted */}
-                    {isMcSubmitted && (
-                      <div
-                        className={`p-4 rounded-2xl border text-xs sm:text-sm space-y-1.5 ${
-                          isItemCorrect
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-950"
-                            : "bg-rose-50 border-rose-200 text-rose-950"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 font-black text-sm">
-                          {isItemCorrect ? (
-                            <>
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                              <span>Jawaban No. {idx + 1} Tepat!</span>
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="w-4 h-4 text-rose-600" />
-                              <span>Jawaban No. {idx + 1} Belum Tepat. Kunci Jawaban: {item.correct_answer}</span>
-                            </>
-                          )}
+                        {/* Umpan Balik untuk Soal Pilihan Ganda Setelah Dikumpulkan */}
+                        {isSubmitted && (
+                          <div
+                            className={`mt-3 p-4 rounded-2xl border text-xs sm:text-sm space-y-1.5 animate-in fade-in ${
+                              isItemCorrect
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                                : "bg-rose-50 border-rose-200 text-rose-950"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 font-black text-xs sm:text-sm">
+                              {isItemCorrect ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                  <span>Jawaban No. {idx + 1} Tepat!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                  <span>
+                                    Jawaban No. {idx + 1} Belum Tepat. Kunci Jawaban: {item.correct_answer}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            {item.explanation && (
+                              <p className="leading-relaxed text-slate-800 text-xs">
+                                <strong>Pembahasan:</strong> {item.explanation}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ============================================================== */}
+                    {/* JIKA SOAL ESAI: FORM MENGETIKKAN JAWABAN & ALASAN SISWA       */}
+                    {/* ============================================================== */}
+                    {isEs && (
+                      <div className="space-y-3 pt-1">
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 block mb-1.5">
+                            Tuliskan Jawaban &amp; Penjelasan Uraianmu:
+                          </label>
+                          <textarea
+                            rows={4}
+                            disabled={isSubmitted}
+                            placeholder="Ketik jawaban lengkap dan uraian penjelasanmu di sini..."
+                            value={essayAnswers[item.id] || ""}
+                            onChange={(e) =>
+                              setEssayAnswers((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                            className="w-full p-4 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] text-xs sm:text-sm leading-relaxed text-[#23212A] placeholder:text-slate-400 focus:outline-none focus:ring-0 disabled:bg-slate-50 disabled:text-slate-700 disabled:cursor-not-allowed"
+                          />
                         </div>
-                        {item.explanation && (
-                          <p className="leading-relaxed text-slate-800">
-                            <strong>Pembahasan:</strong> {item.explanation}
-                          </p>
+
+                        {/* Umpan Balik untuk Soal Esai Setelah Dikumpulkan */}
+                        {isSubmitted && (
+                          <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-950 text-xs space-y-1 animate-in fade-in">
+                            <div className="flex items-center gap-2 font-black">
+                              <CheckCircle2 className="w-4 h-4 text-purple-700 shrink-0" />
+                              <span>Jawaban Esai No. {idx + 1} Berhasil Tersimpan!</span>
+                            </div>
+                            <p className="leading-relaxed text-slate-700 text-[11px]">
+                              Status: <strong>Menunggu Penilaian Guru</strong>. Pengajar akan memeriksa uraian dan memberikan catatan pembelajaran.
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -670,178 +722,107 @@ export default function RoomViewerPage() {
               })}
             </div>
 
-            {/* Action Submit */}
-            {!isMcSubmitted ? (
-              <div className="pt-4 flex items-center justify-between border-t border-[#E9E5E8]">
+            {/* ============================================================== */}
+            {/* FOOTER AKSI: TOMBOL KUMPULKAN / HASIL REKAPITULASI             */}
+            {/* ============================================================== */}
+            {!isSubmitted ? (
+              <div className="pt-6 border-t border-[#E9E5E8] flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span className="text-xs font-semibold text-slate-500">
-                  {Object.keys(selectedMcAnswers).length} dari {mcItems.length} soal terjawab
+                  {totalAnswered} dari {questionItems.length} butir soal telah diisi
                 </span>
+
                 <button
-                  type="button"
-                  disabled={mcItems.some((it) => !selectedMcAnswers[it.id])}
-                  onClick={handleMcSubmit}
-                  className="px-7 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40"
+                  type="submit"
+                  disabled={totalAnswered === 0}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
                 >
-                  Kumpulkan Jawaban
+                  <Send className="w-4 h-4 text-[#FFD36D]" />
+                  <span>Kumpulkan Seluruh Jawaban</span>
                 </button>
               </div>
             ) : (
-              /* Summary and Next Navigation */
-              <div className="pt-4 space-y-4 border-t border-[#E9E5E8]">
-                <div className="p-5 rounded-2xl bg-[#51465B]/5 border border-[#51465B]/20 text-[#23212A] flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-xs text-slate-600 font-bold block">Skor Pilihan Ganda:</span>
-                    <span className="text-2xl font-black text-[#51465B]">
-                      {Math.round(
-                        (mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length /
-                          mcItems.length) *
-                          100
-                      )}
-                      <span className="text-sm font-bold text-slate-500"> / 100</span>
-                    </span>
+              /* Rekapitulasi Nilai & Pembelajaran */
+              <div className="pt-6 space-y-5 border-t border-[#E9E5E8] animate-in fade-in">
+                <div className="p-6 rounded-3xl bg-[#51465B]/5 border-2 border-[#51465B]/20 text-[#23212A] space-y-4">
+                  <div className="flex items-center gap-2 font-black text-sm sm:text-base text-[#51465B]">
+                    <Award className="w-5 h-5 text-[#FFD36D]" />
+                    <span>Latihan Soal Telah Berhasil Diselesaikan!</span>
                   </div>
-                  <span className="text-xs font-bold text-slate-600">
-                    {mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length} dari {mcItems.length} benar
-                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    {/* Skor Pilihan Ganda */}
+                    {mcItems.length > 0 && (
+                      <div className="p-4 rounded-2xl bg-white border border-[#E9E5E8] space-y-1">
+                        <span className="text-xs text-slate-500 font-bold block">
+                          Skor Pilihan Ganda ({mcItems.length} Soal):
+                        </span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-black text-[#51465B]">
+                            {Math.round(
+                              (mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length /
+                                mcItems.length) *
+                                100
+                            )}
+                          </span>
+                          <span className="text-xs text-slate-500 font-bold">/ 100</span>
+                          <span className="text-xs font-semibold text-emerald-700 ml-auto">
+                            {mcItems.filter((it) => selectedMcAnswers[it.id] === it.correct_answer).length} dari {mcItems.length} Benar
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status Soal Esai */}
+                    {essayItems.length > 0 && (
+                      <div className="p-4 rounded-2xl bg-white border border-[#E9E5E8] space-y-1">
+                        <span className="text-xs text-slate-500 font-bold block">
+                          Status Soal Esai ({essayItems.length} Soal):
+                        </span>
+                        <span className="inline-block px-2.5 py-1 rounded-full bg-purple-100 text-purple-900 text-xs font-bold">
+                          Menunggu Penilaian Guru
+                        </span>
+                        <p className="text-[11px] text-slate-600 pt-0.5">
+                          Jawaban uraianmu tersimpan dan akan diperiksa langsung oleh pengajar.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => {
-                      setIsMcSubmitted(false);
-                      setSelectedMcAnswers({});
+                      setIsSubmitted(false);
                     }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Coba Jawab Lagi</span>
+                    <span>Coba Jawab Lagi / Ubah Jawaban</span>
                   </button>
 
-                  {hasEssay && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("essay")}
-                      className="px-5 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs hover:bg-[#3D3445]"
-                    >
-                      Lanjut ke Soal Esai &rarr;
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================================================================== */}
-        {/* HALAMAN 3: SOAL ESAI (SISWA MENGETIKKAN JAWABAN ESAI)              */}
-        {/* ================================================================== */}
-        {activeTab === "essay" && essayItems.length > 0 && (
-          <div className="bg-white rounded-3xl border border-[#E9E5E8] p-6 sm:p-9 shadow-xs space-y-6 animate-in fade-in duration-200">
-            {/* Header Question */}
-            <div className="border-b border-[#E9E5E8] pb-4 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#51465B] block mb-1">
-                  Topik: {essayQuestion?.topic || "Soal Esai"}
-                </span>
-                <h2 className="text-sm font-bold text-slate-500">
-                  {essayItems.length > 1
-                    ? `Jawablah ${essayItems.length} butir pertanyaan esai berikut dengan penalaranmu sendiri`
-                    : "Jawablah pertanyaan esai berikut dengan penalaranmu sendiri"}
-                </h2>
-              </div>
-
-              <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-900 text-xs font-black">
-                {essayItems.length > 1 ? `${essayItems.length} Butir Soal Esai` : "Soal Esai"}
-              </span>
-            </div>
-
-            {/* Essay Form */}
-            <form onSubmit={handleEssaySubmit} className="space-y-6">
-              <div className="space-y-6">
-                {essayItems.map((item, idx) => (
-                  <div key={item.id} className="space-y-3 pt-2 first:pt-0 border-b border-[#E9E5E8]/60 pb-6 last:border-b-0 last:pb-0">
-                    <div className="p-4 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8]">
-                      <div className="flex items-start gap-3">
-                        {essayItems.length > 1 && (
-                          <span className="w-7 h-7 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
-                            {idx + 1}
-                          </span>
-                        )}
-                        <p className="text-base sm:text-lg font-bold text-[#23212A] leading-relaxed flex-1">
-                          {item.question_text}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-800 block mb-1.5">
-                        Tuliskan Jawaban &amp; Alasanmu {essayItems.length > 1 ? `(Soal #${idx + 1})` : ""}:
-                      </label>
-                      <textarea
-                        rows={4}
-                        required
-                        disabled={isEssaySubmitted}
-                        placeholder="Ketik jawaban lengkap dan uraian penjelasanmu di sini..."
-                        value={essayAnswers[item.id] || ""}
-                        onChange={(e) =>
-                          setEssayAnswers((prev) => ({
-                            ...prev,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        className="w-full p-4 rounded-2xl border-2 border-[#E9E5E8] focus:border-[#51465B] text-sm leading-relaxed text-[#23212A] placeholder:text-slate-400 focus:outline-none focus:ring-0 disabled:bg-slate-50 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {!isEssaySubmitted ? (
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={essayItems.some((it) => !essayAnswers[it.id]?.trim())}
-                    className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#51465B] hover:bg-[#3D3445] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-40"
-                  >
-                    <Send className="w-4 h-4 text-[#FFD36D]" />
-                    <span>Kirim Jawaban Esai</span>
-                  </button>
-                </div>
-              ) : (
-                /* Feedback and Rubric */
-                <div className="pt-2 space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs sm:text-sm space-y-2">
-                    <div className="flex items-center gap-2 font-black text-sm sm:text-base">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                      <span>Jawaban Esai Berhasil Terkirim ke Pengajar!</span>
-                    </div>
-                    <p className="leading-relaxed text-slate-800">
-                      <strong>Status:</strong> Menunggu Penilaian Guru. Guru akan membaca uraian jawabanmu dan memberikan skor serta catatan pembelajaran.
-                    </p>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEssaySubmitted(false)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E9E5E8] text-xs font-bold text-[#51465B] hover:bg-slate-50 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Ubah Jawaban</span>
-                    </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {hasMaterial && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("material")}
+                        className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full border border-[#E9E5E8] text-xs font-bold text-slate-700 hover:bg-slate-50"
+                      >
+                        Baca Ulang Materi
+                      </button>
+                    )}
 
                     <Link
                       href="/room"
-                      className="px-5 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs hover:bg-[#3D3445]"
+                      className="flex-1 sm:flex-initial text-center px-6 py-2.5 rounded-full bg-[#51465B] text-white text-xs font-bold shadow-xs hover:bg-[#3D3445]"
                     >
                       Selesai &amp; Buka Room Lain &rarr;
                     </Link>
                   </div>
                 </div>
-              )}
-            </form>
-          </div>
+              </div>
+            )}
+          </form>
         )}
       </main>
 

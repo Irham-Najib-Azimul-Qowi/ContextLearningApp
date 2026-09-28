@@ -334,15 +334,21 @@ export function DepaskanPrintableDocument({
 
                   {/* Essay Writing Space */}
                   {q.type === "essay" && (
-                    <div className="pl-8 pt-1 space-y-2">
-                      <span className="text-[11px] text-slate-500 italic block">
-                        Tuliskan jawaban dan langkah pengerjaan pada baris di bawah:
-                      </span>
-                      <div className="space-y-3 pt-1">
-                        <div className="border-b border-slate-300 h-5 w-full" />
-                        <div className="border-b border-slate-300 h-5 w-full" />
-                        <div className="border-b border-slate-300 h-5 w-full" />
-                        <div className="border-b border-slate-300 h-5 w-full" />
+                    <div className="pl-8 pt-1 space-y-2 break-inside-avoid">
+                      <div className="rounded-xl border border-slate-300 bg-slate-50/50 print:bg-transparent p-3.5 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                          <span>Ruang Jawaban / Uraian Siswa:</span>
+                          <span className="text-[10px] text-slate-400 font-normal italic">
+                            (Tuliskan jawaban dan langkah pengerjaan dengan rapi)
+                          </span>
+                        </div>
+                        <div className="space-y-4 pt-1 pb-1">
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                        </div>
                       </div>
                     </div>
                   )}

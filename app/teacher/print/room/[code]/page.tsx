@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question, School } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, School, getQuestionItems } from "@/lib/db/types";
 
 interface PrintRoomPageProps {
   params: Promise<{ code: string }>;
@@ -323,48 +323,59 @@ export default function PrintRoomPage({ params }: PrintRoomPageProps) {
               <span>Lembar Soal & Pilihan Jawaban ({question.topic || "Latihan Mandiri"}):</span>
             </h3>
 
-            <div className="p-4 rounded-2xl border border-slate-200 print:border-slate-300 bg-white space-y-3 break-inside-avoid">
-              <div className="flex items-start gap-2.5">
-                <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
-                  1
-                </span>
-                <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">
-                  {question.question_text}
-                </p>
-              </div>
-
-              {/* Multiple Choice Options */}
-              {question.type === "multiple_choice" && question.options && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-2 pl-8 pt-1">
-                  {question.options.map((opt) => (
-                    <div
-                      key={opt.key}
-                      className="flex items-center gap-2 text-xs font-medium text-slate-800"
-                    >
-                      <span className="w-6 h-6 rounded-full border border-slate-400 flex items-center justify-center font-bold text-[11px] bg-slate-50">
-                        {opt.key}
-                      </span>
-                      <span>{opt.text}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Essay Writing Space */}
-              {question.type === "essay" && (
-                <div className="pl-8 pt-1 space-y-2">
-                  <span className="text-[11px] text-slate-500 italic block">
-                    Tuliskan jawaban dan langkah pengerjaan pada baris di bawah:
+            {getQuestionItems(question).map((item, idx) => (
+              <div
+                key={item.id || idx}
+                className="p-4 rounded-2xl border border-slate-200 print:border-slate-300 bg-white space-y-3 break-inside-avoid"
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                    {idx + 1}
                   </span>
-                  <div className="space-y-3 pt-1">
-                    <div className="border-b border-slate-300 h-5 w-full" />
-                    <div className="border-b border-slate-300 h-5 w-full" />
-                    <div className="border-b border-slate-300 h-5 w-full" />
-                    <div className="border-b border-slate-300 h-5 w-full" />
-                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">
+                    {item.question_text}
+                  </p>
                 </div>
-              )}
-            </div>
+
+                {/* Multiple Choice Options */}
+                {item.type === "multiple_choice" && item.options && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-2 pl-8 pt-1">
+                    {item.options.map((opt) => (
+                      <div
+                        key={opt.key}
+                        className="flex items-center gap-2 text-xs font-medium text-slate-800"
+                      >
+                        <span className="w-6 h-6 rounded-full border border-slate-400 flex items-center justify-center font-bold text-[11px] bg-slate-50">
+                          {opt.key}
+                        </span>
+                        <span>{opt.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Essay Writing Space with Dedicated Ruang Jawaban Box */}
+                {item.type === "essay" && (
+                  <div className="pl-8 pt-1 space-y-2 break-inside-avoid">
+                    <div className="rounded-xl border border-slate-300 bg-slate-50/50 print:bg-transparent p-3.5 space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                        <span>Ruang Jawaban / Uraian Siswa:</span>
+                        <span className="text-[10px] text-slate-400 font-normal italic">
+                          (Tuliskan jawaban dan langkah pengerjaan dengan rapi)
+                        </span>
+                      </div>
+                      <div className="space-y-4 pt-1 pb-1">
+                        <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                        <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                        <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                        <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                        <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

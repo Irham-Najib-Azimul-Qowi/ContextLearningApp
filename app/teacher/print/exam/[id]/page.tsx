@@ -267,11 +267,22 @@ export default function PrintExamPage({ params }: PrintExamPageProps) {
 
                   {/* Essay Writing Area (Student Mode) */}
                   {q.type === "essay" && mode === "student" && (
-                    <div className="mt-3 space-y-3 pt-2">
-                      <div className="text-[11px] text-slate-400 italic">Ruang Jawaban:</div>
-                      <div className="border-b border-slate-300 min-h-[24px]"></div>
-                      <div className="border-b border-slate-300 min-h-[24px]"></div>
-                      <div className="border-b border-slate-300 min-h-[24px]"></div>
+                    <div className="mt-3 break-inside-avoid">
+                      <div className="rounded-xl border border-slate-300 bg-slate-50/50 print:bg-transparent p-3.5 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                          <span>Ruang Jawaban / Uraian Siswa:</span>
+                          <span className="text-[10px] text-slate-400 font-normal italic">
+                            (Tuliskan jawaban dan penjelasan lengkap dengan rapi)
+                          </span>
+                        </div>
+                        <div className="space-y-4 pt-1 pb-1">
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                          <div className="border-b border-slate-300 min-h-[24px] w-full" />
+                        </div>
+                      </div>
                     </div>
                   )}
 
