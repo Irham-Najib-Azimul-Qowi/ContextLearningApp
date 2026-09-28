@@ -37,8 +37,9 @@ export class ContextualAIEngine {
     const raw = (input.rawText || "").trim();
     const prompt = (input.prompt || "").trim();
     const title = (input.title || "").trim();
-    const topic = (input.topic || title || prompt || "Materi Tematik Kontekstual").trim();
-    const effectiveText = raw || prompt || topic;
+    const rawTopic = (input.topic || "").trim();
+    const effectiveText = raw || prompt || rawTopic || title;
+    const topic = rawTopic || title || prompt || (effectiveText ? "Materi Tematik Kontekstual" : "");
 
     let questionCount = Number(input.questionCount) || 0;
     if (questionCount <= 0 && prompt) {

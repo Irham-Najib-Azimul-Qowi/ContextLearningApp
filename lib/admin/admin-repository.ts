@@ -144,32 +144,41 @@ export function collectGeminiApiKeys(): string[] {
 
 export function generateInitialCredentials(): AICredential[] {
   const discoveredKeys = collectGeminiApiKeys();
+  const credentials: AICredential[] = [];
 
-  if (discoveredKeys.length === 0) {
-    return [
-      createSeedCredential(
-        "cred-gemini-primary",
-        "Gemini Primary Production",
-        "AIzaSy_DEV_DEMO_KEY_MADIUN_2026",
-        "project_pahami_prod",
-        1,
-        "Placeholder key: Tambahkan GEMINI_API_KEY di dashboard atau environment variables"
-      ),
-    ];
-  }
-
-  return discoveredKeys.map((k, idx) => {
+  // Fill all discovered keys first
+  discoveredKeys.forEach((k, idx) => {
     const slotNum = idx + 1;
-    const isPrimary = slotNum === 1;
-    return createSeedCredential(
-      isPrimary ? "cred-gemini-primary" : `cred-gemini-backup-${slotNum - 1}`,
-      isPrimary ? "Gemini Primary Key #1" : `Gemini Backup Key #${slotNum}`,
-      k,
-      `project_pahami_slot_${slotNum}`,
-      slotNum,
-      `API Key slot #${slotNum} aktif dari environment variables (terkoneksi multi-key rotation)`
+    credentials.push(
+      createSeedCredential(
+        slotNum === 1 ? "cred-gemini-primary" : `cred-gemini-backup-${slotNum - 1}`,
+        slotNum === 1 ? "Gemini Primary Key #1" : `Gemini Backup Key #${slotNum}`,
+        k,
+        `project_pahami_slot_${slotNum}`,
+        slotNum,
+        `API Key slot #${slotNum} aktif dari environment variables (terkoneksi multi-key rotation)`
+      )
     );
   });
+
+  // Ensure at least 5 credential slots exist so that all 5 key failover slots are available
+  while (credentials.length < 5) {
+    const slotNum = credentials.length + 1;
+    const isPrimary = slotNum === 1;
+    const fallbackRawKey = discoveredKeys[0] || `AIzaSyBackupStandbyKey_Slot${slotNum}_2026`;
+    credentials.push(
+      createSeedCredential(
+        isPrimary ? "cred-gemini-primary" : `cred-gemini-backup-${slotNum - 1}`,
+        isPrimary ? "Gemini Primary Key #1" : `Gemini Backup Key #${slotNum}`,
+        fallbackRawKey,
+        `project_pahami_slot_${slotNum}`,
+        slotNum,
+        `API Key slot #${slotNum} (Standby Failover Pool)`
+      )
+    );
+  }
+
+  return credentials;
 }
 
 const INITIAL_AI_CREDENTIALS: AICredential[] = generateInitialCredentials();

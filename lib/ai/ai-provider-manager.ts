@@ -214,29 +214,27 @@ export class AIProviderManager {
         continue; // Quota group exhausted, do not rotate to same group
       }
 
-      // Check Circuit Breaker
+      // 1. Health Status Checks: Do not route to rate_limited, invalid, or disabled credentials
+      if (
+        cred.health_status === "rate_limited" ||
+        cred.health_status === "invalid" ||
+        cred.health_status === "disabled"
+      ) {
+        continue;
+      }
+
+      // 2. Check Circuit Breaker
       if (cred.circuit_state === "OPEN") {
-        const openedAt = cred.circuit_opened_at ? new Date(cred.circuit_opened_at).getTime() : 0;
-        const elapsed = (Date.now() - openedAt) / 1000;
+        const now = Date.now();
+        const openedAt = cred.circuit_opened_at ? new Date(cred.circuit_opened_at).getTime() : now;
+        const elapsed = (now - openedAt) / 1000;
         const cooldown = cred.cooldown_seconds || 60;
-        if (elapsed > cooldown) {
+        if (cred.circuit_opened_at && elapsed > cooldown) {
           // Transition to HALF_OPEN for a canary test
           adminRepository.updateCredential(cred.id, {
             circuit_state: "HALF_OPEN",
             cooldown_until: null,
           });
-          return cred;
-        }
-        // Only auto-recover primary if it is the ONLY credential configured
-        if (creds.length === 1 && process.env.GEMINI_API_KEY && cred.id === "cred-gemini-primary") {
-          return cred;
-        }
-        continue;
-      }
-
-      if (cred.health_status === "invalid" || cred.health_status === "disabled") {
-        // Only heal primary if it is the ONLY credential in the system
-        if (creds.length === 1 && process.env.GEMINI_API_KEY && cred.id === "cred-gemini-primary") {
           return cred;
         }
         continue;
@@ -246,6 +244,13 @@ export class AIProviderManager {
     }
 
     return null;
+  }
+
+  getAvailableCredential(
+    excludedQuotaGroups: Set<string> = new Set(),
+    excludedCredIds: Set<string> = new Set()
+  ): AICredential | null {
+    return this.selectCredential(excludedQuotaGroups, excludedCredIds);
   }
 
   /**

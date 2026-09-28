@@ -1166,18 +1166,15 @@ class PahamiRepository {
     const currentUser = this.getCurrentUser();
     if (filter) {
       if (filter.schoolId) {
+        const activeSchool = this.getActiveSchool();
+        const isActiveSchoolQuery =
+          filter.schoolId === "school-active" || (activeSchool && filter.schoolId === activeSchool.id);
         questions = questions.filter((q) => {
           if (q.school_id === filter.schoolId) return true;
-          if (
-            filter.schoolId !== "sch-unknown-999" &&
-            (filter.schoolId === "school-active" || q.school_id === "school-active")
-          ) {
+          if (isActiveSchoolQuery && (q.school_id === "school-active" || q.school_id === activeSchool?.id)) {
             return true;
           }
-          if (currentUser?.id && q.teacher_id === currentUser.id) {
-            return true;
-          }
-          if (!q.teacher_id || q.teacher_id === "usr-teacher-01") {
+          if (isActiveSchoolQuery && currentUser?.id && q.teacher_id === currentUser.id) {
             return true;
           }
           return false;
@@ -1709,7 +1706,10 @@ class PahamiRepository {
   }
 
   createRoom(
-    data: Omit<LearningRoom, "id" | "created_at" | "access_count" | "visitors">
+    data: Omit<LearningRoom, "id" | "created_at" | "access_count" | "visitors" | "code" | "type"> & {
+      code?: string;
+      type?: "material" | "question" | "both";
+    }
   ): LearningRoom {
     const rooms = this.getRooms();
     const cleanCode = (data.code || this.getNextRoomCode())
@@ -1724,17 +1724,40 @@ class PahamiRepository {
     let materialSnapshot = data.material_snapshot;
     let questionSnapshot = data.question_snapshot;
 
-    if (!materialSnapshot && (data.type === "material" || data.type === "both") && data.resource_id) {
-      materialSnapshot = this.getMaterialById(data.resource_id, true);
+    const allCandIds = [data.resource_id, data.secondary_resource_id].filter(Boolean) as string[];
+
+    if (!materialSnapshot) {
+      for (const id of allCandIds) {
+        const found = this.getMaterialById(id, true);
+        if (found) {
+          materialSnapshot = found;
+          break;
+        }
+      }
     }
-    if (!questionSnapshot && (data.type === "question" || data.type === "both")) {
-      const qId = data.type === "both" ? data.secondary_resource_id : data.resource_id;
-      if (qId) {
+
+    if (!questionSnapshot) {
+      for (const id of allCandIds) {
         const { combinedQuestion } = resolveRoomQuestions(
-          qId,
+          id,
           this.getQuestions({ includeArchived: true })
         );
-        questionSnapshot = combinedQuestion || this.getQuestionById(qId, true);
+        const found = combinedQuestion || this.getQuestionById(id, true);
+        if (found) {
+          questionSnapshot = found;
+          break;
+        }
+      }
+    }
+
+    let resolvedType = data.type;
+    if (!resolvedType) {
+      if (materialSnapshot && questionSnapshot) {
+        resolvedType = "both";
+      } else if (questionSnapshot) {
+        resolvedType = "question";
+      } else {
+        resolvedType = "material";
       }
     }
 
@@ -1742,6 +1765,7 @@ class PahamiRepository {
       region_name: data.region_name || "Madiun",
       teacher_name: data.teacher_name || "Guru",
       ...data,
+      type: resolvedType,
       material_snapshot: materialSnapshot,
       question_snapshot: questionSnapshot,
       id: cleanRoomId,
