@@ -11,6 +11,9 @@ describe("Tombstone Deletion & Synchronization Integrity Tests", () => {
       grade: 5,
       school_id: "sch-ponorogo-01",
       content: "Konten uji materi untuk memastikan item tidak muncul kembali.",
+      teacher_id: "usr-teacher-test",
+      is_contextualized: true,
+      published_to_classes: [],
     });
 
     assert.ok(testMat.id, "Material should have an ID");

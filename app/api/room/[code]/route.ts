@@ -68,8 +68,8 @@ export async function GET(
     }
 
     // 3. Resolve attached Material if room has material
-    let resolvedMaterial: LearningMaterial | null = null;
-    if (matchedRoom.type === "material" || matchedRoom.type === "both") {
+    let resolvedMaterial: LearningMaterial | null = matchedRoom.material_snapshot || null;
+    if (!resolvedMaterial && (matchedRoom.type === "material" || matchedRoom.type === "both")) {
       const matId = matchedRoom.resource_id;
 
       // Search in teacher's synced materials
@@ -88,15 +88,15 @@ export async function GET(
         }
       }
 
-      // Search in repository SEED_MATERIALS
+      // Search in repository (including archived items)
       if (!resolvedMaterial) {
-        resolvedMaterial = repository.getMaterials().find((m) => m.id === matId) || null;
+        resolvedMaterial = repository.getMaterialById(matId, true) || null;
       }
     }
 
     // 4. Resolve attached Question if room has questions
-    let resolvedQuestion: Question | null = null;
-    if (matchedRoom.type === "question" || matchedRoom.type === "both") {
+    let resolvedQuestion: Question | null = matchedRoom.question_snapshot || null;
+    if (!resolvedQuestion && (matchedRoom.type === "question" || matchedRoom.type === "both")) {
       const qId =
         matchedRoom.type === "both"
           ? matchedRoom.secondary_resource_id
@@ -114,7 +114,7 @@ export async function GET(
           }
         }
       }
-      pool.push(...repository.getQuestions());
+      pool.push(...repository.getQuestions({ includeArchived: true }));
 
       const { combinedQuestion } = resolveRoomQuestions(qId, pool);
       resolvedQuestion = combinedQuestion;

@@ -51,7 +51,7 @@ export default function PrintRoomPage({ params }: PrintRoomPageProps) {
 
       // 1. Try local repository first
       const cleanCode = (roomCode || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-      let localRoom = repository.getRoomByCode(cleanCode);
+      const localRoom = repository.getRoomByCode(cleanCode);
 
       if (localRoom) {
         setRoom(localRoom);
@@ -150,7 +150,7 @@ export default function PrintRoomPage({ params }: PrintRoomPageProps) {
       <div className="min-h-screen bg-[#FAF7F3] p-8 text-center text-[#23212A] flex flex-col items-center justify-center">
         <div className="max-w-md bg-white p-6 rounded-3xl border border-[#E9E5E8] shadow-md space-y-4">
           <p className="text-base font-black text-slate-800">
-            Dokumen Ruang Belajar "{roomCode}" tidak ditemukan.
+            Dokumen Ruang Belajar &quot;{roomCode}&quot; tidak ditemukan.
           </p>
           <p className="text-xs text-slate-500">
             Pastikan kode room sudah benar dan room telah tersinkronisasi.

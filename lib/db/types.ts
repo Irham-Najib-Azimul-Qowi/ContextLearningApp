@@ -104,6 +104,9 @@ export interface Question {
   image_attribution?: string;
   image_alt?: string;
   media_asset?: MediaAsset;
+  version?: number;
+  is_archived?: boolean;
+  archived_at?: string;
   created_at: string;
 }
 
@@ -153,9 +156,12 @@ export function resolveRoomQuestions(
   const seenIds = new Set<string>();
 
   for (const token of idTokens) {
-    const found = availableQuestions.find(
-      (q) => (q.id || "").toLowerCase() === token
-    );
+    const cleanToken = token.replace(/[^a-z0-9]/g, "");
+    const found = availableQuestions.find((q) => {
+      const qLower = (q.id || "").toLowerCase();
+      if (qLower === token) return true;
+      return cleanToken.length > 0 && qLower.replace(/[^a-z0-9]/g, "") === cleanToken;
+    });
     if (found && !seenIds.has(found.id.toLowerCase())) {
       seenIds.add(found.id.toLowerCase());
       matchedQuestions.push(found);
@@ -245,12 +251,15 @@ export interface LearningMaterial {
   original_content?: string;
   context_variables?: any[];
   validation?: any;
-  published_to_classes: string[]; // Class IDs
+  published_to_classes?: string[]; // Class IDs
   image_url?: string;
   image_caption?: string;
   image_attribution?: string;
   image_alt?: string;
   media_asset?: MediaAsset;
+  version?: number;
+  is_archived?: boolean;
+  archived_at?: string;
   created_at: string;
 }
 
@@ -313,10 +322,14 @@ export interface LearningRoom {
   secondary_resource_id?: string; // Optional ID for paired material or question
   subject: string;
   grade: number;
-  region_name: string;
+  region_name?: string;
+  school_id?: string;
   teacher_id: string;
-  teacher_name: string;
+  teacher_name?: string;
   access_count: number;
+  material_snapshot?: LearningMaterial;
+  question_snapshot?: Question;
+  status?: "active" | "archived" | "closed";
   created_at: string;
   visitors?: RoomVisitor[];
 }

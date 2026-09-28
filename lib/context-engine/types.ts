@@ -85,3 +85,118 @@ export interface ContextualizationPipelineResult {
   primary_media?: MediaAsset | null;
 }
 
+export type ContentType = "material" | "question";
+export type SourceInputType = "manual" | "pdf" | "image" | "camera" | "generate" | "ai" | "from_material";
+
+export interface ContentInput {
+  contentType: ContentType;
+  sourceType: SourceInputType;
+  rawText?: string;
+  prompt?: string;
+  title?: string;
+  topic?: string;
+  subject: string;
+  grade: number;
+  regionId: string;
+  regionName: string;
+  questionCount?: number;
+  questionType?: "multiple_choice" | "essay" | "mixed";
+  options?: { key: string; text: string }[];
+  correctAnswer?: string;
+  explanation?: string;
+  structuredData?: Record<string, unknown> | any;
+  metadata?: Record<string, unknown>;
+}
+
+export interface NormalizedContent {
+  contentType: ContentType;
+  sourceType: SourceInputType;
+  effectiveText: string;
+  title: string;
+  topic: string;
+  subject: string;
+  grade: number;
+  regionId: string;
+  regionName: string;
+  questionCount: number;
+  questionType: "multiple_choice" | "essay" | "mixed";
+  options?: { key: string; text: string }[];
+  correctAnswer?: string;
+  explanation?: string;
+}
+
+export interface QuestionDraftItem {
+  id: string;
+  original_question_text?: string;
+  question_text: string;
+  type: "multiple_choice" | "essay";
+  options?: { key: string; text: string }[];
+  correct_answer: string;
+  explanation: string;
+  rubric?: string;
+  points: number;
+  context_variables?: {
+    original_term: string;
+    replacement_term: string;
+    category?: string;
+    reason?: string;
+  }[];
+  validation: {
+    is_valid: boolean;
+    status: "VALID" | "WARNING" | "INVALID";
+    competency_preserved: boolean;
+    answer_key_preserved: boolean;
+    math_numbers_strictly_preserved: boolean;
+    local_context_grounded: boolean;
+    warnings: string[];
+    pedagogical_notes: string;
+  };
+}
+
+export interface MaterialContextualizedResult {
+  original_title: string;
+  original_content: string;
+  title: string;
+  content: string;
+  contextual_content?: string;
+  summary: string;
+  local_connection: string;
+  context_variables: {
+    original_term: string;
+    replacement_term: string;
+    category?: string;
+    reason?: string;
+  }[];
+  local_entities?: any[];
+  validation: {
+    is_valid: boolean;
+    competency_preserved: boolean;
+    local_context_grounded: boolean;
+    math_numbers_strictly_preserved: boolean;
+    warnings: string[];
+    pedagogical_notes: string;
+  };
+}
+
+export interface UnifiedContextualizeResult {
+  type: ContentType;
+  material?: MaterialContextualizedResult;
+  questions?: {
+    topic: string;
+    questions: QuestionDraftItem[];
+    validation: {
+      is_valid: boolean;
+      status: "VALID" | "WARNING" | "INVALID";
+      competency_preserved: boolean;
+      answer_key_preserved: boolean;
+      local_context_grounded: boolean;
+      math_numbers_strictly_preserved: boolean;
+      warnings: string[];
+      pedagogical_notes: string;
+    };
+  };
+  retrievedEntities: ContextCandidateEntity[];
+  modelUsed?: string;
+  requestId?: string;
+}
+

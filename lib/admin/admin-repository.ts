@@ -9,6 +9,7 @@ import {
   SystemSetting,
   SystemNotification,
   SystemHealthStatus,
+  AIAuditEventType,
 } from "./types";
 import { encryptSecret, maskApiKey, hashPasswordSync } from "./crypto";
 
@@ -52,59 +53,99 @@ const INITIAL_ADMIN_ACCOUNTS: AdminAccount[] = [
   },
 ];
 
-// Default Seed AI Credential (Primary Gemini Key from environment if available)
-const seedKey = process.env.GEMINI_API_KEY || "AIzaSy_DEV_DEMO_KEY_MADIUN_2026";
-const encryptedSeed = encryptSecret(seedKey);
+// Helper to encrypt and generate seed credentials
+function createSeedCredential(
+  id: string,
+  name: string,
+  rawKey: string,
+  quotaGroup: string,
+  priority: number,
+  notes: string
+): AICredential {
+  const enc = encryptSecret(rawKey);
+  return {
+    id,
+    name,
+    provider: "gemini",
+    model: "gemini-flash-lite-latest",
+    quota_group: quotaGroup,
+    encrypted_api_key: enc.ciphertext,
+    iv: enc.iv,
+    auth_tag: enc.tag,
+    masked_key: maskApiKey(rawKey),
+    priority,
+    is_enabled: true,
+    health_status: "healthy",
+    consecutive_errors: 0,
+    circuit_state: "CLOSED",
+    circuit_opened_at: null,
+    cooldown_seconds: 60,
+    cooldown_until: null,
+    daily_request_limit: 1500,
+    last_used_at: priority === 1 ? new Date().toISOString() : null,
+    last_success_at: null,
+    last_error: null,
+    last_error_at: null,
+    failure_count: 0,
+    success_count: 0,
+    notes,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: new Date().toISOString(),
+  };
+}
+
+const envKeys = (process.env.GEMINI_API_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+
+const key1 = process.env.GEMINI_API_KEY_1 || envKeys[0] || process.env.GEMINI_API_KEY || "AIzaSy_DEV_DEMO_KEY_MADIUN_2026";
+const key2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_BACKUP_KEY_1 || envKeys[1] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey1_2026";
+const key3 = process.env.GEMINI_API_KEY_3 || process.env.GEMINI_BACKUP_KEY_2 || envKeys[2] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey2_2026";
+const key4 = process.env.GEMINI_API_KEY_4 || process.env.GEMINI_BACKUP_KEY_3 || envKeys[3] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey3_2026";
+const key5 = process.env.GEMINI_API_KEY_5 || process.env.GEMINI_BACKUP_KEY_4 || envKeys[4] || process.env.GEMINI_API_KEY || "AIzaSyBackupStandbyKey4_2026";
 
 const INITIAL_AI_CREDENTIALS: AICredential[] = [
-  {
-    id: "cred-gemini-primary",
-    name: "Gemini Primary Production",
-    provider: "gemini",
-    quota_group: "project_pahami_prod",
-    encrypted_api_key: encryptedSeed.ciphertext,
-    iv: encryptedSeed.iv,
-    auth_tag: encryptedSeed.tag,
-    masked_key: maskApiKey(seedKey),
-    priority: 1,
-    is_enabled: true,
-    health_status: "healthy",
-    consecutive_errors: 0,
-    circuit_state: "CLOSED",
-    circuit_opened_at: null,
-    cooldown_seconds: 60,
-    daily_request_limit: 1500,
-    last_used_at: new Date().toISOString(),
-    last_error: null,
-    last_error_at: null,
-    notes: "API Key utama proyek PAHAMI dari Google AI Studio",
-    created_at: "2026-09-01T00:00:00Z",
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "cred-gemini-backup",
-    name: "Gemini Secondary / Standby",
-    provider: "gemini",
-    quota_group: "project_pahami_backup",
-    encrypted_api_key: encryptedSeed.ciphertext,
-    iv: encryptedSeed.iv,
-    auth_tag: encryptedSeed.tag,
-    masked_key: maskApiKey("AIzaSyBackupStandbyKey2026"),
-    priority: 2,
-    is_enabled: true,
-    health_status: "healthy",
-    consecutive_errors: 0,
-    circuit_state: "CLOSED",
-    circuit_opened_at: null,
-    cooldown_seconds: 60,
-    daily_request_limit: 1500,
-    last_used_at: null,
-    last_error: null,
-    last_error_at: null,
-    notes: "Kredensial cadangan dengan kuota proyek terpisah untuk automatic failover",
-    created_at: "2026-09-01T00:00:00Z",
-    updated_at: new Date().toISOString(),
-  },
+  createSeedCredential(
+    "cred-gemini-primary",
+    "Gemini Primary Production",
+    key1,
+    "project_pahami_prod",
+    1,
+    "API Key utama proyek DEPASKAN dari Google AI Studio"
+  ),
+  createSeedCredential(
+    "cred-gemini-backup-1",
+    "Gemini Standby Backup #1",
+    key2,
+    "project_pahami_backup_1",
+    2,
+    "Kredensial cadangan slot 1 untuk automatic failover"
+  ),
+  createSeedCredential(
+    "cred-gemini-backup-2",
+    "Gemini Standby Backup #2",
+    key3,
+    "project_pahami_backup_2",
+    3,
+    "Kredensial cadangan slot 2 untuk beban puncak / rotasi kuota"
+  ),
+  createSeedCredential(
+    "cred-gemini-backup-3",
+    "Gemini Standby Backup #3",
+    key4,
+    "project_pahami_backup_3",
+    4,
+    "Kredensial cadangan slot 3 untuk ketahanan layanan"
+  ),
+  createSeedCredential(
+    "cred-gemini-backup-4",
+    "Gemini Standby Backup #4",
+    key5,
+    "project_pahami_backup_4",
+    5,
+    "Kredensial cadangan slot 4 untuk mitigasi batas kuota harian"
+  ),
 ];
 
 const INITIAL_AI_MODELS: AIModelConfig[] = [
@@ -112,10 +153,10 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-qgen",
     feature_key: "question_generation",
     provider: "gemini",
-    primary_model: "gemini-flash-lite-latest",
-    fallback_model: "gemini-3.1-flash-lite",
+    primary_model: "gemini-3.7-flash",
+    fallback_model: "gemini-flash-latest",
     required_capabilities: ["text_generation", "structured_output"],
-    timeout_ms: 25000,
+    timeout_ms: 35000,
     temperature: 0.2,
     max_output_tokens: 2048,
     is_active: true,
@@ -126,10 +167,10 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-qscan",
     feature_key: "question_scan",
     provider: "gemini",
-    primary_model: "gemini-flash-lite-latest",
-    fallback_model: "gemini-3.1-flash-lite",
+    primary_model: "gemini-3.7-flash",
+    fallback_model: "gemini-flash-latest",
     required_capabilities: ["text_generation", "image_understanding"],
-    timeout_ms: 30000,
+    timeout_ms: 45000,
     temperature: 0.1,
     max_output_tokens: 2048,
     is_active: true,
@@ -140,11 +181,11 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-matgen",
     feature_key: "material_generation",
     provider: "gemini",
-    primary_model: "gemini-flash-lite-latest",
-    fallback_model: "gemini-3.1-flash-lite",
-    required_capabilities: ["text_generation"],
-    timeout_ms: 30000,
-    temperature: 0.25,
+    primary_model: "gemini-3.7-flash",
+    fallback_model: "gemini-flash-latest",
+    required_capabilities: ["text_generation", "structured_output"],
+    timeout_ms: 45000,
+    temperature: 0.2,
     max_output_tokens: 3072,
     is_active: true,
     created_at: "2026-09-01T00:00:00Z",
@@ -154,10 +195,10 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-rewrite",
     feature_key: "contextual_rewriting",
     provider: "gemini",
-    primary_model: "gemini-flash-lite-latest",
-    fallback_model: "gemini-3.1-flash-lite",
+    primary_model: "gemini-3.7-flash",
+    fallback_model: "gemini-flash-latest",
     required_capabilities: ["text_generation", "structured_output"],
-    timeout_ms: 25000,
+    timeout_ms: 35000,
     temperature: 0.2,
     max_output_tokens: 2048,
     is_active: true,
@@ -168,10 +209,10 @@ const INITIAL_AI_MODELS: AIModelConfig[] = [
     id: "model-cfg-val",
     feature_key: "educational_validation",
     provider: "gemini",
-    primary_model: "gemini-flash-lite-latest",
-    fallback_model: "gemini-3.1-flash-lite",
+    primary_model: "gemini-3.7-flash",
+    fallback_model: "gemini-flash-latest",
     required_capabilities: ["text_generation", "structured_output"],
-    timeout_ms: 20000,
+    timeout_ms: 25000,
     temperature: 0.1,
     max_output_tokens: 1024,
     is_active: true,
@@ -436,8 +477,37 @@ class AdminRepository {
     return [...this.getStore().credentials].sort((a, b) => a.priority - b.priority);
   }
 
+  getCredentials(): AICredential[] {
+    return this.listCredentials();
+  }
+
   getCredentialById(id: string): AICredential | null {
     return this.getStore().credentials.find((c) => c.id === id) || null;
+  }
+
+  getCredential(id: string): AICredential | null {
+    return this.getCredentialById(id);
+  }
+
+  updateCredentialStatus(
+    id: string,
+    status: "healthy" | "cooldown" | "exhausted" | "disabled",
+    reason?: string
+  ): AICredential | null {
+    const cred = this.getCredentialById(id);
+    if (!cred) return null;
+
+    const cooldownUntil =
+      status === "cooldown"
+        ? new Date(Date.now() + 5 * 60 * 1000).toISOString()
+        : null;
+
+    return this.updateCredential(id, {
+      status,
+      cooldown_until: cooldownUntil,
+      failure_reason: reason,
+      failure_count: status === "healthy" ? 0 : (cred.failure_count || 0) + 1,
+    });
   }
 
   addCredential(cred: Omit<AICredential, "id" | "created_at" | "updated_at">): AICredential {
@@ -555,6 +625,21 @@ class AdminRepository {
 
   listAuditLogs(limit: number = 50): AdminAuditLog[] {
     return this.getStore().auditLogs.slice(0, limit);
+  }
+
+  recordAIAuditEvent(
+    eventType: AIAuditEventType,
+    metadata: Record<string, unknown>,
+    adminUsername: string = "system"
+  ): AdminAuditLog {
+    return this.recordAuditLog({
+      admin_username: adminUsername,
+      action: eventType,
+      target_type: "CREDENTIAL",
+      target_id: (metadata.credential_id as string) || (metadata.requestId as string) || "ai-gateway",
+      result: eventType === "AI_REQUEST_FAILED" || eventType === "AI_ALL_CREDENTIALS_FAILED" ? "FAILED" : "SUCCESS",
+      metadata,
+    });
   }
 
   // ----------------------------------------------------------------------------

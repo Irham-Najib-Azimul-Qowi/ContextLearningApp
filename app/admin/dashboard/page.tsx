@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   HardDrive,
   Key,
+  BookOpen,
+  FileText,
+  DoorOpen,
 } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/layout/admin-workspace-shell";
 
@@ -22,12 +25,18 @@ export default function AdminDashboardPage() {
     aiHealth: string;
     totalTokens: number;
     totalRequests: number;
+    materialCount: number;
+    questionCount: number;
+    roomCount: number;
   }>({
     userCount: 0,
     schoolCount: 0,
     aiHealth: "Active",
     totalTokens: 0,
     totalRequests: 0,
+    materialCount: 0,
+    questionCount: 0,
+    roomCount: 0,
   });
 
   const [systemStatus, setSystemStatus] = useState<{
@@ -52,8 +61,10 @@ export default function AdminDashboardPage() {
       fetch("/api/admin/ai/usage").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/admin/system/health").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/admin/security/audit-logs?limit=5").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/admin/content").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/admin/rooms").then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(([usersData, schoolsData, usageData, healthData, auditData]) => {
+      .then(([usersData, schoolsData, usageData, healthData, auditData, contentData, roomsData]) => {
         const isHealthy = (st?: string) => st === "healthy" || st === "Operational" || !st;
 
         setStats({
@@ -62,6 +73,9 @@ export default function AdminDashboardPage() {
           aiHealth: isHealthy(healthData?.health?.components?.gemini_ai_provider?.status) ? "Active" : "Degraded",
           totalTokens: usageData?.metrics?.totalTokens || 1600,
           totalRequests: usageData?.metrics?.totalRequests || 2,
+          materialCount: contentData?.stats?.totalMaterials || 0,
+          questionCount: contentData?.stats?.totalQuestions || 0,
+          roomCount: roomsData?.stats?.totalRooms || 0,
         });
 
         if (healthData?.health?.components) {
@@ -118,6 +132,18 @@ export default function AdminDashboardPage() {
               API
             </Link>
             <Link
+              href="/admin/content"
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-bold text-[#51465B] shadow-2xs transition-colors whitespace-nowrap"
+            >
+              Konten
+            </Link>
+            <Link
+              href="/admin/rooms"
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-bold text-[#51465B] shadow-2xs transition-colors whitespace-nowrap"
+            >
+              Rooms
+            </Link>
+            <Link
               href="/admin/knowledge-base"
               className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E9E5E8] hover:border-[#51465B] text-xs font-bold text-[#51465B] shadow-2xs transition-colors whitespace-nowrap"
             >
@@ -136,7 +162,7 @@ export default function AdminDashboardPage() {
             2. BAGIAN UTAMA (4 CORE CARDS):
             User Management | API Management | Knowledge Base | System Status
             =================================================================== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card 1: User Management */}
           <Link
             href="/admin/users"
@@ -243,6 +269,60 @@ export default function AdminDashboardPage() {
             </div>
             <div className="mt-3 pt-3 border-t border-[#E9E5E8] flex items-center justify-between text-xs text-[#51465B] font-bold">
               <span>Diagnostik</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Card 5: Content (Materi & Soal) */}
+          <Link
+            href="/admin/content"
+            className="p-5 rounded-3xl bg-white border border-[#E9E5E8] hover:border-[#51465B] shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">
+                Konten Edukasi
+              </span>
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
+                <FileText className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <span className="text-2xl font-black text-[#23212A] block">
+                {stats.materialCount + stats.questionCount}
+              </span>
+              <span className="text-xs text-[#756F7A] font-semibold mt-0.5 block">
+                {stats.materialCount} Materi &amp; {stats.questionCount} Bank Soal
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-[#E9E5E8] flex items-center justify-between text-xs text-[#51465B] font-bold">
+              <span>Monitoring Konten</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Card 6: Room Monitoring */}
+          <Link
+            href="/admin/rooms"
+            className="p-5 rounded-3xl bg-white border border-[#E9E5E8] hover:border-[#51465B] shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#756F7A]">
+                Learning Room
+              </span>
+              <div className="w-10 h-10 rounded-2xl bg-violet-50 text-violet-700 flex items-center justify-center font-bold">
+                <DoorOpen className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <span className="text-2xl font-black text-[#23212A] block">
+                {stats.roomCount}
+              </span>
+              <span className="text-xs text-[#756F7A] font-semibold mt-0.5 block">
+                Room Aktif
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-[#E9E5E8] flex items-center justify-between text-xs text-[#51465B] font-bold">
+              <span>Monitoring Room</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>

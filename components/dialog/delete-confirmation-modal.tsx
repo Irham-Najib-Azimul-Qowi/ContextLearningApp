@@ -9,6 +9,7 @@ interface DeleteConfirmationModalProps {
   itemId?: string;
   itemTitle?: string;
   isDeleting?: boolean;
+  isUsedInRoom?: boolean;
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
 }
@@ -19,6 +20,7 @@ export function DeleteConfirmationModal({
   itemId,
   itemTitle,
   isDeleting = false,
+  isUsedInRoom = false,
   onConfirm,
   onClose,
 }: DeleteConfirmationModalProps) {
@@ -75,22 +77,39 @@ export function DeleteConfirmationModal({
 
         {/* Header Bersih: Ikon + Judul */}
         <div className="flex items-center gap-3 mb-3 pr-8">
-          <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+            isUsedInRoom
+              ? "bg-amber-500/20 border border-amber-500/30 text-amber-400"
+              : "bg-rose-500/20 border border-rose-500/30 text-rose-400"
+          }`}>
             <Trash2 className="w-5 h-5 stroke-[2.2]" />
           </div>
           <h3 id="delete-modal-title" className="text-base sm:text-lg font-black text-white tracking-tight">
-            Hapus {getTypeLabel()}?
+            {isUsedInRoom ? `Arsipkan ${getTypeLabel()}?` : `Hapus ${getTypeLabel()}?`}
           </h3>
         </div>
 
-        {/* Deskripsi Bersih & Terarah (tanpa kotak-kotak bertumpuk) */}
-        <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-6">
-          Apakah Anda yakin ingin menghapus{" "}
-          <span className="font-bold text-white">
-            &ldquo;{itemTitle || getTypeLabel()}&rdquo;
-          </span>
-          ? Tindakan ini tidak dapat dibatalkan.
-        </p>
+        {/* Deskripsi Bersih & Terarah */}
+        {isUsedInRoom ? (
+          <div className="space-y-2 mb-6 text-xs sm:text-sm text-gray-300 leading-relaxed">
+            <p className="font-semibold text-amber-300">
+              Konten ini sudah digunakan dalam Room.
+            </p>
+            <p>
+              Untuk menjaga data Room dan hasil siswa tetap aman dan dapat diakses, konten{" "}
+              <span className="font-bold text-white">&ldquo;{itemTitle || getTypeLabel()}&rdquo;</span>{" "}
+              akan diarsipkan dan tidak digunakan untuk penggunaan baru.
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-6">
+            Apakah Anda yakin ingin menghapus{" "}
+            <span className="font-bold text-white">
+              &ldquo;{itemTitle || getTypeLabel()}&rdquo;
+            </span>
+            ? Tindakan ini tidak dapat dibatalkan.
+          </p>
+        )}
 
         {/* Tombol Aksi Simpel & Minimalis */}
         <div className="flex items-center justify-end gap-2.5">
@@ -106,15 +125,19 @@ export function DeleteConfirmationModal({
             type="button"
             onClick={() => onConfirm()}
             disabled={isDeleting}
-            className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-rose-600 hover:bg-rose-500 text-white shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+            className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60 text-white ${
+              isUsedInRoom
+                ? "bg-amber-600 hover:bg-amber-500"
+                : "bg-rose-600 hover:bg-rose-500"
+            }`}
           >
             {isDeleting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Menghapus...</span>
+                <span>{isUsedInRoom ? "Mengarsipkan..." : "Menghapus..."}</span>
               </>
             ) : (
-              <span>Hapus</span>
+              <span>{isUsedInRoom ? "Arsipkan Konten" : "Hapus"}</span>
             )}
           </button>
         </div>

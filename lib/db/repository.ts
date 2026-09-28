@@ -12,6 +12,7 @@ import {
   AppNotification,
   UserRole,
   LearningRoom,
+  resolveRoomQuestions,
 } from "./types";
 
 // ==============================================================================
@@ -743,6 +744,19 @@ class PahamiRepository {
   }
 
   getActiveSchoolId(): string {
+    if (this.isBrowser()) {
+      try {
+        const storedProfile = localStorage.getItem("pahami_v2_teacher_profile");
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          if (parsed && (parsed.schoolId || parsed.school_id)) {
+            return parsed.schoolId || parsed.school_id;
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
     return this.getItem<string>("active_school_id", SEED_SCHOOLS[0].id);
   }
 
@@ -1043,16 +1057,26 @@ class PahamiRepository {
   }
 
   // --- QUESTIONS ---
-  getQuestions(filter?: { schoolId?: string; subject?: string; grade?: number; topic?: string }): Question[] {
+  getQuestions(filter?: {
+    schoolId?: string;
+    subject?: string;
+    grade?: number;
+    topic?: string;
+    includeArchived?: boolean;
+  }): Question[] {
     const deleted = this.getDeletedIds().questions || [];
     let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS).filter(
       (q) => !deleted.includes(q.id)
     );
+    if (!filter?.includeArchived) {
+      questions = questions.filter((q) => !q.is_archived);
+    }
     const currentUser = this.getCurrentUser();
     if (filter) {
       if (filter.schoolId) {
         questions = questions.filter((q) => {
           if (q.school_id === filter.schoolId) return true;
+          if (filter.schoolId === "school-active" || q.school_id === "school-active") return true;
           if (currentUser?.id && currentUser.id !== "usr-teacher-01" && q.teacher_id === currentUser.id) {
             return true;
           }
@@ -1067,11 +1091,11 @@ class PahamiRepository {
   }
 
   getQuestion(id: string): Question | undefined {
-    return this.getQuestions().find((q) => q.id === id);
+    return this.getQuestions({ includeArchived: true }).find((q) => q.id === id);
   }
 
   getNextQuestionId(): string {
-    const questions = this.getQuestions();
+    const questions = this.getQuestions({ includeArchived: true });
     let maxNum = 1000;
     questions.forEach((q) => {
       const match = q.id.match(/(?:sol|q|soal)-?(\d+)/i);
@@ -1097,7 +1121,7 @@ class PahamiRepository {
       items?: QuestionItem[];
     }
   ): Question {
-    const questions = this.getQuestions();
+    const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
 
     // Normalize items if present
     let items = data.items;
@@ -1151,9 +1175,7 @@ class PahamiRepository {
       }
     }
     const current = this.getCurrentUser();
-    const cleanQuestionId = (data.id || this.getNextQuestionId())
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+    const cleanQuestionId = data.id ? data.id.trim() : this.getNextQuestionId();
 
     this.removeDeletedId("question", cleanQuestionId);
 
@@ -1184,7 +1206,49 @@ class PahamiRepository {
     return newQuestion;
   }
 
-  deleteQuestion(id: string): boolean {
+  isContentUsedInRoom(type: "material" | "question", id: string): {
+    isUsed: boolean;
+    rooms: LearningRoom[];
+    activeRooms: LearningRoom[];
+  } {
+    const cleanId = (id || "").toLowerCase().trim();
+    const rooms = this.getRooms();
+    const matched = rooms.filter((r) => {
+      const primary = (r.resource_id || "").toLowerCase().split(",").map((s) => s.trim());
+      const secondary = (r.secondary_resource_id || "").toLowerCase().split(",").map((s) => s.trim());
+      return primary.includes(cleanId) || secondary.includes(cleanId);
+    });
+
+    const activeRooms = matched.filter((r) => r.status !== "closed" && r.status !== "archived");
+    return {
+      isUsed: matched.length > 0,
+      rooms: matched,
+      activeRooms,
+    };
+  }
+
+  archiveQuestion(id: string): boolean {
+    const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const target = questions.find((q) => q.id === id);
+    if (!target) return false;
+
+    target.is_archived = true;
+    target.archived_at = new Date().toISOString();
+    this.setItem<Question[]>("questions", questions);
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+    }
+    this.syncToCloud();
+    return true;
+  }
+
+  deleteQuestion(id: string, forcePhysical: boolean = false): boolean {
+    const usage = this.isContentUsedInRoom("question", id);
+    if (usage.isUsed && !forcePhysical) {
+      // Content is used in a Room: soft delete / archive to keep Room and student historical results intact!
+      return this.archiveQuestion(id);
+    }
+
     this.addDeletedId("question", id);
     const rawQuestions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
     const filtered = rawQuestions.filter((q) => q.id !== id);
@@ -1196,22 +1260,28 @@ class PahamiRepository {
     return true;
   }
 
-  async deleteQuestionAsync(id: string): Promise<boolean> {
-    const ok = this.deleteQuestion(id);
-    await this.syncToCloudImmediate({ deletedItem: { type: "question", id } });
+  async deleteQuestionAsync(id: string, forcePhysical: boolean = false): Promise<boolean> {
+    const ok = this.deleteQuestion(id, forcePhysical);
+    if (forcePhysical || !this.isContentUsedInRoom("question", id).isUsed) {
+      await this.syncToCloudImmediate({ deletedItem: { type: "question", id } });
+    }
     return ok;
   }
 
   // --- MATERIALS ---
-  getMaterials(schoolId?: string): LearningMaterial[] {
+  getMaterials(schoolId?: string, includeArchived?: boolean): LearningMaterial[] {
     const deleted = this.getDeletedIds().materials || [];
     let materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS).filter(
       (m) => !deleted.includes(m.id)
     );
+    if (!includeArchived) {
+      materials = materials.filter((m) => !m.is_archived);
+    }
     if (!schoolId) return materials;
     const currentUser = this.getCurrentUser();
     return materials.filter((m) => {
       if (m.school_id === schoolId) return true;
+      if (schoolId === "school-active" || m.school_id === "school-active") return true;
       if (currentUser?.id && currentUser.id !== "usr-teacher-01" && m.teacher_id === currentUser.id) {
         return true;
       }
@@ -1220,84 +1290,94 @@ class PahamiRepository {
   }
 
   getMaterial(id: string): LearningMaterial | undefined {
-    return this.getMaterials().find((m) => m.id === id);
+    return this.getMaterials(undefined, true).find((m) => m.id === id);
   }
 
-  getNextMaterialId(): string {
-    const materials = this.getMaterials();
-    let maxNum = 1000;
-    materials.forEach((m) => {
-      const match = m.id.match(/(?:mat|m)-?(\d+)/i);
-      if (match) {
-        const val = parseInt(match[1], 10);
-        if (val > maxNum && val < 99999) maxNum = val;
-      }
+  getMaterialById(id: string, includeArchived: boolean = true): LearningMaterial | undefined {
+    return this.getMaterials(undefined, includeArchived).find((m) => m.id === id);
+  }
+
+  getQuestionById(id: string, includeArchived: boolean = true): Question | undefined {
+    const clean = id.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    return this.getQuestions({ includeArchived }).find((q) => {
+      if (q.id === id) return true;
+      const qLower = (q.id || "").toLowerCase();
+      if (qLower === id.toLowerCase()) return true;
+      return clean.length > 0 && qLower.replace(/[^a-z0-9]/g, "") === clean;
     });
-    const nextNum = Math.max(maxNum + 1, 1001);
-    return `mat${nextNum}`;
   }
 
   saveMaterial(
     data: Partial<LearningMaterial> & {
       title: string;
-      subject: string;
-      grade: number;
-      school_id: string;
       content: string;
+      id?: string;
+      school_id?: string;
+      teacher_id?: string;
     }
   ): LearningMaterial {
-    const materials = this.getMaterials();
-    if (data.id) {
-      const index = materials.findIndex((m) => m.id === data.id);
-      if (index !== -1) {
-        const updated = { ...materials[index], ...data };
-        materials[index] = updated;
-        this.setItem<LearningMaterial[]>("materials", materials);
-        this.removeDeletedId("material", data.id);
-        this.syncToCloud();
-        return updated;
+    const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const id = data.id || `mat-${Date.now()}`;
+    this.removeDeletedId("material", id);
+
+    const currentUser = this.getCurrentUser();
+    const existingIndex = materials.findIndex((m) => m.id === id);
+    if (existingIndex !== -1) {
+      const updated: LearningMaterial = {
+        ...materials[existingIndex],
+        ...data,
+        id,
+      };
+      materials[existingIndex] = updated;
+      this.setItem<LearningMaterial[]>("materials", materials);
+      if (this.isBrowser()) {
+        window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
       }
+      this.syncToCloud();
+      return updated;
     }
-    const current = this.getCurrentUser();
-    const cleanMaterialId = (data.id || this.getNextMaterialId())
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
 
-    this.removeDeletedId("material", cleanMaterialId);
-
-    const newMat: LearningMaterial = {
-      id: cleanMaterialId,
-      title: data.title,
-      subject: data.subject,
-      grade: data.grade,
-      school_id: data.school_id,
-      teacher_id: data.teacher_id || current?.id || "teacher-1",
-      content: data.content,
-      is_contextualized: data.is_contextualized ?? true,
-      original_content: data.original_content,
-      context_variables: data.context_variables,
-      validation: data.validation,
+    const newMaterial: LearningMaterial = {
+      subject: data.subject || "Matematika",
+      grade: data.grade || 5,
+      school_id: data.school_id || "school-active",
+      teacher_id: data.teacher_id || currentUser?.id || "usr-teacher-01",
       published_to_classes: data.published_to_classes || [],
+      is_contextualized: data.is_contextualized ?? false,
+      ...data,
+      id,
       created_at: new Date().toISOString(),
     };
-    this.setItem<LearningMaterial[]>("materials", [newMat, ...materials]);
-    this.syncToCloud();
-    return newMat;
-  }
-
-  publishMaterial(id: string, classIds: string[]): LearningMaterial | undefined {
-    const materials = this.getMaterials();
-    const item = materials.find((m) => m.id === id);
-    if (item) {
-      item.published_to_classes = classIds;
-      this.setItem<LearningMaterial[]>("materials", materials);
-      this.syncToCloud();
-      return item;
+    this.setItem<LearningMaterial[]>("materials", [newMaterial, ...materials]);
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
-    return undefined;
+    this.syncToCloud();
+    return newMaterial;
   }
 
-  deleteMaterial(id: string): boolean {
+  archiveMaterial(id: string): boolean {
+    const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const target = materials.find((m) => m.id === id);
+    if (!target) return false;
+
+    target.is_archived = true;
+    target.archived_at = new Date().toISOString();
+    this.setItem<LearningMaterial[]>("materials", materials);
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+    }
+    this.syncToCloud();
+    return true;
+  }
+
+  deleteMaterial(id: string, forcePhysical: boolean = false): boolean {
+    const usage = this.isContentUsedInRoom("material", id);
+    if (usage.isUsed && !forcePhysical) {
+      // Content has been used in a Room: soft delete / archive to protect Room & Student results!
+      return this.archiveMaterial(id);
+    }
+
     this.addDeletedId("material", id);
     const rawMaterials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
     const filtered = rawMaterials.filter((m) => m.id !== id);
@@ -1309,9 +1389,11 @@ class PahamiRepository {
     return true;
   }
 
-  async deleteMaterialAsync(id: string): Promise<boolean> {
-    const ok = this.deleteMaterial(id);
-    await this.syncToCloudImmediate({ deletedItem: { type: "material", id } });
+  async deleteMaterialAsync(id: string, forcePhysical: boolean = false): Promise<boolean> {
+    const ok = this.deleteMaterial(id, forcePhysical);
+    if (forcePhysical || !this.isContentUsedInRoom("material", id).isUsed) {
+      await this.syncToCloudImmediate({ deletedItem: { type: "material", id } });
+    }
     return ok;
   }
 
@@ -1450,7 +1532,7 @@ class PahamiRepository {
   // --- LEARNING ROOMS (URL / KODE AKSES SISWA TANPA LOGIN) ---
   getRooms(teacherId?: string): LearningRoom[] {
     const deleted = this.getDeletedIds().rooms || [];
-    let rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS).filter(
+    const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS).filter(
       (r) =>
         !deleted.includes((r.id || "").toLowerCase()) &&
         !deleted.includes((r.code || "").toLowerCase())
@@ -1499,8 +1581,29 @@ class PahamiRepository {
     this.removeDeletedId("room", cleanRoomId);
     this.removeDeletedId("room", cleanCode);
 
+    let materialSnapshot = data.material_snapshot;
+    let questionSnapshot = data.question_snapshot;
+
+    if (!materialSnapshot && (data.type === "material" || data.type === "both") && data.resource_id) {
+      materialSnapshot = this.getMaterialById(data.resource_id, true);
+    }
+    if (!questionSnapshot && (data.type === "question" || data.type === "both")) {
+      const qId = data.type === "both" ? data.secondary_resource_id : data.resource_id;
+      if (qId) {
+        const { combinedQuestion } = resolveRoomQuestions(
+          qId,
+          this.getQuestions({ includeArchived: true })
+        );
+        questionSnapshot = combinedQuestion || this.getQuestionById(qId, true);
+      }
+    }
+
     const newRoom: LearningRoom = {
+      region_name: data.region_name || "Madiun",
+      teacher_name: data.teacher_name || "Guru",
       ...data,
+      material_snapshot: materialSnapshot,
+      question_snapshot: questionSnapshot,
       id: cleanRoomId,
       code: cleanCode,
       access_count: 0,

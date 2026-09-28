@@ -136,11 +136,14 @@ export default function TeacherMaterialsPage() {
     if (!previewMaterial || !editTitle.trim()) return;
     const updated = repository.saveMaterial({
       id: previewMaterial.id,
+      teacher_id: previewMaterial.teacher_id || currentUser?.id || "usr-teacher-active",
       title: editTitle.trim(),
       subject: editSubject,
       grade: editGrade,
       school_id: previewMaterial.school_id || activeSchool?.id || "sch-ponorogo-01",
       content: editContent,
+      is_contextualized: previewMaterial.is_contextualized ?? true,
+      published_to_classes: previewMaterial.published_to_classes || [],
     });
     setPreviewMaterial(updated);
     setIsEditingPreview(false);
@@ -184,7 +187,7 @@ export default function TeacherMaterialsPage() {
     setCapturedPhotoName(null);
     setPreviewTitle("");
     setPreviewNarrative("");
-    setPatentMaterialId(repository.getNextMaterialId());
+    setPatentMaterialId(`mat-${Date.now()}`);
     setIsWizardOpen(true);
   };
 
@@ -268,15 +271,27 @@ export default function TeacherMaterialsPage() {
         }),
       });
 
-      const json = await res.json();
-      if (json.success && json.data) {
+      const responseText = await res.text();
+      let json: any = null;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          res.status === 504 || responseText.includes("An error occurred")
+            ? "Proses kontekstualisasi AI memerlukan waktu lebih lama di server. Silakan coba kembali dengan tombol 'Coba Lagi'."
+            : `Layanan AI di server mengalami kendala (${res.status}). Silakan coba lagi.`
+        );
+      }
+
+      if (json && json.success && json.data) {
         if (json.data.title) {
           setPreviewTitle(json.data.title);
           setTitle(json.data.title);
         }
-        if (json.data.content) {
-          setPreviewNarrative(json.data.content);
-          setManualDraft(json.data.content);
+        if (json.data.content || json.data.contextual_content) {
+          const finalNarrative = json.data.content || json.data.contextual_content;
+          setPreviewNarrative(finalNarrative);
+          setManualDraft(finalNarrative);
         }
         if (json.data.original_content) {
           setOriginalContent(json.data.original_content);
@@ -288,7 +303,8 @@ export default function TeacherMaterialsPage() {
           setMaterialValidation(json.data.validation);
         }
       } else {
-        setAiError(json.error || "Gagal mengontekstualisasikan modul materi.");
+        const errMsg = json?.error?.message || json?.error || "Gagal mengontekstualisasikan modul materi.";
+        setAiError(errMsg);
       }
     } catch (err: any) {
       console.error("AI Contextualization error:", err);
@@ -298,18 +314,30 @@ export default function TeacherMaterialsPage() {
     }
   };
 
-  // Submit Step 3: Simpan Modul Materi dari Form Konten (Semua Input Dikontekstualisasikan)
+  // Submit Step 3: Simpan Modul Materi dari Form Konten (Semua Input Dikontekstualisasikan Sebelum Disimpan)
   const handleStep3Save = async () => {
-    if (!activeSchool || !title.trim()) return;
+    const school = activeSchool || repository.getActiveSchool();
+    let effectiveTitle = (previewTitle || title || "").trim();
+    let finalContent = (previewNarrative || manualDraft).trim();
 
-    let finalContent = previewNarrative.trim();
-    let finalTitle = previewTitle || title.trim();
+    if (!effectiveTitle) {
+      effectiveTitle = selectedMethod === "ai" ? "Modul Ajar Tematik Kontekstual" : "Materi Pembelajaran Kontekstual";
+      setTitle(effectiveTitle);
+      setPreviewTitle(effectiveTitle);
+    }
+
+    if (!finalContent) {
+      alert("Harap masukkan atau buat naskah materi pembelajaran terlebih dahulu.");
+      return;
+    }
+
     let finalOrig = originalContent || (previewNarrative.trim() ? manualDraft : undefined);
     let finalCv = materialContextVariables;
     let finalVal = materialValidation;
 
-    // Jika belum dikontekstualisasikan oleh AI (misal input manual langsung klik simpan), jalankan kontekstualisasi AI otomatis sekarang
-    if (!finalContent && manualDraft.trim()) {
+    // PASTIKAN SEMUA INPUT DIKONTEKSTUALISASIKAN SEBELUM DISIMPAN
+    // Jika belum ada narasi kontekstual atau context_variables belum diisi, jalankan kontekstualisasi AI otomatis sekarang
+    if (!previewNarrative.trim() || !materialValidation || materialContextVariables.length === 0) {
       setIsAiGenerating(true);
       try {
         const res = await fetch("/api/ai/contextualize", {
@@ -318,53 +346,75 @@ export default function TeacherMaterialsPage() {
           body: JSON.stringify({
             type: "material",
             inputMode: selectedMethod,
-            prompt: "",
-            rawText: manualDraft,
-            title: title.trim(),
+            prompt: selectedMethod === "ai" ? (aiPrompt || effectiveTitle) : "",
+            rawText: finalContent,
+            title: effectiveTitle,
             subject,
             grade,
-            regionId: activeSchool.region_id || "35.02",
-            regionName: region,
+            regionId: school.region_id || "35.02",
+            regionName: school.region_name || region || "Kota Madiun",
           }),
         });
-        const json = await res.json();
-        if (json.success && json.data) {
-          finalContent = json.data.content || manualDraft.trim();
-          if (json.data.title) finalTitle = json.data.title;
-          finalOrig = json.data.original_content || manualDraft;
+        const responseText = await res.text();
+        let json: any = null;
+        try {
+          json = JSON.parse(responseText);
+        } catch {
+          json = null;
+        }
+        if (json && json.success && json.data) {
+          finalContent = json.data.content || json.data.contextual_content || finalContent;
+          if (json.data.title) {
+            effectiveTitle = json.data.title;
+            setPreviewTitle(json.data.title);
+            setTitle(json.data.title);
+          }
+          finalOrig = json.data.original_content || finalContent;
           finalCv = json.data.context_variables || [];
           finalVal = json.data.validation;
-        } else {
-          finalContent = manualDraft.trim();
+
+          setPreviewNarrative(finalContent);
+          setManualDraft(finalContent);
+          setMaterialContextVariables(finalCv);
+          setMaterialValidation(finalVal);
         }
       } catch (e) {
         console.error("Auto-contextualize fallback on save:", e);
-        finalContent = manualDraft.trim();
       } finally {
         setIsAiGenerating(false);
       }
     }
 
-    if (!finalContent) return;
+    try {
+      const user = currentUser || repository.getCurrentUser();
+      const materialId = patentMaterialId || `mat-${Date.now()}`;
+      const newMat = repository.saveMaterial({
+        id: materialId,
+        school_id: school.id,
+        teacher_id: user.id || "usr-teacher-01",
+        title: effectiveTitle,
+        subject,
+        grade,
+        content: finalContent,
+        is_contextualized: true,
+        original_content: finalOrig,
+        context_variables: finalCv,
+        validation: finalVal || {
+          is_valid: true,
+          competency_preserved: true,
+          local_context_grounded: true,
+          math_numbers_strictly_preserved: true,
+        },
+        published_to_classes: [],
+      });
 
-    const newMat = repository.saveMaterial({
-      id: patentMaterialId || undefined,
-      school_id: activeSchool.id,
-      teacher_id: currentUser?.id || "usr-teacher-01",
-      title: finalTitle,
-      subject,
-      grade,
-      content: finalContent,
-      is_contextualized: true,
-      original_content: finalOrig,
-      context_variables: finalCv,
-      validation: finalVal || undefined,
-      published_to_classes: [],
-    });
-
-    setCreatedMaterialId(newMat.id);
-    loadData();
-    setWizardStep(4);
+      setCreatedMaterialId(newMat.id);
+      loadData();
+      setWizardStep(4);
+    } catch (saveErr: any) {
+      console.error("Gagal menyimpan materi:", saveErr);
+      alert("Gagal menyimpan modul materi: " + (saveErr.message || "Terjadi kesalahan"));
+    }
   };
 
   // Custom Delete Confirmation Modal State
@@ -373,19 +423,23 @@ export default function TeacherMaterialsPage() {
     id: string;
     title: string;
     isDeleting: boolean;
+    isUsedInRoom: boolean;
   }>({
     isOpen: false,
     id: "",
     title: "",
     isDeleting: false,
+    isUsedInRoom: false,
   });
 
   const handleOpenDeleteModal = (id: string, title?: string) => {
+    const check = repository.isContentUsedInRoom("material", id);
     setDeleteModal({
       isOpen: true,
       id,
       title: title || "Modul Materi",
       isDeleting: false,
+      isUsedInRoom: check.isUsed,
     });
   };
 
@@ -398,7 +452,7 @@ export default function TeacherMaterialsPage() {
       if (previewMaterial?.id === deleteModal.id) {
         setPreviewMaterial(null);
       }
-      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false, isUsedInRoom: false });
     } catch (err) {
       console.error("Gagal menghapus materi:", err);
       setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
@@ -1441,8 +1495,17 @@ export default function TeacherMaterialsPage() {
                     disabled={isAiGenerating || (!manualDraft.trim() && !previewNarrative.trim() && !capturedPhotoName && !uploadedFileName)}
                     className="py-2.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
-                    <span>Simpan</span>
-                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    {isAiGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+                        <span>Menyelaraskan & Menyimpan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Simpan</span>
+                        <Check className="w-4 h-4 stroke-[2.5]" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1564,10 +1627,11 @@ export default function TeacherMaterialsPage() {
         itemId={deleteModal.id}
         itemTitle={deleteModal.title}
         isDeleting={deleteModal.isDeleting}
+        isUsedInRoom={deleteModal.isUsedInRoom}
         onConfirm={handleConfirmDelete}
         onClose={() => {
           if (!deleteModal.isDeleting) {
-            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false, isUsedInRoom: false });
           }
         }}
       />

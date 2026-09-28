@@ -74,7 +74,9 @@ function CreateMaterialContent() {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isExtractingFile, setIsExtractingFile] = useState<boolean>(false);
-  const [fileExtractError, setFileExtractError] = useState<string | null>(null);
+  const [fileExtractError, setFileExtractError] = useState<{ code?: string; message: string } | null>(null);
+  const [contextualizeError, setContextualizeError] = useState<{ code?: string; message: string } | null>(null);
+  const [validationResult, setValidationResult] = useState<any>(null);
 
   useEffect(() => {
     const school = repository.getActiveSchool();
@@ -92,87 +94,102 @@ function CreateMaterialContent() {
     }
   }, []);
 
-  const triggerStepProgress = (onComplete: () => void) => {
+  const executeContextualization = async (
+    sourceType: "manual" | "pdf" | "image" | "generate",
+    rawTextInput?: string,
+    customTitle?: string
+  ) => {
     setIsProcessing(true);
     setCurrentStepIndex(0);
+    setContextualizeError(null);
 
-    let step = 0;
-    const interval = setInterval(() => {
-      step += 1;
-      if (step < 6) {
-        setCurrentStepIndex(step);
-      } else {
-        clearInterval(interval);
+    const stepInterval = setInterval(() => {
+      setCurrentStepIndex((prev) => (prev < 4 ? prev + 1 : prev));
+    }, 600);
+
+    try {
+      const textToUse = sourceType === "generate" ? "" : (rawTextInput || originalContent || "");
+      if (sourceType !== "generate" && !textToUse.trim()) {
+        clearInterval(stepInterval);
+        setContextualizeError({
+          code: "INPUT_INVALID",
+          message: "Teks materi belum diisi. Pastikan naskah materi sudah diketik atau diekstrak.",
+        });
         setIsProcessing(false);
-        onComplete();
+        return;
       }
-    }, 450);
+
+      const res = await fetch("/api/ai/contextualize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "material",
+          inputMode: sourceType === "image" ? "camera" : sourceType === "generate" ? "ai" : sourceType,
+          prompt: sourceType === "generate" ? (topic || "Kearifan lokal dan bentang alam") : "",
+          rawText: textToUse,
+          title: customTitle || title || topic || "Materi Pembelajaran Kontekstual",
+          subject,
+          grade,
+          regionName: targetRegion,
+          regionId: REGION_OPTIONS.find((r) => r.name === targetRegion)?.id || "35.02",
+        }),
+      });
+
+      const responseText = await res.text();
+      let json: any = null;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        json = null;
+      }
+      clearInterval(stepInterval);
+
+      if (!res.ok || !json || !json.success || !json.data) {
+        const errObj = json?.error;
+        const msg =
+          typeof errObj === "object"
+            ? errObj.message
+            : errObj ||
+              (res.status === 504 || responseText.includes("An error occurred")
+                ? "Proses AI membutuhkan waktu lebih lama di server. Silakan klik 'Coba Lagi'."
+                : `Layanan AI mengalami kendala (${res.status}). Silakan coba lagi.`);
+        const code = typeof errObj === "object" ? errObj.code : "CONTEXTUALIZATION_FAILED";
+        setContextualizeError({ code, message: msg });
+        setIsProcessing(false);
+        return;
+      }
+
+      setCurrentStepIndex(5);
+      const data = json.data;
+      if (data.title) setTitle(data.title);
+      if (data.original_content) setOriginalContent(data.original_content);
+      const finalContent = data.contextual_content || data.content;
+      if (finalContent) setContextualContent(finalContent);
+      if (data.local_entities && Array.isArray(data.local_entities)) setLocalEntitiesAdded(data.local_entities);
+      else if (data.context_variables && Array.isArray(data.context_variables)) setLocalEntitiesAdded(data.context_variables);
+      if (data.validation) setValidationResult(data.validation);
+      if (data.validation) setValidationResult(data.validation);
+
+      setIsProcessing(false);
+      setPreviewMode(true);
+    } catch (err: any) {
+      clearInterval(stepInterval);
+      console.error("Contextualization network error:", err);
+      setContextualizeError({
+        code: "NETWORK_ERROR",
+        message: err.message || "Terjadi kesalahan jaringan saat memproses kontekstualisasi.",
+      });
+      setIsProcessing(false);
+    }
   };
 
   const handleGenerateAI = () => {
-    triggerStepProgress(() => {
-      const generatedTitle = `Kearifan Pengelolaan Sumber Daya Alam di ${targetRegion}`;
-      let rawStandard = "";
-      let localized = "";
-      let entities = [];
-
-      if (targetRegion.includes("Semarang")) {
-        rawStandard =
-          "Masyarakat di daerah dataran rendah dan pesisir melakukan berbagai aktivitas ekonomi perdagangan dan pelabuhan. Di pusat kota, terdapat banyak pusat perniagaan serta peninggalan bangunan bersejarah yang menarik wisatawan.";
-        localized =
-          `Di ${targetRegion} (Kode Wilayah 33.74), kegiatan ekonomi sangat dipengaruhi oleh posisi strategisnya sebagai kota metropolitan pelabuhan. Kawasan Pelabuhan Tanjung Emas menjadi pusat bongkar muat barang industri, sementara kawasan cagar budaya Kota Lama Semarang menjadi denyut pariwisata ekonomi kreatif. Siswa kelas 5 SD dapat mengamati bagaimana sungai Banjir Kanal Barat berfungsi mengalirkan air perkotaan agar terhindar dari banjir rob.`;
-        entities = [
-          { entity: "Pelabuhan Tanjung Emas", category: "Infrastruktur & Perdagangan", description: "Pusat logistik maritim internasional Kota Semarang" },
-          { entity: "Kota Lama Semarang", category: "Warisan Sejarah & Wisata", description: "Sentra ekonomi kreatif 'Little Netherland' bersejarah" },
-          { entity: "Sungai Banjir Kanal Barat", category: "Geografi Perkotaan", description: "Infrastruktur pengendali aliran air dan ruang terbuka hijau" },
-        ];
-      } else {
-        rawStandard =
-          "Kegiatan ekonomi masyarakat di Indonesia sangat beragam tergantung pada bentang alamnya. Masyarakat di daerah pegunungan biasanya bekerja sebagai petani sayur dan peternak sapi perah. Sementara di daerah perbukitan, masyarakat menanam berbagai komoditas bernilai tinggi. Di pasar tradisional, hasil panen tersebut dijual dan didistribusikan.";
-        localized =
-          `Kegiatan ekonomi masyarakat di ${targetRegion} sangat dipengaruhi oleh kondisi alamnya. Di dataran tinggi seperti ${targetDistrict || "Kecamatan Pudak"}, udara sejuk mendukung peternakan sapi perah penghasil susu segar berkualitas tinggi serta sayuran segar. Selain itu, petani giat membudidayakan tanaman porang yang kini menjadi komoditas ekspor unggulan. Di pasar rakyat terdekat, hasil panen tersebut dipasarkan untuk mendorong perputaran roda ekonomi daerah.`;
-        entities = [
-          { entity: targetDistrict || "Kecamatan Pudak", category: "Geografis & Peternakan", description: `Sentra agrowisata dan produksi susu dataran tinggi ${targetRegion}` },
-          { entity: "Tanaman Porang", category: "Komoditas Unggulan", description: "Komoditas umbi bernilai ekonomi tinggi untuk pasar ekspor" },
-          { entity: "Pasar Tradisional Daerah", category: "Pusat Perdagangan", description: "Sentra transaksi komoditas pangan masyarakat lokal" },
-        ];
-      }
-
-      setTitle(generatedTitle);
-      setOriginalContent(rawStandard);
-      setContextualContent(localized);
-      setLocalEntitiesAdded(entities);
-      setPreviewMode(true);
-    });
+    executeContextualization("generate");
   };
 
   const handleAnalyzeManualOrUploaded = (textToAnalyze: string, customTitle?: string) => {
-    if (!textToAnalyze.trim()) return;
-
-    triggerStepProgress(() => {
-      let localized = textToAnalyze;
-      if (localized.toLowerCase().includes("pasar")) {
-        localized = localized.replace(/pasar(?:\s+kota|\s+tradisional)?/gi, `Pasar Rakyat ${targetRegion}`);
-      }
-      if (localized.toLowerCase().includes("petani") || localized.toLowerCase().includes("beras")) {
-        localized = localized.replace(/padi|beras/gi, "porang dan tanaman pangan lokal");
-      }
-      localized += `\n\n(Materi ini telah diperkaya dengan konteks bentang alam dan kearifan ekonomi nyata di ${targetRegion}).`;
-
-      if (customTitle && !title) {
-        setTitle(customTitle);
-      }
-      setOriginalContent(textToAnalyze);
-      setContextualContent(localized);
-      setLocalEntitiesAdded([
-        {
-          entity: `${targetRegion} & Agrikultur Lokal`,
-          category: "Konteks Wilayah Terpilih",
-          description: `Penyesuaian istilah umum menuju aktivitas nyata yang dapat diamati siswa Kelas 5 di ${targetRegion}.`,
-        },
-      ]);
-      setPreviewMode(true);
-    });
+    const sourceType = activeTab === "photo" ? "image" : activeTab === "pdf" ? "pdf" : "manual";
+    executeContextualization(sourceType, textToAnalyze, customTitle);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,6 +198,7 @@ function CreateMaterialContent() {
 
     setUploadedFileName(file.name);
     setFileExtractError(null);
+    setContextualizeError(null);
     setIsExtractingFile(true);
 
     try {
@@ -194,7 +212,11 @@ function CreateMaterialContent() {
 
       const json = await res.json();
       if (!json.success || !json.extractedText) {
-        throw new Error(json.error || "Gagal mengekstrak teks dari berkas PDF.");
+        const errObj = json.error;
+        const msg = typeof errObj === "object" ? errObj.message : errObj || "PDF berhasil diunggah, tetapi teks belum berhasil dibaca.";
+        const code = typeof errObj === "object" ? errObj.code : "PDF_EXTRACTION_FAILED";
+        setFileExtractError({ code, message: msg });
+        return;
       }
 
       const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
@@ -202,7 +224,10 @@ function CreateMaterialContent() {
       setOriginalContent(json.extractedText);
     } catch (err: any) {
       console.error("PDF extract error:", err);
-      setFileExtractError(err.message || "Gagal membaca berkas PDF. Pastikan format berkas terbaca.");
+      setFileExtractError({
+        code: "NETWORK_ERROR",
+        message: err.message || "Gagal membaca berkas PDF. Pastikan format berkas terbaca.",
+      });
     } finally {
       setIsExtractingFile(false);
     }
@@ -215,6 +240,7 @@ function CreateMaterialContent() {
     setPhotoPreviewUrl(URL.createObjectURL(file));
     setUploadedFileName(file.name);
     setFileExtractError(null);
+    setContextualizeError(null);
     setIsExtractingFile(true);
 
     try {
@@ -228,7 +254,11 @@ function CreateMaterialContent() {
 
       const json = await res.json();
       if (!json.success || !json.extractedText) {
-        throw new Error(json.error || "Gagal mengekstrak teks dari foto.");
+        const errObj = json.error;
+        const msg = typeof errObj === "object" ? errObj.message : errObj || "Teks pada gambar belum berhasil dibaca. Coba gunakan gambar yang lebih jelas.";
+        const code = typeof errObj === "object" ? errObj.code : "OCR_FAILED";
+        setFileExtractError({ code, message: msg });
+        return;
       }
 
       const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
@@ -236,28 +266,44 @@ function CreateMaterialContent() {
       setOriginalContent(json.extractedText);
     } catch (err: any) {
       console.error("Photo OCR error:", err);
-      setFileExtractError(err.message || "Gagal mengekstrak teks dari gambar/foto.");
+      setFileExtractError({
+        code: "NETWORK_ERROR",
+        message: err.message || "Gagal mengekstrak teks dari gambar/foto.",
+      });
     } finally {
       setIsExtractingFile(false);
     }
   };
 
-  const handleSaveAndPublish = (asDraft: boolean = false) => {
+  const handleSaveAndPublish = async (asDraft: boolean = false) => {
     const school = repository.getActiveSchool();
-    const finalContent = contextualContent || originalContent;
-    if (!title.trim() || !finalContent.trim()) {
-      alert("Harap lengkapi judul dan naskah materi pembelajaran.");
+    const effectiveTitle = (title || topic || "Materi Pembelajaran Kontekstual").trim();
+    let finalContent = (contextualContent || originalContent).trim();
+
+    if (!finalContent) {
+      alert("Harap lengkapi naskah materi pembelajaran terlebih dahulu.");
       return;
     }
 
+    // Pastikan selalu dikontekstualisasikan sebelum disimpan
+    if (!contextualContent && originalContent.trim()) {
+      await executeContextualization(
+        activeTab === "photo" ? "image" : activeTab === "pdf" ? "pdf" : "manual",
+        originalContent,
+        effectiveTitle
+      );
+      finalContent = contextualContent || originalContent;
+    }
+
+    const teacher = repository.getCurrentUser();
     repository.saveMaterial({
       school_id: school.id,
-      teacher_id: "usr-teacher-01",
-      title: title.trim(),
+      teacher_id: teacher.id || "usr-teacher-01",
+      title: effectiveTitle,
       subject: subject,
       grade: grade,
       content: finalContent,
-      is_contextualized: !!contextualContent,
+      is_contextualized: true,
       original_content: originalContent || undefined,
       published_to_classes: asDraft ? [] : selectedClasses,
     });
@@ -293,6 +339,49 @@ function CreateMaterialContent() {
               regionName={targetRegion}
               title="Contextual AI Engine Menyelaraskan Materi Ajar"
             />
+          </div>
+        )}
+
+        {/* Contextualize Error State */}
+        {contextualizeError && !isProcessing && (
+          <div className="bg-rose-50 border border-rose-200 rounded-[28px] p-6 text-rose-900 shadow-xs space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-rose-700">
+                    Kontekstualisasi Belum Berhasil
+                  </span>
+                  {contextualizeError.code && (
+                    <span className="px-2 py-0.5 rounded-md bg-rose-200 text-rose-800 text-[10px] font-mono font-bold">
+                      {contextualizeError.code}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs font-semibold text-rose-800 mt-1">
+                  {contextualizeError.message}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-2 border-t border-rose-200/60 justify-end">
+              <button
+                type="button"
+                onClick={() => setContextualizeError(null)}
+                className="px-4 py-2 rounded-xl border border-rose-300 text-rose-800 text-xs font-bold hover:bg-rose-100 transition-colors"
+              >
+                Ubah Input
+              </button>
+              <button
+                type="button"
+                onClick={() => executeContextualization(activeTab === "photo" ? "image" : activeTab === "pdf" ? "pdf" : activeTab === "ai" ? "generate" : "manual", originalContent, title)}
+                className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Coba Lagi</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -551,8 +640,26 @@ function CreateMaterialContent() {
                   )}
 
                   {fileExtractError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-                      {fileExtractError}
+                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5 text-rose-900 mb-0.5">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Gagal Membaca Dokumen PDF</span>
+                          {fileExtractError.code && (
+                            <span className="px-1.5 py-0.2 bg-rose-200 text-rose-800 text-[10px] font-mono rounded">
+                              {fileExtractError.code}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-rose-700">{fileExtractError.message}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFileExtractError(null)}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-bold shrink-0"
+                      >
+                        Pilih File Lain
+                      </button>
                     </div>
                   )}
 
@@ -588,24 +695,6 @@ function CreateMaterialContent() {
                       </div>
                     </div>
                   )}
-
-                  {!uploadedFileName && !isExtractingFile && (
-                    <div className="text-center pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUploadedFileName("Buku_Tematik_Tema_3_Bentang_Alam.pdf");
-                          setTitle("Buku Tematik: Bentang Alam & Kegiatan Ekonomi");
-                          setOriginalContent(
-                            "Bentang alam mempengaruhi corak kehidupan manusia. Di daerah pegunungan, hawa sejuk memungkinkan budidaya perkebunan dan peternakan. Di pasar tradisional, masyarakat berkumpul memperjualbelikan komoditas pertanian."
-                          );
-                        }}
-                        className="text-xs text-[#51465B] underline font-semibold"
-                      >
-                        Gunakan Contoh PDF Buku Tematik Kelas 5 untuk Simulasi Cepat
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -639,8 +728,26 @@ function CreateMaterialContent() {
                   )}
 
                   {fileExtractError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-                      {fileExtractError}
+                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5 text-rose-900 mb-0.5">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Teks pada gambar belum berhasil dibaca</span>
+                          {fileExtractError.code && (
+                            <span className="px-1.5 py-0.2 bg-rose-200 text-rose-800 text-[10px] font-mono rounded">
+                              {fileExtractError.code}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-rose-700">{fileExtractError.message}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFileExtractError(null)}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-bold shrink-0"
+                      >
+                        Pilih Gambar Lain
+                      </button>
                     </div>
                   )}
 
@@ -676,25 +783,6 @@ function CreateMaterialContent() {
                           className="w-full p-3.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-medium text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20 leading-relaxed"
                         />
                       </div>
-                    </div>
-                  )}
-
-                  {!photoPreviewUrl && (
-                    <div className="text-center pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhotoPreviewUrl("/window.svg");
-                          setUploadedFileName("snapshot_buku_lks.jpg");
-                          setTitle("Materi Buku LKS Siswa Kelas 5");
-                          setOriginalContent(
-                            "Usaha ekonomi keluarga meliputi pertanian sayur dan perdagangan kecil. Di pasar desa, komoditas dijual untuk memenuhi kebutuhan sehari-hari."
-                          );
-                        }}
-                        className="text-xs text-[#51465B] underline font-semibold"
-                      >
-                        Gunakan Contoh Foto Lembar Lembar Kerja untuk Simulasi
-                      </button>
                     </div>
                   )}
                 </div>

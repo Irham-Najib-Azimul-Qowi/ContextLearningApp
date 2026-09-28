@@ -52,6 +52,18 @@ import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
 
+function deriveQuestionRoomCode(id: string): string {
+  const digits = (id || "").replace(/[^0-9]/g, "");
+  if (digits.length >= 4) {
+    return `sol${digits.slice(-4)}`;
+  }
+  let sum = 1001;
+  for (let i = 0; i < (id || "sol").length; i++) {
+    sum = (sum * 31 + (id || "sol").charCodeAt(i)) % 9000;
+  }
+  return `sol${Math.abs(sum) + 1000}`;
+}
+
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
   "Matematika",
@@ -618,8 +630,19 @@ function TeacherQuestionsContent() {
         }),
       });
 
-      const json = await res.json();
-      if (json.success && json.data) {
+      const responseText = await res.text();
+      let json: any = null;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          res.status === 504 || responseText.includes("An error occurred")
+            ? "Proses AI membutuhkan waktu lebih lama di server. Silakan klik 'Coba Lagi'."
+            : `Layanan AI mengalami kendala (${res.status}). Silakan coba lagi.`
+        );
+      }
+
+      if (json && json.success && json.data) {
         if (json.data.topic) {
           setTopic(json.data.topic);
         }
@@ -663,15 +686,30 @@ function TeacherQuestionsContent() {
     }
   };
 
-  // Step 3 Save: Simpan Butir Soal dari Form Konten (Mendukung Multi-Soal Sekaligus & Otomatis Terkontekstualisasi)
+  // Step 3 Save: Simpan Butir Soal dari Form Konten (Semua Input Dikontekstualisasikan Sebelum Disimpan)
   const handleStep3Save = async () => {
-    if (!activeSchool || !topic.trim()) return;
+    const school = activeSchool || repository.getActiveSchool();
+    let effectiveTopic = (topic || "").trim();
+    if (!effectiveTopic) {
+      effectiveTopic = "Latihan Evaluasi Tematik Kontekstual";
+      setTopic(effectiveTopic);
+    }
 
     let validQuestions = questionsList.filter((q) => q.question_text.trim());
-    if (validQuestions.length === 0) return;
+    if (validQuestions.length === 0) {
+      alert("Harap masukkan minimal satu butir pertanyaan soal sebelum menyimpan.");
+      return;
+    }
 
-    // Jika belum pernah dikontekstualisasikan sama sekali (misal input manual tanpa klik tombol AI), jalankan kontekstualisasi otomatis sekarang
-    if (!overallValidation && selectedMethod === "manual") {
+    // PASTIKAN SEMUA INPUT DIKONTEKSTUALISASIKAN SEBELUM DISIMPAN
+    // Untuk semua input (manual, camera, pdf, ai): jika belum dikontekstualisasikan atau context_variables belum ada, jalankan kontekstualisasi AI otomatis sekarang!
+    const needsContextualization =
+      !overallValidation ||
+      validQuestions.some(
+        (q) => !q.context_variables || q.context_variables.length === 0 || !q.original_question_text
+      );
+
+    if (needsContextualization) {
       setIsAiGenerating(true);
       try {
         const rawItemsText = validQuestions
@@ -694,22 +732,29 @@ function TeacherQuestionsContent() {
           body: JSON.stringify({
             type: "question",
             inputMode: selectedMethod,
-            prompt: "",
+            prompt: selectedMethod === "ai" ? (aiPrompt || effectiveTopic) : "",
             rawText: rawItemsText,
-            topic: topic.trim(),
+            topic: effectiveTopic,
             subject,
             grade,
-            regionId: activeSchool.region_id || "35.02",
-            regionName: region,
+            regionId: school.region_id || "35.02",
+            regionName: school.region_name || region || "Kota Madiun",
           }),
         });
 
-        const json = await res.json();
-        if (json.success && json.data && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
+        const responseText = await res.text();
+        let json: any = null;
+        try {
+          json = JSON.parse(responseText);
+        } catch {
+          json = null;
+        }
+
+        if (json && json.success && json.data && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
           const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => ({
             id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
             type: q.type === "essay" ? "essay" : "multiple_choice",
-            original_question_text: q.original_question_text || "",
+            original_question_text: q.original_question_text || validQuestions[idx]?.question_text || "",
             question_text: q.question_text || q.question || "",
             options: q.options && Array.isArray(q.options)
               ? q.options.map((o: any, oIdx: number) => ({
@@ -755,21 +800,28 @@ function TeacherQuestionsContent() {
       rubric: q.type === "essay" ? q.rubric : undefined,
     }));
 
-    const saved = repository.saveQuestion({
-      id: patentQuestionId ? patentQuestionId : undefined,
-      school_id: activeSchool.id,
-      subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
-      grade,
-      topic: topic.trim(),
-      items: itemsToSave,
-      teacher_id: currentUser?.id || "usr-teacher-01",
-      is_contextualized: true,
-    });
+    try {
+      const user = currentUser || repository.getCurrentUser();
+      const questionId = patentQuestionId || `q-${Date.now()}`;
+      const saved = repository.saveQuestion({
+        id: questionId,
+        school_id: school.id,
+        subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
+        grade,
+        topic: effectiveTopic,
+        items: itemsToSave,
+        teacher_id: user.id || "usr-teacher-01",
+        is_contextualized: true,
+      });
 
-    setCreatedQuestionId(saved.id);
-    setCreatedQuestionIds([saved.id]);
-    loadData();
-    setWizardStep(4);
+      setCreatedQuestionId(saved.id);
+      setCreatedQuestionIds([saved.id]);
+      loadData();
+      setWizardStep(4);
+    } catch (saveErr: any) {
+      console.error("Gagal menyimpan butir soal:", saveErr);
+      alert("Gagal menyimpan butir soal: " + (saveErr.message || "Terjadi kesalahan"));
+    }
   };
 
   // Custom Delete Confirmation Modal State
@@ -778,19 +830,23 @@ function TeacherQuestionsContent() {
     id: string;
     title: string;
     isDeleting: boolean;
+    isUsedInRoom: boolean;
   }>({
     isOpen: false,
     id: "",
     title: "",
     isDeleting: false,
+    isUsedInRoom: false,
   });
 
   const handleOpenDeleteModal = (id: string, title?: string) => {
+    const check = repository.isContentUsedInRoom("question", id);
     setDeleteModal({
       isOpen: true,
       id,
       title: title || "Butir Soal",
       isDeleting: false,
+      isUsedInRoom: check.isUsed,
     });
   };
 
@@ -803,7 +859,7 @@ function TeacherQuestionsContent() {
       if (previewQuestion?.id === deleteModal.id) {
         setPreviewQuestion(null);
       }
-      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+      setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false, isUsedInRoom: false });
     } catch (err) {
       console.error("Gagal menghapus soal:", err);
       setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
@@ -812,7 +868,7 @@ function TeacherQuestionsContent() {
 
   const handleOpenPublishRoom = (q: Question) => {
     setQuestionToPublish(q);
-    const randomCode = `sol${Math.floor(1000 + Math.random() * 9000)}`;
+    const randomCode = deriveQuestionRoomCode(q.id);
     setGeneratedRoomCode(randomCode);
     setRoomCreatedSuccess(false);
     setIsRoomModalOpen(true);
@@ -2727,11 +2783,20 @@ function TeacherQuestionsContent() {
                     <button
                       type="button"
                       onClick={handleStep3Save}
-                      disabled={questionsList.every((q) => !q.question_text.trim())}
+                      disabled={isAiGenerating || questionsList.every((q) => !q.question_text.trim())}
                       className="py-2.5 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] hover:from-[#FFE085] hover:to-[#FFBD59] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                     >
-                      <span>Simpan ({questionsList.length} Soal)</span>
-                      <Check className="w-4 h-4 stroke-[2.5]" />
+                      {isAiGenerating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+                          <span>Menyelaraskan & Menyimpan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Simpan ({questionsList.length} Soal)</span>
+                          <Check className="w-4 h-4 stroke-[2.5]" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -2872,10 +2937,11 @@ function TeacherQuestionsContent() {
         itemId={deleteModal.id}
         itemTitle={deleteModal.title}
         isDeleting={deleteModal.isDeleting}
+        isUsedInRoom={deleteModal.isUsedInRoom}
         onConfirm={handleConfirmDelete}
         onClose={() => {
           if (!deleteModal.isDeleting) {
-            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false });
+            setDeleteModal({ isOpen: false, id: "", title: "", isDeleting: false, isUsedInRoom: false });
           }
         }}
       />

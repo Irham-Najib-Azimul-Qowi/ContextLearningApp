@@ -83,6 +83,7 @@ export interface AICredential {
   id: string;
   name: string;
   provider: "gemini" | "openai" | "anthropic";
+  model?: string;
   quota_group: string; // e.g. "default_project" or "tier2_project"
   encrypted_api_key: string;
   iv: string;
@@ -91,18 +92,33 @@ export interface AICredential {
   priority: number;
   is_enabled: boolean;
   health_status: "healthy" | "degraded" | "rate_limited" | "invalid" | "disabled";
+  status?: "active" | "cooldown" | "exhausted" | "disabled" | "healthy" | "unhealthy" | "error" | string;
   consecutive_errors: number;
   circuit_state: "CLOSED" | "OPEN" | "HALF_OPEN";
   circuit_opened_at?: string | null;
   cooldown_seconds: number;
+  cooldown_until?: string | null;
   daily_request_limit: number;
   last_used_at?: string | null;
+  last_success_at?: string | null;
   last_error?: string | null;
+  failure_reason?: string | null;
   last_error_at?: string | null;
+  failure_count?: number;
+  success_count?: number;
   notes?: string;
   created_at: string;
   updated_at: string;
 }
+
+export type AIAuditEventType =
+  | "AI_REQUEST_STARTED"
+  | "AI_REQUEST_SUCCESS"
+  | "AI_REQUEST_FAILED"
+  | "AI_FALLBACK_TRIGGERED"
+  | "AI_CREDENTIAL_COOLDOWN"
+  | "AI_CREDENTIAL_DISABLED"
+  | "AI_ALL_CREDENTIALS_FAILED";
 
 export type AICapability =
   | "text_generation"

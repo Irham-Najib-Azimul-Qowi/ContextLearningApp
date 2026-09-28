@@ -1510,7 +1510,7 @@ function TeacherRoomsContent() {
           title={previewRoom.title}
           subject={previewRoom.subject}
           grade={previewRoom.grade}
-          regionName={previewRoom.region_name}
+          regionName={previewRoom.region_name || "Madiun"}
           content={attachedMaterial?.content || ""}
           roomCode={previewRoom.code}
           questions={

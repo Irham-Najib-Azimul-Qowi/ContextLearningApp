@@ -25,6 +25,8 @@ import {
   X,
   ShieldCheck,
   CheckCircle2,
+  FileText,
+  DoorOpen,
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
@@ -164,6 +166,31 @@ export function AdminWorkspaceShell({ children, activeGroupId }: AdminWorkspaceS
           >
             <Building2 className="w-4 h-4 shrink-0" />
             <span>Sekolah</span>
+          </Link>
+
+          {/* 2b. Content & Room Monitoring */}
+          <Link
+            href="/admin/content"
+            className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl transition-all ${
+              pathname.startsWith("/admin/content")
+                ? "bg-[#FFD36D] text-[#3E3547] font-black shadow-md"
+                : "text-white/80 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <FileText className="w-4 h-4 shrink-0" />
+            <span>Konten</span>
+          </Link>
+
+          <Link
+            href="/admin/rooms"
+            className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl transition-all ${
+              pathname.startsWith("/admin/rooms")
+                ? "bg-[#FFD36D] text-[#3E3547] font-black shadow-md"
+                : "text-white/80 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <DoorOpen className="w-4 h-4 shrink-0" />
+            <span>Room</span>
           </Link>
 
           {/* 3. AI Provider Group */}

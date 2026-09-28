@@ -61,9 +61,24 @@ export default function QuestionGeneratorPage() {
         }),
       });
 
-      const json = await res.json();
-      if (!json.success || !json.data || !Array.isArray(json.data.questions)) {
-        throw new Error(json.error || "Gagal menghasilkan paket butir soal.");
+      const responseText = await res.text();
+      let json: any = null;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        json = null;
+      }
+
+      if (!res.ok || !json || !json.success || !json.data || !Array.isArray(json.data.questions)) {
+        const errObj = json?.error;
+        const msg =
+          typeof errObj === "object"
+            ? errObj.message
+            : errObj ||
+              (res.status === 504 || responseText.includes("An error occurred")
+                ? "Proses AI memerlukan waktu lebih lama di server. Silakan klik 'Generate Sekarang' kembali."
+                : `Layanan AI mengalami kendala (${res.status}). Silakan coba lagi.`);
+        throw new Error(msg);
       }
 
       // 2. Save into repository with all generated items

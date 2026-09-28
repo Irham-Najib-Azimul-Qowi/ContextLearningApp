@@ -75,14 +75,14 @@ export default function RoomViewerPage() {
         const allQs = repository.getQuestions();
 
         if (localRoom.type === "material" || localRoom.type === "both") {
-          const m = allMats.find((item) => item.id === localRoom.resource_id) || allMats[0] || null;
+          const m = localRoom.material_snapshot || allMats.find((item) => item.id === localRoom.resource_id) || repository.getMaterialById(localRoom.resource_id, true) || null;
           setMaterial(m);
         }
 
         if (localRoom.type === "question" || localRoom.type === "both") {
           const qId = localRoom.type === "both" ? localRoom.secondary_resource_id : localRoom.resource_id;
-          const { combinedQuestion } = resolveRoomQuestions(qId, allQs);
-          setQuestion(combinedQuestion);
+          const { combinedQuestion } = resolveRoomQuestions(qId, repository.getQuestions({ includeArchived: true }));
+          setQuestion(localRoom.question_snapshot || combinedQuestion || null);
         }
       }
 

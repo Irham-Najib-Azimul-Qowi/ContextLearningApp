@@ -15,6 +15,7 @@ import {
   School as SchoolIcon,
   FileCheck,
   MapPin,
+  AlertCircle,
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
@@ -32,14 +33,21 @@ function ScanQuestionContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isContextualizing, setIsContextualizing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<{ code?: string; message: string } | null>(null);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
-  const [extractedData, setExtractedData] = useState<{
-    question_text: string;
-    options: { key: string; text: string }[];
-    correct_answer: string;
-    explanation: string;
-  } | null>(null);
+  const [extractedRawText, setExtractedRawText] = useState<string>("");
+  const [questionsList, setQuestionsList] = useState<
+    {
+      id: string;
+      type: "multiple_choice" | "essay";
+      question_text: string;
+      options: { key: string; text: string }[];
+      correct_answer: string;
+      explanation: string;
+      validation?: any;
+    }[]
+  >([]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -57,7 +65,8 @@ function ScanQuestionContent() {
       } else {
         setPreviewUrl(null);
       }
-      setExtractedData(null);
+      setExtractedRawText("");
+      setQuestionsList([]);
     }
   };
 
@@ -65,21 +74,26 @@ function ScanQuestionContent() {
     setSelectedFile(file);
     setPreviewUrl(url);
     setErrorMessage(null);
-    setExtractedData(null);
+    setExtractedRawText("");
+    setQuestionsList([]);
   };
 
   const handleProcessScan = async () => {
     if (!selectedFile) {
-      setErrorMessage("Silakan pilih berkas atau ambil foto naskah terlebih dahulu.");
+      setErrorMessage({
+        code: "INPUT_INVALID",
+        message: "Silakan pilih berkas atau ambil foto naskah terlebih dahulu.",
+      });
       return;
     }
 
     setIsProcessing(true);
     setErrorMessage(null);
-    setExtractedData(null);
+    setExtractedRawText("");
+    setQuestionsList([]);
 
     try {
-      // 1. Send file to server-side extraction API (OCR / Document Parser)
+      // 1. Send file to server-side extraction API (PDF Parse / Gemini Vision OCR)
       const formData = new FormData();
       formData.append("file", selectedFile);
 
@@ -90,19 +104,39 @@ function ScanQuestionContent() {
 
       const extractJson = await extractRes.json();
       if (!extractJson.success || !extractJson.extractedText) {
-        throw new Error(extractJson.error || "Gagal mengekstrak teks dari berkas.");
+        const errObj = extractJson.error;
+        const msg = typeof errObj === "object" ? errObj.message : errObj || (isPdfMode ? "PDF berhasil diunggah, tetapi teks belum berhasil dibaca." : "Teks pada gambar belum berhasil dibaca.");
+        const code = typeof errObj === "object" ? errObj.code : (isPdfMode ? "PDF_EXTRACTION_FAILED" : "OCR_FAILED");
+        setErrorMessage({ code, message: msg });
+        return;
       }
 
-      const extractedText = extractJson.extractedText;
+      setExtractedRawText(extractJson.extractedText);
+    } catch (err: any) {
+      console.error("Scan processing error:", err);
+      setErrorMessage({
+        code: "NETWORK_ERROR",
+        message: err.message || "Gagal memproses berkas. Pastikan foto atau dokumen terbaca dengan jelas.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-      // 2. Parse extracted question items into structured form via contextualize API
+  const handleContextualize = async () => {
+    if (!extractedRawText.trim() || !activeSchool) return;
+
+    setIsContextualizing(true);
+    setErrorMessage(null);
+
+    try {
       const ctxRes = await fetch("/api/ai/contextualize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "question",
           inputMode: isPdfMode ? "pdf" : "camera",
-          rawText: extractedText,
+          rawText: extractedRawText,
           subject: "Matematika",
           grade: 5,
           regionId: activeSchool?.region_id || "35.02",
@@ -110,58 +144,74 @@ function ScanQuestionContent() {
         }),
       });
 
-      const ctxJson = await ctxRes.json();
-      if (ctxJson.success && ctxJson.data?.questions && ctxJson.data.questions.length > 0) {
-        const firstQ = ctxJson.data.questions[0];
-        setExtractedData({
-          question_text: firstQ.question_text || extractedText,
-          options: firstQ.options || [
-            { key: "A", text: "Pilihan A" },
-            { key: "B", text: "Pilihan B" },
-            { key: "C", text: "Pilihan C" },
-            { key: "D", text: "Pilihan D" },
-          ],
-          correct_answer: firstQ.correct_answer || "A",
-          explanation: firstQ.explanation || "Pembahasan butir soal hasil ekstraksi.",
-        });
-      } else {
-        // Fallback to presenting raw extracted text
-        setExtractedData({
-          question_text: extractedText,
-          options: [
-            { key: "A", text: "Pilihan A" },
-            { key: "B", text: "Pilihan B" },
-            { key: "C", text: "Pilihan C" },
-            { key: "D", text: "Pilihan D" },
-          ],
-          correct_answer: "A",
-          explanation: "Hasil pembacaan naskah dokumen.",
-        });
+      const responseText = await ctxRes.text();
+      let ctxJson: any = null;
+      try {
+        ctxJson = JSON.parse(responseText);
+      } catch {
+        ctxJson = null;
       }
+
+      if (!ctxRes.ok || !ctxJson || !ctxJson.success || !ctxJson.data?.questions || ctxJson.data.questions.length === 0) {
+        const errObj = ctxJson?.error;
+        const msg =
+          typeof errObj === "object"
+            ? errObj.message
+            : errObj ||
+              (ctxRes.status === 504 || responseText.includes("An error occurred")
+                ? "Proses AI membutuhkan waktu lebih lama di server. Silakan klik 'Kontekstualkan' kembali."
+                : `Layanan AI mengalami kendala (${ctxRes.status}). Silakan coba lagi.`);
+        const code = typeof errObj === "object" ? errObj.code : "CONTEXTUALIZATION_FAILED";
+        setErrorMessage({ code, message: msg });
+        return;
+      }
+
+      const mapped = ctxJson.data.questions.map((q: any, idx: number) => ({
+        id: q.id || `scan-q-${Date.now()}-${idx + 1}`,
+        type: q.type === "essay" ? "essay" : "multiple_choice",
+        question_text: q.question_text || q.question || "",
+        options: q.options && Array.isArray(q.options)
+          ? q.options.map((o: any, oIdx: number) => ({
+              key: o.key || String.fromCharCode(65 + oIdx),
+              text: o.text || String(o),
+            }))
+          : [],
+        correct_answer: q.correct_answer || q.correctAnswer || "A",
+        explanation: q.explanation || "",
+        validation: q.validation || ctxJson.data.validation || undefined,
+      }));
+
+      setQuestionsList(mapped);
     } catch (err: any) {
-      console.error("Scan processing error:", err);
-      setErrorMessage(err.message || "Gagal memproses berkas. Pastikan foto atau dokumen terbaca dengan jelas.");
+      console.error("Contextualization error:", err);
+      setErrorMessage({
+        code: "NETWORK_ERROR",
+        message: err.message || "Gagal memproses kontekstualisasi soal.",
+      });
     } finally {
-      setIsProcessing(false);
+      setIsContextualizing(false);
     }
   };
 
-  const handleProceedToContext = () => {
-    if (!extractedData || !activeSchool) return;
+  const handleProceedToSave = () => {
+    if (questionsList.length === 0 || !activeSchool) return;
 
     const teacher = repository.getCurrentUser();
+    const firstQ = questionsList[0];
     const saved = repository.saveQuestion({
       school_id: activeSchool.id,
       teacher_id: teacher.id,
       subject: "Matematika",
       grade: 5,
-      topic: isPdfMode ? "Aritmetika Sosial (Ekstraksi Naskah PDF)" : "Aritmetika Sosial (Hasil Vision OCR)",
-      type: "multiple_choice",
-      question_text: extractedData.question_text,
-      options: extractedData.options,
-      correct_answer: extractedData.correct_answer,
-      explanation: extractedData.explanation,
-      is_contextualized: false,
+      topic: isPdfMode ? "Ekstraksi & Kontekstualisasi Dokumen PDF" : "Ekstraksi & Kontekstualisasi Vision OCR",
+      type: questionsList.length > 1 ? "mixed" : firstQ.type,
+      question_text: firstQ.question_text,
+      options: firstQ.options,
+      correct_answer: firstQ.correct_answer,
+      explanation: firstQ.explanation,
+      items: questionsList,
+      is_contextualized: true,
+      original_question_text: extractedRawText,
     });
 
     router.push(`/teacher/questions/context-preview?id=${saved.id}`);
@@ -308,92 +358,176 @@ function ScanQuestionContent() {
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 text-[#FFD36D]" />
-                      <span>Ekstraksi Teks dengan {isPdfMode ? "Document Parser" : "Gemini Vision"}</span>
+                      <span>Ekstraksi Teks dengan {isPdfMode ? "PDF Parser" : "Gemini Vision OCR"}</span>
                     </>
                   )}
                 </button>
-                {errorMessage && (
-                  <div className="mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-                    {errorMessage}
-                  </div>
-                )}
               </div>
             </div>
           )}
 
-          {/* Quick Demo Simulator if user has no file */}
-          {!selectedFile && (
-            <div className="mt-4 text-center">
+          {errorMessage && (
+            <div className="mt-4 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start justify-between gap-3">
+              <div>
+                <div className="font-bold flex items-center gap-1.5 text-rose-900 mb-0.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Proses Belum Berhasil</span>
+                  {errorMessage.code && (
+                    <span className="px-1.5 py-0.2 bg-rose-200 text-rose-800 text-[10px] font-mono rounded">
+                      {errorMessage.code}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] leading-relaxed text-rose-700">{errorMessage.message}</p>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (isPdfMode) {
-                    setSelectedFile(new File(["dummy"], "Bank_Soal_Aritmetika_Kelas5.pdf", { type: "application/pdf" }));
-                  } else {
-                    setPreviewUrl("/window.svg");
-                    setSelectedFile(new File(["dummy"], "lembar_soal_aritmetika.jpg", { type: "image/jpeg" }));
-                  }
-                  handleProcessScan();
-                }}
-                className="text-xs text-[#51465B] underline font-semibold"
+                onClick={() => setErrorMessage(null)}
+                className="px-2.5 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-bold shrink-0"
               >
-                Gunakan Contoh {isPdfMode ? "PDF Soal Latihan" : "Foto Naskah Soal"} untuk Simulasi Cepat
+                Tutup
               </button>
             </div>
           )}
         </div>
 
-        {/* Extracted Data Card */}
-        {extractedData && (
+        {/* Step 2: Show Extracted Raw Text & Allow Teacher Edit */}
+        {extractedRawText && questionsList.length === 0 && (
           <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-emerald-200 shadow-md p-6 sm:p-8 space-y-4 animate-in fade-in">
-            <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-sm">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Naskah Butir Soal Berhasil Diekstraksi!</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-sm">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span>Naskah Berhasil Diekstraksi</span>
+              </div>
+              <span className="text-[11px] text-[#756F7A]">
+                Guru dapat meninjau & menyunting naskah sebelum dikontekstualisasikan
+              </span>
             </div>
 
             <div>
-              <label className="font-bold text-[#23212A] block mb-1 text-xs">
-                Pertanyaan Soal Hasil Ekstraksi
+              <label className="font-bold text-[#23212A] block mb-1.5 text-xs">
+                Naskah Hasil Ekstraksi (Dapat Diedit):
               </label>
               <textarea
-                rows={3}
-                value={extractedData.question_text}
-                onChange={(e) =>
-                  setExtractedData({ ...extractedData, question_text: e.target.value })
-                }
-                className="w-full p-3.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-medium text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20 leading-relaxed"
+                rows={6}
+                value={extractedRawText}
+                onChange={(e) => setExtractedRawText(e.target.value)}
+                className="w-full p-3.5 rounded-xl border border-[#E9E5E8] bg-[#FAF7F3] text-xs font-medium text-[#23212A] focus:outline-none focus:ring-2 focus:ring-[#51465B]/20 leading-relaxed font-mono"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {extractedData.options.map((opt, i) => (
-                <div key={opt.key} className="flex items-center gap-2 text-xs">
-                  <span className="font-black w-6 text-center text-[#51465B] bg-[#FAF7F3] py-1.5 rounded-lg border border-[#E9E5E8]">
-                    {opt.key}
-                  </span>
-                  <input
-                    type="text"
-                    value={opt.text}
-                    onChange={(e) => {
-                      const newOpts = [...extractedData.options];
-                      newOpts[i].text = e.target.value;
-                      setExtractedData({ ...extractedData, options: newOpts });
-                    }}
-                    className="flex-1 px-3 py-1.5 rounded-xl border border-[#E9E5E8] bg-white text-xs font-medium text-[#23212A]"
-                  />
+            <div className="pt-3 border-t border-[#E9E5E8] flex justify-end">
+              <button
+                type="button"
+                onClick={handleContextualize}
+                disabled={isContextualizing}
+                className="px-6 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-black text-xs shadow-md flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-50"
+              >
+                {isContextualizing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#FFD36D]" />
+                    <span>Contextual AI Engine Menyelaraskan Soal...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-[#FFD36D]" />
+                    <span>Kontekstualisasikan Soal ke {activeSchool?.region_name || "Wilayah"}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Contextualized Questions Review */}
+        {questionsList.length > 0 && (
+          <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-[#51465B]/20 shadow-md p-6 sm:p-8 space-y-6 animate-in fade-in">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E9E5E8]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#23212A]">
+                    {questionsList.length} Butir Soal Terkontekstualisasi
+                  </h3>
+                  <p className="text-[11px] text-[#756F7A]">
+                    Kompetensi inti dipertahankan dengan adaptasi kearifan lokal {activeSchool?.region_name}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {questionsList.map((q, idx) => (
+                <div key={q.id || idx} className="p-4 rounded-2xl border border-[#E9E5E8] bg-[#FAF7F3] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-[#51465B]">Butir Soal #{idx + 1}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold uppercase">
+                      {q.type === "essay" ? "Esai" : "Pilihan Ganda"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#23212A] mb-1">Pertanyaan:</label>
+                    <textarea
+                      rows={2}
+                      value={q.question_text}
+                      onChange={(e) => {
+                        const next = [...questionsList];
+                        next[idx].question_text = e.target.value;
+                        setQuestionsList(next);
+                      }}
+                      className="w-full p-2.5 rounded-xl border border-[#E9E5E8] bg-white text-xs font-medium text-[#23212A]"
+                    />
+                  </div>
+
+                  {q.type === "multiple_choice" && q.options && q.options.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {q.options.map((opt, oIdx) => (
+                        <div key={opt.key} className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[#51465B] w-5 text-center">{opt.key}.</span>
+                          <input
+                            type="text"
+                            value={opt.text}
+                            onChange={(e) => {
+                              const next = [...questionsList];
+                              next[idx].options[oIdx].text = e.target.value;
+                              setQuestionsList(next);
+                            }}
+                            className="flex-1 p-2 rounded-xl border border-[#E9E5E8] bg-white text-xs text-[#23212A]"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {q.explanation && (
+                    <p className="text-[11px] text-[#756F7A] bg-white p-2.5 rounded-xl border border-slate-200">
+                      <span className="font-bold text-[#51465B]">Pembahasan: </span>
+                      {q.explanation}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
 
-            <div className="pt-4 border-t border-[#E9E5E8] flex justify-end">
+            <div className="pt-4 border-t border-[#E9E5E8] flex justify-end gap-3">
               <button
                 type="button"
-                onClick={handleProceedToContext}
-                className="px-6 py-3 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-white font-black text-xs shadow-md flex items-center gap-2 transition-transform active:scale-95"
+                onClick={() => setQuestionsList([])}
+                className="px-4 py-2.5 rounded-xl border border-[#E9E5E8] text-xs font-bold text-[#756F7A] hover:bg-slate-50"
+              >
+                Sunting Ulang Naskah
+              </button>
+              <button
+                type="button"
+                onClick={handleProceedToSave}
+                className="px-6 py-2.5 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white font-black text-xs shadow-md flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4 text-[#FFD36D]" />
-                <span>Simpan & Lanjutkan ke Kontekstualisasi {activeSchool?.region_name}</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Setujui & Simpan ke Bank Soal</span>
               </button>
             </div>
           </div>

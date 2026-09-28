@@ -94,10 +94,17 @@ function ContextPreviewContent() {
   }, [questionId]);
 
   const handleApproveAndSave = () => {
-    if (!question || !pipelineResult || !activeSchool) return;
+    const school = activeSchool || repository.getActiveSchool();
+    if (!question || !pipelineResult) {
+      alert("Data soal atau hasil kontekstualisasi belum lengkap.");
+      return;
+    }
 
+    const teacher = repository.getCurrentUser();
     repository.saveQuestion({
       ...question,
+      school_id: school.id,
+      teacher_id: question.teacher_id || teacher.id,
       question_text: pipelineResult.contextualized_text,
       is_contextualized: true,
       original_question_text: pipelineResult.original_text,
