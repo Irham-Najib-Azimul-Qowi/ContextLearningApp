@@ -515,16 +515,24 @@ class PahamiRepository {
   // --- CLOUD SYNCHRONIZATION (Cross-Device 2-Way Sync via Supabase & Route Handler) ---
   private syncDebounceTimer: any = null;
   private isSyncing: boolean = false;
+  private pendingSaveTimestamp: number = 0;
+
+  /** Mark that a local save just happened so sync won't overwrite it */
+  private markPendingSave(): void {
+    this.pendingSaveTimestamp = Date.now();
+  }
 
   async syncToCloudImmediate(options?: {
     forceOverwrite?: boolean;
     deletedItem?: { type: "material" | "question" | "room"; id: string };
   }): Promise<void> {
     if (!this.isBrowser()) return;
+    if (this.isSyncing) return; // Prevent concurrent syncs that race and lose data
     if (this.syncDebounceTimer) {
       clearTimeout(this.syncDebounceTimer);
       this.syncDebounceTimer = null;
     }
+    this.isSyncing = true;
 
     try {
       const { createClient } = await import("@/lib/supabase/client");
@@ -570,6 +578,7 @@ class PahamiRepository {
         const json = await res.json();
         if (json.success && json.data) {
           this.applyAuthoritativeCloudData(json.data);
+          this.pendingSaveTimestamp = 0; // Clear pending flag after successful cloud sync
         }
       } else {
         const errText = await res.text();
@@ -577,6 +586,8 @@ class PahamiRepository {
       }
     } catch (err) {
       console.warn("Immediate sync to cloud error:", err);
+    } finally {
+      this.isSyncing = false;
     }
   }
 
@@ -671,6 +682,12 @@ class PahamiRepository {
 
   private applyAuthoritativeCloudData(cloudData: any): void {
     if (!this.isBrowser() || !cloudData) return;
+    // If a local save happened very recently (within 2s), skip cloud overwrite to avoid race
+    // The next sync cycle will reconcile properly
+    const timeSinceLastSave = Date.now() - this.pendingSaveTimestamp;
+    if (this.pendingSaveTimestamp > 0 && timeSinceLastSave < 2000) {
+      return;
+    }
     const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted, deletedIds } = cloudData;
     let hasChanges = false;
 
@@ -1141,7 +1158,7 @@ class PahamiRepository {
   }): Question[] {
     const deleted = this.getDeletedIds().questions || [];
     let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS).filter(
-      (q) => !deleted.includes(q.id)
+      (q) => !deleted.some((del) => del === q.id || isIdOrCodeMatch(del, q.id, "question"))
     );
     if (!filter?.includeArchived) {
       questions = questions.filter((q) => !q.is_archived);
@@ -1251,6 +1268,7 @@ class PahamiRepository {
         };
         questions[index] = updated;
         this.setItem<Question[]>("questions", questions);
+        this.markPendingSave();
         this.removeDeletedId("question", data.id);
         this.syncToCloud();
         return updated;
@@ -1284,6 +1302,10 @@ class PahamiRepository {
       created_at: new Date().toISOString(),
     };
     this.setItem<Question[]>("questions", [newQuestion, ...questions]);
+    this.markPendingSave();
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+    }
     this.syncToCloud();
     return newQuestion;
   }
@@ -1417,6 +1439,7 @@ class PahamiRepository {
       };
       materials[existingIndex] = updated;
       this.setItem<LearningMaterial[]>("materials", materials);
+      this.markPendingSave();
       if (this.isBrowser()) {
         window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
       }
@@ -1436,6 +1459,7 @@ class PahamiRepository {
       created_at: new Date().toISOString(),
     };
     this.setItem<LearningMaterial[]>("materials", [newMaterial, ...materials]);
+    this.markPendingSave();
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
@@ -1708,6 +1732,10 @@ class PahamiRepository {
     };
     rooms.unshift(newRoom);
     this.setItem<LearningRoom[]>("rooms", rooms);
+    this.markPendingSave();
+    if (this.isBrowser()) {
+      window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+    }
     this.syncToCloud();
     return newRoom;
   }
@@ -1719,6 +1747,7 @@ class PahamiRepository {
       const updated = { ...rooms[index], ...data };
       rooms[index] = updated;
       this.setItem<LearningRoom[]>("rooms", rooms);
+      this.markPendingSave();
       this.syncToCloud();
       return updated;
     }

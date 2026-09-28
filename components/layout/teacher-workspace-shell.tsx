@@ -65,12 +65,12 @@ export function TeacherWorkspaceShell({
         }
       };
 
-      // 4. Background heartbeat sync every 30s to keep devices in sync while open
+      // 4. Background heartbeat sync every 60s to keep devices in sync while open
       const interval = setInterval(() => {
         if (document.visibilityState === "visible") {
           repository.syncWithCloud();
         }
-      }, 30000);
+      }, 60000);
 
       window.addEventListener("focus", handleFocus);
       document.addEventListener("visibilitychange", handleVisibilityChange);
