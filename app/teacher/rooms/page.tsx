@@ -28,7 +28,16 @@ import {
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question, School, UserProfile, getQuestionItems } from "@/lib/db/types";
+import {
+  LearningRoom,
+  LearningMaterial,
+  Question,
+  School,
+  UserProfile,
+  getQuestionItems,
+  resolveRoomQuestions,
+  resolveRoomMaterials,
+} from "@/lib/db/types";
 import { RoomDashboardView } from "@/components/room/room-dashboard-view";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
@@ -53,6 +62,7 @@ function TeacherRoomsContent() {
   const [roomType, setRoomType] = useState<"material" | "question" | "both">("material");
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const [secondaryResourceId, setSecondaryResourceId] = useState("");
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [customTitle, setCustomTitle] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [subject, setSubject] = useState("Matematika");
@@ -68,6 +78,7 @@ function TeacherRoomsContent() {
   const [editRoomGrade, setEditRoomGrade] = useState(5);
   const [editRoomResourceId, setEditRoomResourceId] = useState("");
   const [editRoomSecondaryId, setEditRoomSecondaryId] = useState("");
+  const [editQuestionIds, setEditQuestionIds] = useState<string[]>([]);
   const [previewTab, setPreviewTab] = useState<"dashboard" | "content">("dashboard");
   const [isPrintingRoom, setIsPrintingRoom] = useState(false);
 
@@ -79,16 +90,33 @@ function TeacherRoomsContent() {
     setEditRoomGrade(previewRoom.grade || 5);
     setEditRoomResourceId(previewRoom.resource_id || "");
     setEditRoomSecondaryId(previewRoom.secondary_resource_id || "");
+
+    const rawQStr =
+      previewRoom.type === "both"
+        ? (previewRoom.secondary_resource_id || "")
+        : (previewRoom.resource_id || "");
+    const parsedQIds = rawQStr
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setEditQuestionIds(parsedQIds);
   };
 
   const handleSaveEditedRoom = () => {
     if (!previewRoom || !editRoomTitle.trim()) return;
+    const finalQIds =
+      editQuestionIds.length > 0
+        ? editQuestionIds.join(",")
+        : previewRoom.type === "both"
+        ? editRoomSecondaryId
+        : editRoomResourceId;
+
     const updated = repository.updateRoom(previewRoom.id, {
       title: editRoomTitle.trim(),
       subject: editRoomSubject,
       grade: editRoomGrade,
-      resource_id: editRoomResourceId,
-      secondary_resource_id: previewRoom.type === "both" ? editRoomSecondaryId : undefined,
+      resource_id: previewRoom.type === "both" ? editRoomResourceId : finalQIds,
+      secondary_resource_id: previewRoom.type === "both" ? finalQIds : undefined,
     });
     if (updated) {
       setPreviewRoom(updated);
@@ -121,6 +149,9 @@ function TeacherRoomsContent() {
     }
     if (questions.length > 0) {
       setSecondaryResourceId(questions[0].id);
+      setSelectedQuestionIds(questions.map((q) => q.id));
+    } else {
+      setSelectedQuestionIds([]);
     }
     setCustomTitle("");
     setSubject("Matematika");
@@ -204,12 +235,14 @@ function TeacherRoomsContent() {
       setSelectedResourceId(materials[0].id);
     } else if (type === "question" && questions.length > 0) {
       setSelectedResourceId(questions[0].id);
+      setSelectedQuestionIds(questions.map((q) => q.id));
     } else if (type === "both") {
       if (materials.length > 0) {
         setSelectedResourceId(materials[0].id);
       }
       if (questions.length > 0) {
         setSecondaryResourceId(questions[0].id);
+        setSelectedQuestionIds([questions[0].id]);
       }
     }
     setWizardStep(2);
@@ -229,12 +262,19 @@ function TeacherRoomsContent() {
 
     setIsSubmitting(true);
     const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const qIdsPayload =
+      selectedQuestionIds.length > 0
+        ? selectedQuestionIds.join(",")
+        : roomType === "both"
+        ? secondaryResourceId
+        : selectedResourceId;
+
     const newRoom = repository.createRoom({
       code: cleanCode,
       title: customTitle.trim(),
       type: roomType,
-      resource_id: selectedResourceId,
-      secondary_resource_id: roomType === "both" ? secondaryResourceId : undefined,
+      resource_id: roomType === "both" ? selectedResourceId : qIdsPayload,
+      secondary_resource_id: roomType === "both" ? qIdsPayload : undefined,
       subject,
       grade,
       region_name: activeSchool?.region_name || "Kota Madiun",
@@ -257,24 +297,30 @@ function TeacherRoomsContent() {
     return matchesFilter && matchesSearch;
   });
 
-  const attachedMaterial = previewRoom
-    ? (previewRoom.type === "material" || previewRoom.type === "both"
-      ? materials.find(
-          (m) => m.id === (isEditingPreview ? editRoomResourceId : previewRoom.resource_id)
-        ) || (previewRoom.resource_id ? repository.getMaterial(isEditingPreview ? editRoomResourceId : previewRoom.resource_id) : null) || null
-      : null)
-    : null;
+  const secQuestionId = isEditingPreview
+    ? (editQuestionIds.length > 0 ? editQuestionIds.join(",") : editRoomSecondaryId)
+    : (previewRoom?.secondary_resource_id || "");
+  const priQuestionId = isEditingPreview
+    ? (editQuestionIds.length > 0 && previewRoom?.type === "question" ? editQuestionIds.join(",") : editRoomResourceId)
+    : (previewRoom?.resource_id || "");
 
-  const secQuestionId = isEditingPreview ? editRoomSecondaryId : (previewRoom?.secondary_resource_id || "");
-  const priQuestionId = isEditingPreview ? editRoomResourceId : (previewRoom?.resource_id || "");
+  const rawQuestionIds = previewRoom
+    ? (previewRoom.type === "question" ? priQuestionId : previewRoom.type === "both" ? secQuestionId : "")
+    : "";
 
-  const attachedQuestion = previewRoom
-    ? (previewRoom.type === "question"
-      ? questions.find((q) => q.id === priQuestionId) || (priQuestionId ? repository.getQuestion(priQuestionId) : null) || null
-      : previewRoom.type === "both"
-      ? questions.find((q) => q.id === secQuestionId) || (secQuestionId ? repository.getQuestion(secQuestionId) : null) || null
-      : null)
-    : null;
+  const {
+    questions: attachedQuestions,
+    combinedQuestion: attachedQuestion,
+  } = resolveRoomQuestions(rawQuestionIds, questions);
+
+  const rawMaterialIds = previewRoom
+    ? (previewRoom.type === "material" || previewRoom.type === "both" ? (isEditingPreview ? editRoomResourceId : previewRoom.resource_id) : "")
+    : "";
+
+  const {
+    materials: attachedMaterials,
+    primaryMaterial: attachedMaterial,
+  } = resolveRoomMaterials(rawMaterialIds, materials);
 
   return (
     <TeacherWorkspaceShell activeGroupId="rooms">
@@ -464,7 +510,9 @@ function TeacherRoomsContent() {
                   <RoomDashboardView
                     room={previewRoom}
                     material={attachedMaterial}
+                    materials={attachedMaterials}
                     question={attachedQuestion}
+                    questions={attachedQuestions}
                     onRefresh={loadData}
                   />
                 )}
@@ -688,28 +736,65 @@ function TeacherRoomsContent() {
                 )}
 
                 {(previewRoom.type === "question" || previewRoom.type === "both") && (
-                  <div>
-                    <label className="block text-xs font-bold text-[#51465B] mb-1">
-                      Paket Soal Yang Dibagikan
-                    </label>
-                    <select
-                      value={previewRoom.type === "both" ? editRoomSecondaryId : editRoomResourceId}
-                      onChange={(e) => {
-                        if (previewRoom.type === "both") {
-                          setEditRoomSecondaryId(e.target.value);
-                        } else {
-                          setEditRoomResourceId(e.target.value);
-                        }
-                      }}
-                      className="w-full px-3.5 py-2 rounded-2xl border-2 border-[#51465B]/25 text-xs font-bold text-[#23212A] focus:border-[#51465B] focus:outline-none"
-                    >
-                      <option value="">-- Pilih Soal --</option>
-                      {questions.map((q) => (
-                        <option key={q.id} value={q.id}>
-                          [{q.id}] {q.question_text.slice(0, 60)}... ({q.subject} - Kelas {q.grade})
-                        </option>
-                      ))}
-                    </select>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-[#51465B]">
+                        Paket Soal Yang Dibagikan ({editQuestionIds.length} Dipilih)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editQuestionIds.length === questions.length) {
+                            setEditQuestionIds([]);
+                          } else {
+                            setEditQuestionIds(questions.map((q) => q.id));
+                          }
+                        }}
+                        className="text-[11px] text-[#51465B] font-bold hover:underline cursor-pointer"
+                      >
+                        {editQuestionIds.length === questions.length ? "Hapus Semua" : "Pilih Semua"}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2.5 rounded-2xl border-2 border-[#51465B]/25 bg-slate-50/50">
+                      {questions.map((q) => {
+                        const isChecked = editQuestionIds.includes(q.id);
+                        const qCount = getQuestionItems(q).length;
+                        return (
+                          <button
+                            key={q.id}
+                            type="button"
+                            onClick={() => {
+                              if (isChecked) {
+                                setEditQuestionIds((prev) => prev.filter((id) => id !== q.id));
+                              } else {
+                                setEditQuestionIds((prev) => [...prev, q.id]);
+                              }
+                            }}
+                            className={`p-2.5 rounded-xl border text-left text-xs font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                              isChecked
+                                ? "bg-white border-[#51465B] text-[#51465B] shadow-xs font-bold ring-1 ring-[#51465B]"
+                                : "bg-white/80 border-slate-200 text-slate-600 hover:bg-white"
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="font-mono text-[10px] block text-slate-400">{q.id}</span>
+                              <span className="truncate block font-bold text-xs text-[#23212A]">
+                                {q.topic || q.question_text.slice(0, 40)}
+                              </span>
+                              <span className="text-[10px] text-slate-500">{qCount} Butir • {q.subject}</span>
+                            </div>
+                            <div
+                              className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white text-[10px] ${
+                                isChecked ? "bg-[#51465B]" : "border border-slate-300"
+                              }`}
+                            >
+                              {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1212,12 +1297,32 @@ function TeacherRoomsContent() {
                 {(roomType === "question" || roomType === "both") && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-gray-200">
-                        Pilih Soal ({questions.length})
-                      </label>
-                      <span className="text-[11px] text-[#FFD36D] font-medium flex items-center gap-1">
-                        Geser horizontal &rarr;
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-gray-200">
+                          Pilih Soal ({questions.length})
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD36D] text-[#251E2B] font-black">
+                          {selectedQuestionIds.length} Dipilih
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedQuestionIds.length === questions.length) {
+                              setSelectedQuestionIds([]);
+                            } else {
+                              setSelectedQuestionIds(questions.map((q) => q.id));
+                            }
+                          }}
+                          className="text-[11px] text-[#FFD36D] hover:underline font-bold cursor-pointer"
+                        >
+                          {selectedQuestionIds.length === questions.length ? "Hapus Pilihan" : "Pilih Semua"}
+                        </button>
+                        <span className="text-[11px] text-gray-400 font-medium">
+                          &bull; Geser &rarr;
+                        </span>
+                      </div>
                     </div>
 
                     {questions.length === 0 ? (
@@ -1227,27 +1332,24 @@ function TeacherRoomsContent() {
                     ) : (
                       <div className="flex items-stretch gap-3 overflow-x-auto pb-2.5 pt-1 -mx-1 px-1 scrollbar-thin">
                         {questions.map((q) => {
-                          const isSelected =
-                            roomType === "both"
-                              ? secondaryResourceId === q.id
-                              : selectedResourceId === q.id;
-
+                          const isSelected = selectedQuestionIds.includes(q.id);
                           const questionTitle = q.topic || q.question_text || "Butir Soal";
+                          const qItemsCount = getQuestionItems(q).length;
 
                           return (
                             <button
                               key={q.id}
                               type="button"
                               onClick={() => {
-                                if (roomType === "both") {
-                                  setSecondaryResourceId(q.id);
+                                if (isSelected) {
+                                  setSelectedQuestionIds((prev) => prev.filter((id) => id !== q.id));
                                 } else {
-                                  setSelectedResourceId(q.id);
+                                  setSelectedQuestionIds((prev) => [...prev, q.id]);
                                 }
                               }}
-                              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer min-w-[200px] max-w-[240px] shrink-0 flex flex-col justify-between gap-3 group active:scale-95 ${
+                              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer min-w-[210px] max-w-[250px] shrink-0 flex flex-col justify-between gap-3 group active:scale-95 ${
                                 isSelected
-                                  ? "border-[#FFD36D] bg-[#FFD36D]/15 shadow-md shadow-[#FFD36D]/10 ring-1 ring-[#FFD36D]"
+                                  ? "border-[#FFD36D] bg-[#FFD36D]/20 shadow-md shadow-[#FFD36D]/15 ring-2 ring-[#FFD36D]"
                                   : "border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30"
                               }`}
                             >
@@ -1261,10 +1363,12 @@ function TeacherRoomsContent() {
                                 >
                                   {q.id}
                                 </span>
-                                {isSelected && (
+                                {isSelected ? (
                                   <span className="w-5 h-5 rounded-full bg-[#FFD36D] text-[#251E2B] flex items-center justify-center shrink-0 shadow-xs">
                                     <Check className="w-3 h-3 stroke-[3]" />
                                   </span>
+                                ) : (
+                                  <span className="w-5 h-5 rounded-full border border-white/25 flex items-center justify-center shrink-0" />
                                 )}
                               </div>
 
@@ -1275,6 +1379,11 @@ function TeacherRoomsContent() {
                                 title={questionTitle}
                               >
                                 {questionTitle}
+                              </div>
+
+                              <div className="flex items-center justify-between text-[10px] text-gray-400 border-t border-white/10 pt-2">
+                                <span>{q.subject}</span>
+                                <span className="font-bold text-[#FFD36D]">{qItemsCount} Butir</span>
                               </div>
                             </button>
                           );

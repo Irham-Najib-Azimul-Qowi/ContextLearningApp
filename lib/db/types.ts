@@ -132,6 +132,107 @@ export function getQuestionItems(q: Question): QuestionItem[] {
   ];
 }
 
+export function resolveRoomQuestions(
+  resourceIdString?: string,
+  availableQuestions: Question[] = []
+): {
+  questions: Question[];
+  combinedQuestion: Question | null;
+  allItems: QuestionItem[];
+} {
+  if (!resourceIdString || !resourceIdString.trim()) {
+    return { questions: [], combinedQuestion: null, allItems: [] };
+  }
+
+  const idTokens = resourceIdString
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  const matchedQuestions: Question[] = [];
+  const seenIds = new Set<string>();
+
+  for (const token of idTokens) {
+    const found = availableQuestions.find(
+      (q) => (q.id || "").toLowerCase() === token
+    );
+    if (found && !seenIds.has(found.id.toLowerCase())) {
+      seenIds.add(found.id.toLowerCase());
+      matchedQuestions.push(found);
+    }
+  }
+
+  if (matchedQuestions.length === 0) {
+    return { questions: [], combinedQuestion: null, allItems: [] };
+  }
+
+  const allItems: QuestionItem[] = matchedQuestions.flatMap((q, qIdx) => {
+    const items = getQuestionItems(q);
+    return items.map((it, itIdx) => ({
+      ...it,
+      id: it.id || `${q.id}-item-${qIdx + 1}-${itIdx + 1}`,
+    }));
+  });
+
+  const firstQ = matchedQuestions[0];
+  const hasMc = allItems.some((it) => it.type === "multiple_choice");
+  const hasEssay = allItems.some((it) => it.type === "essay");
+  const combinedType: "multiple_choice" | "essay" | "mixed" =
+    hasMc && hasEssay ? "mixed" : hasEssay ? "essay" : "multiple_choice";
+
+  const combinedQuestion: Question = {
+    ...firstQ,
+    id: matchedQuestions.map((q) => q.id).join(","),
+    topic:
+      matchedQuestions.length > 1
+        ? matchedQuestions.map((q) => q.topic).filter(Boolean).join(" • ")
+        : firstQ.topic,
+    type: combinedType,
+    items: allItems,
+  };
+
+  return {
+    questions: matchedQuestions,
+    combinedQuestion,
+    allItems,
+  };
+}
+
+export function resolveRoomMaterials(
+  resourceIdString?: string,
+  availableMaterials: LearningMaterial[] = []
+): {
+  materials: LearningMaterial[];
+  primaryMaterial: LearningMaterial | null;
+} {
+  if (!resourceIdString || !resourceIdString.trim()) {
+    return { materials: [], primaryMaterial: null };
+  }
+
+  const idTokens = resourceIdString
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  const matchedMaterials: LearningMaterial[] = [];
+  const seenIds = new Set<string>();
+
+  for (const token of idTokens) {
+    const found = availableMaterials.find(
+      (m) => (m.id || "").toLowerCase() === token
+    );
+    if (found && !seenIds.has(found.id.toLowerCase())) {
+      seenIds.add(found.id.toLowerCase());
+      matchedMaterials.push(found);
+    }
+  }
+
+  return {
+    materials: matchedMaterials,
+    primaryMaterial: matchedMaterials[0] || null,
+  };
+}
+
 export interface LearningMaterial {
   id: string;
   school_id: string;

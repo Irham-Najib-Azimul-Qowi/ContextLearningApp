@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question, School, getQuestionItems } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, School, getQuestionItems, resolveRoomQuestions } from "@/lib/db/types";
 
 interface PrintRoomPageProps {
   params: Promise<{ code: string }>;
@@ -66,8 +66,8 @@ export default function PrintRoomPage({ params }: PrintRoomPageProps) {
             localRoom.type === "both"
               ? localRoom.secondary_resource_id
               : localRoom.resource_id;
-          const q = repository.getQuestions().find((item) => item.id === qId);
-          if (q) setQuestion(q);
+          const { combinedQuestion } = resolveRoomQuestions(qId, repository.getQuestions());
+          if (combinedQuestion) setQuestion(combinedQuestion);
         }
       }
 

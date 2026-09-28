@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createLkbClient } from "@/lib/supabase/server";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, resolveRoomQuestions } from "@/lib/db/types";
 
 export const dynamic = "force-dynamic";
 
@@ -102,26 +102,22 @@ export async function GET(
           ? matchedRoom.secondary_resource_id
           : matchedRoom.resource_id;
 
-      // Search in teacher's synced questions
+      // Collect available questions from creator, synced users, and repository
+      const pool: Question[] = [];
       if (matchedTeacherRow && Array.isArray(matchedTeacherRow.questions)) {
-        resolvedQuestion =
-          matchedTeacherRow.questions.find((q: any) => q.id === qId) || null;
+        pool.push(...matchedTeacherRow.questions);
       }
-
-      // Search across all teachers
-      if (!resolvedQuestion && Array.isArray(rows)) {
+      if (Array.isArray(rows)) {
         for (const row of rows) {
           if (Array.isArray(row.questions)) {
-            resolvedQuestion = row.questions.find((q: any) => q.id === qId) || null;
-            if (resolvedQuestion) break;
+            pool.push(...row.questions);
           }
         }
       }
+      pool.push(...repository.getQuestions());
 
-      // Search in repository SEED_QUESTIONS
-      if (!resolvedQuestion) {
-        resolvedQuestion = repository.getQuestions().find((q) => q.id === qId) || null;
-      }
+      const { combinedQuestion } = resolveRoomQuestions(qId, pool);
+      resolvedQuestion = combinedQuestion;
     }
 
     return NextResponse.json({

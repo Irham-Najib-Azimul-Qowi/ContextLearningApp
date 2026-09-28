@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { repository } from "../lib/db/repository";
+import { resolveRoomQuestions } from "../lib/db/types";
 
 test("Examination & Assessment Scoring Engine Tests", async (t) => {
   await t.test("Multiple Choice deterministic auto-grading computes accurately", () => {
@@ -84,4 +85,45 @@ test("Examination & Assessment Scoring Engine Tests", async (t) => {
     assert.strictEqual(saved.items?.length, 2, "Items length should be preserved");
     assert.strictEqual(saved.question_text, "Berapa keliling caplokan dadak merak berdiameter 70 cm?", "Fallback question text should match first item");
   });
+
+  await t.test("Room Multi-Question & Content Resolution: resolves all 5 questions and their items completely", () => {
+    // Create 5 distinct questions in repository
+    const createdIds: string[] = [];
+    for (let i = 1; i <= 5; i++) {
+      const q = repository.saveQuestion({
+        id: `sol-test-room-${i}`,
+        school_id: "sch-ponorogo-01",
+        teacher_id: "usr-teacher-01",
+        subject: "Matematika",
+        grade: 5,
+        topic: `Topik Soal #${i}`,
+        type: i % 2 === 0 ? "essay" : "multiple_choice",
+        question_text: `Pertanyaan butir nomor ${i} tentang pasar Ponorogo`,
+        options: i % 2 === 0 ? [] : [
+          { key: "A", text: "Opsi A" },
+          { key: "B", text: "Opsi B" },
+          { key: "C", text: "Opsi C" },
+          { key: "D", text: "Opsi D" },
+        ],
+        correct_answer: "B",
+        explanation: `Pembahasan soal nomor ${i}`,
+      });
+      createdIds.push(q.id);
+    }
+
+    assert.strictEqual(createdIds.length, 5);
+
+    // Resolve comma-separated IDs
+    const commaSeparated = createdIds.join(",");
+    const allQuestions = repository.getQuestions();
+    const { questions, combinedQuestion, allItems } = resolveRoomQuestions(commaSeparated, allQuestions);
+
+    assert.strictEqual(questions.length, 5, "Must resolve all 5 questions");
+    assert.strictEqual(allItems.length, 5, "Must contain all 5 question items");
+    assert.ok(combinedQuestion, "Combined question must be formed");
+    assert.strictEqual(combinedQuestion?.items?.length, 5, "Combined question must hold all 5 items");
+    assert.strictEqual(allItems[4].question_text, "Pertanyaan butir nomor 5 tentang pasar Ponorogo");
+    assert.strictEqual(allItems[4].explanation, "Pembahasan soal nomor 5");
+  });
 });
+

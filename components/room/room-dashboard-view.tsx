@@ -18,13 +18,18 @@ import {
   FileText,
   AlertCircle,
   FileQuestion,
+  BookOpen,
+  Layers,
+  MapPin,
 } from "lucide-react";
 import { LearningRoom, Question, LearningMaterial, RoomVisitor, getQuestionItems } from "@/lib/db/types";
 
 export interface RoomDashboardViewProps {
   room: LearningRoom;
   material?: LearningMaterial | null;
+  materials?: LearningMaterial[];
   question?: Question | null;
+  questions?: Question[];
   onRefresh?: () => void;
 }
 
@@ -49,7 +54,9 @@ interface SubmissionRecord {
 export function RoomDashboardView({
   room,
   material,
+  materials,
   question,
+  questions,
   onRefresh,
 }: RoomDashboardViewProps) {
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
@@ -269,149 +276,279 @@ export function RoomDashboardView({
       </div>
 
       {/* ============================================================== */}
-      {/* 2. PRATINJAU KONTEN & BUTIR SOAL DI ROOM INI                    */}
+      {/* 2. PRATINJAU KONTEN & PEMBAHASAN DI ROOM INI                   */}
       {/* ============================================================== */}
-      {question && (() => {
-        const qItems = getQuestionItems(question);
-        const mcCount = qItems.filter((i) => i.type === "multiple_choice").length;
-        const essayCount = qItems.filter((i) => i.type === "essay").length;
+      {(() => {
+        const resolvedMaterials =
+          materials && materials.length > 0
+            ? materials
+            : material
+            ? [material]
+            : [];
+
+        const resolvedQuestions =
+          questions && questions.length > 0
+            ? questions
+            : question
+            ? [question]
+            : [];
+
+        const allQuestionItems = resolvedQuestions.flatMap((q, qIdx) =>
+          getQuestionItems(q).map((it, itIdx) => ({
+            ...it,
+            id: it.id || `${q.id}-item-${qIdx + 1}-${itIdx + 1}`,
+          }))
+        );
+
+        const hasMaterials = resolvedMaterials.length > 0;
+        const hasQuestions = allQuestionItems.length > 0;
+
+        if (!hasMaterials && !hasQuestions) {
+          return (
+            <div className="bg-white rounded-3xl border-2 border-dashed border-slate-200 p-6 sm:p-8 text-center space-y-2">
+              <Layers className="w-8 h-8 text-slate-400 mx-auto" />
+              <h4 className="text-sm font-bold text-slate-700">Belum Ada Konten Terhubung</h4>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                Ruang belajar ini belum memiliki modul materi atau paket soal yang terpasang. Klik tombol &ldquo;Edit&rdquo; di atas untuk memilih materi atau soal.
+              </p>
+            </div>
+          );
+        }
 
         return (
-          <div className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-5 sm:p-7 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] flex items-center gap-1.5">
-                  <FileQuestion className="w-3.5 h-3.5 text-[#51465B]" />
-                  Paket Soal Terhubung di Room Ini
-                </span>
-                <h3 className="text-base font-black text-[#23212A] tracking-tight">
-                  {question.topic || "Latihan Mandiri"}
-                </h3>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-[#51465B] text-[#FFD36D]">
-                  Total {qItems.length} Butir Soal
-                </span>
-                {mcCount > 0 && (
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                    {mcCount} Pilihan Ganda
-                  </span>
-                )}
-                {essayCount > 0 && (
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
-                    {essayCount} Esai
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Stimulus wacana if present */}
-            {question.question_text &&
-              qItems.length > 1 &&
-              question.question_text !== qItems[0]?.question_text && (
-                <div className="p-3.5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs font-medium text-[#23212A] leading-relaxed">
-                  <span className="text-[10px] font-black uppercase text-[#51465B] block mb-1">
-                    Wacana / Stimulus Kontekstual:
-                  </span>
-                  {question.question_text}
-                </div>
-              )}
-
-            {/* List of items */}
-            <div className="space-y-4 pt-1">
-              {qItems.map((item, idx) => {
-                const isMc = item.type === "multiple_choice";
-                const isEs = item.type === "essay";
-
-                return (
+          <div className="space-y-5">
+            {/* PRATINJAU MODUL MATERI (Jika Ada) */}
+            {hasMaterials && (
+              <div className="space-y-4">
+                {resolvedMaterials.map((mat) => (
                   <div
-                    key={item.id || idx}
-                    className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3"
+                    key={mat.id}
+                    className="bg-white rounded-3xl border-2 border-[#51465B]/20 p-5 sm:p-7 shadow-xs space-y-4"
                   >
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-200 flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
-                          {idx + 1}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-[#51465B]" />
+                          Modul Materi Pembelajaran Terhubung
                         </span>
-                        <span className="text-xs font-black text-[#23212A]">
-                          Soal Nomor {idx + 1}
-                        </span>
+                        <h3 className="text-base font-black text-[#23212A] tracking-tight">
+                          {mat.title}
+                        </h3>
                       </div>
 
-                      <span
-                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
-                          isEs
-                            ? "bg-purple-100 text-purple-900 border border-purple-200"
-                            : "bg-amber-100 text-amber-900 border border-amber-200"
-                        }`}
-                      >
-                        {isEs ? "Soal Uraian / Esai" : "Pilihan Ganda"}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#51465B]/10 text-[#51465B]">
+                          {mat.subject} • Kelas {mat.grade} SD
+                        </span>
+                        {mat.is_contextualized && (
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                            <span>Terkontekstualisasi</span>
+                          </span>
+                        )}
+                        <span className="font-mono text-[11px] font-bold text-slate-400">
+                          {mat.id}
+                        </span>
+                      </div>
                     </div>
 
-                    <p className="text-xs sm:text-sm font-bold text-[#23212A] leading-relaxed">
-                      {item.question_text}
-                    </p>
-
-                    {/* Options if Multiple Choice */}
-                    {isMc && item.options && item.options.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                        {item.options.map((opt) => {
-                          const isCorrect =
-                            item.correct_answer === opt.key || item.correct_answer === opt.text;
-                          return (
-                            <div
-                              key={opt.key}
-                              className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 ${
-                                isCorrect
-                                  ? "bg-emerald-50 border-emerald-400 text-emerald-950 font-bold shadow-2xs"
-                                  : "bg-white border-slate-200 text-[#23212A]"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
-                                    isCorrect ? "bg-emerald-600 text-white" : "bg-slate-100 text-[#23212A]"
-                                  }`}
-                                >
-                                  {opt.key}
-                                </span>
-                                <span>{opt.text}</span>
-                              </div>
-                              {isCorrect && (
-                                <span className="text-[9px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-full">
-                                  Kunci Jawaban
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
+                    {/* Image if present */}
+                    {mat.image_url && (
+                      <div className="rounded-2xl overflow-hidden border border-slate-200 max-w-lg bg-slate-50">
+                        <img
+                          src={mat.image_url}
+                          alt={mat.image_alt || mat.title}
+                          className="w-full h-48 object-cover"
+                        />
+                        {(mat.image_caption || mat.image_attribution) && (
+                          <div className="p-2.5 bg-slate-50 text-[10px] text-slate-500">
+                            {mat.image_caption && <p className="font-semibold">{mat.image_caption}</p>}
+                            {mat.image_attribution && <p className="text-[9px] text-slate-400">Sumber: {mat.image_attribution}</p>}
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Rubrik if Essay */}
-                    {isEs && item.rubric && (
-                      <div className="p-3 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 font-medium space-y-1">
-                        <span className="font-bold block text-purple-900">Rubrik Penilaian:</span>
-                        <p className="leading-relaxed">{item.rubric}</p>
+                    {/* Narrative Reading Content */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black uppercase text-[#51465B] block">
+                        Isi Bacaan Naskah Materi:
+                      </span>
+                      <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-xs sm:text-sm text-[#23212A] font-medium leading-relaxed whitespace-pre-wrap max-h-72 overflow-y-auto">
+                        {mat.content}
                       </div>
-                    )}
+                    </div>
 
-                    {/* Explanation if available */}
-                    {item.explanation && (
-                      <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 font-medium space-y-1">
-                        <span className="font-bold flex items-center gap-1.5 text-amber-900">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                          Pembahasan Guru:
+                    {/* Context variables chips if present */}
+                    {Array.isArray(mat.context_variables) && mat.context_variables.length > 0 && (
+                      <div className="pt-1">
+                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-1.5">
+                          Unsur Konteks Wilayah Terhubung:
                         </span>
-                        <p className="leading-relaxed text-slate-800">{item.explanation}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {mat.context_variables.map((cv: any, cIdx: number) => (
+                            <span
+                              key={cIdx}
+                              className="px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-bold flex items-center gap-1"
+                            >
+                              <MapPin className="w-2.5 h-2.5 text-amber-600" />
+                              <span>{cv.replacement_value || cv.text || cv.matched_term}</span>
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* PRATINJAU PAKET SOAL & PEMBAHASAN (Jika Ada) */}
+            {hasQuestions && (() => {
+              const mcCount = allQuestionItems.filter((i) => i.type === "multiple_choice").length;
+              const essayCount = allQuestionItems.filter((i) => i.type === "essay").length;
+              const combinedTopic =
+                resolvedQuestions.map((q) => q.topic).filter(Boolean).join(" • ") ||
+                (question?.topic ? question.topic : "Latihan Mandiri");
+
+              return (
+                <div className="bg-white rounded-3xl border-2 border-[#FFD36D] p-5 sm:p-7 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#51465B] flex items-center gap-1.5">
+                        <FileQuestion className="w-3.5 h-3.5 text-[#51465B]" />
+                        Paket Soal & Pembahasan Terhubung di Room Ini
+                      </span>
+                      <h3 className="text-base font-black text-[#23212A] tracking-tight">
+                        {combinedTopic}
+                      </h3>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-[#51465B] text-[#FFD36D]">
+                        Total {allQuestionItems.length} Butir Soal
+                      </span>
+                      {mcCount > 0 && (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          {mcCount} Pilihan Ganda
+                        </span>
+                      )}
+                      {essayCount > 0 && (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                          {essayCount} Esai
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* List of ALL items (1 to 5 or more) */}
+                  <div className="space-y-4 pt-1">
+                    {allQuestionItems.map((item, idx) => {
+                      const isMc = item.type === "multiple_choice";
+                      const isEs = item.type === "essay";
+
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3"
+                        >
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-200 flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="text-xs font-black text-[#23212A]">
+                                Soal Nomor {idx + 1}
+                              </span>
+                            </div>
+
+                            <span
+                              className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                                isEs
+                                  ? "bg-purple-100 text-purple-900 border border-purple-200"
+                                  : "bg-amber-100 text-amber-900 border border-amber-200"
+                              }`}
+                            >
+                              {isEs ? "Soal Uraian / Esai" : "Pilihan Ganda"}
+                            </span>
+                          </div>
+
+                          <p className="text-xs sm:text-sm font-bold text-[#23212A] leading-relaxed">
+                            {item.question_text}
+                          </p>
+
+                          {/* Image if present in item */}
+                          {item.image_url && (
+                            <div className="rounded-xl overflow-hidden border border-slate-200 max-w-sm">
+                              <img
+                                src={item.image_url}
+                                alt={item.image_alt || `Soal ${idx + 1}`}
+                                className="w-full h-36 object-cover"
+                              />
+                            </div>
+                          )}
+
+                          {/* Options if Multiple Choice */}
+                          {isMc && item.options && item.options.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                              {item.options.map((opt) => {
+                                const isCorrect =
+                                  item.correct_answer === opt.key || item.correct_answer === opt.text;
+                                return (
+                                  <div
+                                    key={opt.key}
+                                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 ${
+                                      isCorrect
+                                        ? "bg-emerald-50 border-emerald-400 text-emerald-950 font-bold shadow-2xs"
+                                        : "bg-white border-slate-200 text-[#23212A]"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                          isCorrect ? "bg-emerald-600 text-white" : "bg-slate-100 text-[#23212A]"
+                                        }`}
+                                      >
+                                        {opt.key}
+                                      </span>
+                                      <span>{opt.text}</span>
+                                    </div>
+                                    {isCorrect && (
+                                      <span className="text-[9px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-full">
+                                        Kunci Jawaban
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Rubrik if Essay */}
+                          {isEs && item.rubric && (
+                            <div className="p-3 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 font-medium space-y-1">
+                              <span className="font-bold block text-purple-900">Rubrik Penilaian:</span>
+                              <p className="leading-relaxed">{item.rubric}</p>
+                            </div>
+                          )}
+
+                          {/* Explanation / Pembahasan Lengkap Guru */}
+                          {item.explanation && (
+                            <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 font-medium space-y-1">
+                              <span className="font-bold flex items-center gap-1.5 text-amber-900">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                                Pembahasan Guru:
+                              </span>
+                              <p className="leading-relaxed text-slate-800">{item.explanation}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
@@ -627,8 +764,21 @@ export function RoomDashboardView({
             </div>
 
             {/* Pertanyaan Soal */}
-            {question && (() => {
-              const allItems = getQuestionItems(question);
+            {(() => {
+              const resolvedQuestions =
+                questions && questions.length > 0
+                  ? questions
+                  : question
+                  ? [question]
+                  : [];
+              const allItems = resolvedQuestions.flatMap((q, qIdx) =>
+                getQuestionItems(q).map((it, itIdx) => ({
+                  ...it,
+                  id: it.id || `${q.id}-item-${qIdx + 1}-${itIdx + 1}`,
+                }))
+              );
+              if (allItems.length === 0) return null;
+
               const essayItems = allItems.filter((it) => it.type === "essay");
               const mcItems = allItems.filter((it) => it.type === "multiple_choice");
 
@@ -660,7 +810,7 @@ export function RoomDashboardView({
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
                         Pertanyaan Soal:
                       </span>
-                      <p className="font-bold text-[#23212A]">{question.question_text}</p>
+                      <p className="font-bold text-[#23212A]">{allItems[0]?.question_text}</p>
                     </div>
                   )}
 

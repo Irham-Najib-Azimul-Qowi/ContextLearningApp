@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question, getQuestionItems } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, getQuestionItems, resolveRoomQuestions } from "@/lib/db/types";
 
 export default function RoomViewerPage() {
   const params = useParams();
@@ -81,8 +81,8 @@ export default function RoomViewerPage() {
 
         if (localRoom.type === "question" || localRoom.type === "both") {
           const qId = localRoom.type === "both" ? localRoom.secondary_resource_id : localRoom.resource_id;
-          const qPrimary = allQs.find((item) => item.id === qId) || null;
-          setQuestion(qPrimary);
+          const { combinedQuestion } = resolveRoomQuestions(qId, allQs);
+          setQuestion(combinedQuestion);
         }
       }
 
