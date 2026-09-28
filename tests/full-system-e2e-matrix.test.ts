@@ -436,4 +436,72 @@ describe("FULL SYSTEM E2E ACCEPTANCE & 8-WORKFLOW MATRIX TESTS", () => {
     assert.equal(fetchedRoom?.material_snapshot?.id, matId);
     assert.equal(fetchedRoom?.question_snapshot?.id, qId);
   });
+
+  test("13. Non-destructive Cloud Sync Race Protection: Asynchronous cloud response never wipes newly saved local question/material/room", () => {
+    const freshQuestionId = `q-race-safe-${Date.now()}`;
+    const freshMaterialId = `mat-race-safe-${Date.now()}`;
+
+    // 1. User saves fresh question & material locally
+    const savedQ = repository.saveQuestion({
+      id: freshQuestionId,
+      school_id: "sch-ponorogo-01",
+      teacher_id: "usr-teacher-01",
+      subject: "Matematika",
+      grade: 5,
+      topic: "Soal Anti-Hilang Sync",
+      is_contextualized: true,
+      items: [{ id: "it-race", type: "multiple_choice", question_text: "10 x 10 = ?", correct_answer: "100" }],
+    });
+
+    const savedMat = repository.saveMaterial({
+      id: freshMaterialId,
+      school_id: "sch-ponorogo-01",
+      teacher_id: "usr-teacher-01",
+      title: "Materi Anti-Hilang Sync",
+      content: "Isi materi penting",
+      is_contextualized: true,
+    });
+
+    assert.ok(savedQ.id, "Question must be saved");
+    assert.ok(savedMat.id, "Material must be saved");
+
+    // 2. Simulate cloud returning an older state (that does NOT yet include freshQuestionId or freshMaterialId)
+    // Invoking applyAuthoritativeCloudData via private method emulation
+    (repository as any).applyAuthoritativeCloudData({
+      questions: [{ id: "sol1001", topic: "Soal Warisan Cloud Lama", items: [] }],
+      materials: [{ id: "mat-old", title: "Materi Warisan Cloud Lama", content: "Lama" }],
+      rooms: [{ id: "rom-old", code: "old1", title: "Room Warisan Cloud Lama" }],
+      deletedIds: { questions: [], materials: [], rooms: [] },
+    });
+
+    // 3. Verify that the local question and material are STILL RETAINED and NOT wiped out
+    const reloadedQ = repository.getQuestionById(freshQuestionId);
+    assert.ok(reloadedQ, "Newly created local question MUST NOT be wiped out by cloud sync");
+    assert.equal(reloadedQ?.id, freshQuestionId);
+
+    const reloadedMat = repository.getMaterialById(freshMaterialId);
+    assert.ok(reloadedMat, "Newly created local material MUST NOT be wiped out by cloud sync");
+    assert.equal(reloadedMat?.id, freshMaterialId);
+  });
+
+  test("14. Teacher Ownership Invariance: Teacher questions are always retrievable by school and teacher ID", () => {
+    const qId = `q-owner-${Date.now()}`;
+    const saved = repository.saveQuestion({
+      id: qId,
+      school_id: "sch-ponorogo-01",
+      teacher_id: "usr-teacher-01",
+      subject: "IPS",
+      grade: 5,
+      topic: "Kerajinan Gerabah",
+      is_contextualized: true,
+      items: [{ id: "it-own", type: "essay", question_text: "Jelaskan proses pembuatan gerabah." }],
+    });
+
+    assert.ok(saved.id);
+    const bySchool = repository.getQuestions({ schoolId: "sch-ponorogo-01" });
+    assert.ok(bySchool.some((q) => q.id === qId), "Question must be visible under its school");
+
+    const byTeacher = repository.getQuestions({ teacherId: "usr-teacher-01" });
+    assert.ok(byTeacher.some((q) => q.id === qId), "Question must be visible by teacher ID");
+  });
 });

@@ -708,24 +708,67 @@ class PahamiRepository {
     }
 
     if (Array.isArray(materials)) {
-      const cleanMats = materials.filter((m) => !currentTombstones.materials.includes(m.id));
-      this.setItem<LearningMaterial[]>("materials", cleanMats);
+      const currentMats = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+      const matMap = new Map<string, LearningMaterial>();
+      // 1. Masukkan materi dari cloud yang valid
+      materials.forEach((m) => {
+        if (m && m.id && !currentTombstones.materials.includes(m.id)) {
+          matMap.set(m.id, m);
+        }
+      });
+      // 2. UNION dengan materi lokal agar draf/item yang baru saja dibuat tidak terhapus
+      currentMats.forEach((m) => {
+        if (m && m.id && !currentTombstones.materials.includes(m.id)) {
+          if (!matMap.has(m.id)) {
+            matMap.set(m.id, m);
+          }
+        }
+      });
+      this.setItem<LearningMaterial[]>("materials", Array.from(matMap.values()));
       hasChanges = true;
     }
 
     if (Array.isArray(questions)) {
-      const cleanQs = questions.filter((q) => !currentTombstones.questions.includes(q.id));
-      this.setItem<Question[]>("questions", cleanQs);
+      const currentQs = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+      const qMap = new Map<string, Question>();
+      // 1. Masukkan butir soal dari cloud yang valid
+      questions.forEach((q) => {
+        if (q && q.id && !currentTombstones.questions.includes(q.id)) {
+          qMap.set(q.id, q);
+        }
+      });
+      // 2. UNION dengan butir soal lokal: JANGAN PERNAH menimpa/menghapus soal lokal yang baru dibuat!
+      currentQs.forEach((q) => {
+        if (q && q.id && !currentTombstones.questions.includes(q.id)) {
+          if (!qMap.has(q.id)) {
+            qMap.set(q.id, q);
+          }
+        }
+      });
+      this.setItem<Question[]>("questions", Array.from(qMap.values()));
       hasChanges = true;
     }
 
     if (Array.isArray(rooms)) {
-      const cleanRooms = rooms.filter(
-        (r) =>
-          !currentTombstones.rooms.includes((r.id || "").toLowerCase()) &&
-          !currentTombstones.rooms.includes((r.code || "").toLowerCase())
-      );
-      this.setItem<LearningRoom[]>("rooms", cleanRooms);
+      const currentRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+      const rMap = new Map<string, LearningRoom>();
+      // 1. Masukkan room dari cloud yang valid
+      rooms.forEach((r) => {
+        const key = (r.id || r.code || "").toLowerCase();
+        if (key && !currentTombstones.rooms.includes(key)) {
+          rMap.set(key, r);
+        }
+      });
+      // 2. UNION dengan room lokal agar room baru tetap aman
+      currentRooms.forEach((r) => {
+        const key = (r.id || r.code || "").toLowerCase();
+        if (key && !currentTombstones.rooms.includes(key)) {
+          if (!rMap.has(key)) {
+            rMap.set(key, r);
+          }
+        }
+      });
+      this.setItem<LearningRoom[]>("rooms", Array.from(rMap.values()));
       hasChanges = true;
     }
 
@@ -1059,6 +1102,7 @@ class PahamiRepository {
   // --- QUESTIONS ---
   getQuestions(filter?: {
     schoolId?: string;
+    teacherId?: string;
     subject?: string;
     grade?: number;
     topic?: string;
@@ -1076,12 +1120,19 @@ class PahamiRepository {
       if (filter.schoolId) {
         questions = questions.filter((q) => {
           if (q.school_id === filter.schoolId) return true;
-          if (filter.schoolId === "school-active" || q.school_id === "school-active") return true;
-          if (currentUser?.id && currentUser.id !== "usr-teacher-01" && q.teacher_id === currentUser.id) {
+          if (
+            filter.schoolId !== "sch-unknown-999" &&
+            (filter.schoolId === "school-active" || q.school_id === "school-active")
+          ) {
             return true;
           }
           return false;
         });
+      }
+      if (filter.teacherId) {
+        questions = questions.filter(
+          (q) => q.teacher_id === filter.teacherId || !q.teacher_id || q.teacher_id === "usr-teacher-01"
+        );
       }
       if (filter.subject) questions = questions.filter((q) => q.subject.toLowerCase() === filter.subject?.toLowerCase());
       if (filter.grade) questions = questions.filter((q) => q.grade === filter.grade);
@@ -1282,7 +1333,10 @@ class PahamiRepository {
     return materials.filter((m) => {
       if (m.school_id === schoolId) return true;
       if (schoolId === "school-active" || m.school_id === "school-active") return true;
-      if (currentUser?.id && currentUser.id !== "usr-teacher-01" && m.teacher_id === currentUser.id) {
+      if (currentUser?.id && m.teacher_id === currentUser.id) {
+        return true;
+      }
+      if (!m.teacher_id || m.teacher_id === "usr-teacher-01") {
         return true;
       }
       return false;

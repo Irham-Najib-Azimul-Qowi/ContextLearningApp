@@ -1,4 +1,3 @@
-// @ts-expect-error - pdf-parse lacks native TypeScript declarations
 import * as pdfModule from "pdf-parse";
 
 export interface PdfExtractResult {

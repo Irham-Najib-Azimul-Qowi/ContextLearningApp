@@ -7,11 +7,11 @@ import { cookies } from "next/headers";
  */
 export async function createClient() {
   const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    "";
+    "placeholder-anon-key";
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -36,12 +36,12 @@ export async function createClient() {
  * Does not depend on request cookies, safe for serverless Vercel edge/node execution.
  */
 export function createLkbClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
   const apiKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    "";
+    "placeholder-key";
 
   return createSupabaseJsClient(supabaseUrl, apiKey, {
     auth: {

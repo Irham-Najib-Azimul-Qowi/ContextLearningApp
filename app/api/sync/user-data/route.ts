@@ -413,11 +413,44 @@ export async function POST(request: Request) {
       );
 
     if (upsertError) {
-      console.error("[Sync POST] Upsert error:", upsertError);
-      return NextResponse.json(
-        { success: false, error: upsertError.message },
-        { status: 500 }
-      );
+      console.warn("[Sync POST] Upsert error, checking schema fallback:", upsertError.message);
+      // Fallback: jika kolom deleted_ids belum termigrasi di database, lakukan upsert tanpa deleted_ids
+      if (
+        upsertError.message?.includes("deleted_ids") ||
+        upsertError.details?.includes("deleted_ids") ||
+        upsertError.code === "PGRST204"
+      ) {
+        const { error: retryError } = await dbClient
+          .from("user_synced_data")
+          .upsert(
+            {
+              user_id: effectiveUserId,
+              user_email: effectiveEmail,
+              profile: finalProfile,
+              materials: finalMaterials,
+              questions: finalQuestions,
+              rooms: finalRooms,
+              schools: finalSchools,
+              active_school_id: finalActiveSchool,
+              onboarding_completed: finalOnboarding,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id" }
+          );
+
+        if (retryError) {
+          console.error("[Sync POST] Retry error without deleted_ids:", retryError);
+          return NextResponse.json(
+            { success: false, error: retryError.message },
+            { status: 500 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { success: false, error: upsertError.message },
+          { status: 500 }
+        );
+      }
     }
 
     // 3. Return the reconciled merged state so the client stays 100% in sync
