@@ -2,17 +2,17 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createLkbClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
+import { isIdOrCodeMatch } from "@/lib/db/types";
 
 // Helper functions for conflict-free data merging with tombstone support
 function cleanMaterials(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
-  const delSet = new Set(deletedIds);
   return list.filter(
     (m) =>
       m &&
       typeof m === "object" &&
       m.id &&
-      !delSet.has(m.id) &&
+      !deletedIds.some((del) => isIdOrCodeMatch(del, m.id, "material")) &&
       m.id !== "mat-test" &&
       m.title !== "Test Material Title"
   );
@@ -20,59 +20,63 @@ function cleanMaterials(list: any[], deletedIds: string[] = []): any[] {
 
 function cleanQuestions(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
-  const delSet = new Set(deletedIds);
-  return list.filter((q) => q && typeof q === "object" && q.id && !delSet.has(q.id));
+  return list.filter(
+    (q) =>
+      q &&
+      typeof q === "object" &&
+      q.id &&
+      !deletedIds.some((del) => isIdOrCodeMatch(del, q.id, "question"))
+  );
 }
 
 function cleanRooms(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
-  const delSet = new Set(deletedIds.map((id) => id.toLowerCase()));
   return list.filter(
     (r) =>
       r &&
       typeof r === "object" &&
       (r.id || r.code) &&
-      !delSet.has((r.id || "").toLowerCase()) &&
-      !delSet.has((r.code || "").toLowerCase())
+      !deletedIds.some((del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room"))
   );
 }
 
 function mergeMaterials(existing: any[], incoming: any[], deletedIds: string[] = []): any[] {
   const map = new Map<string, any>();
-  const delSet = new Set(deletedIds);
   cleanMaterials(existing, deletedIds).forEach((m) => {
-    if (!delSet.has(m.id)) map.set(m.id, m);
+    const key = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (key) map.set(key, m);
   });
   cleanMaterials(incoming, deletedIds).forEach((m) => {
-    if (!delSet.has(m.id)) map.set(m.id, m);
+    const key = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (key) map.set(key, m);
   });
   return Array.from(map.values());
 }
 
 function mergeQuestions(existing: any[], incoming: any[], deletedIds: string[] = []): any[] {
   const map = new Map<string, any>();
-  const delSet = new Set(deletedIds);
   cleanQuestions(existing, deletedIds).forEach((q) => {
-    if (!delSet.has(q.id)) map.set(q.id, q);
+    const key = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (key) map.set(key, q);
   });
   cleanQuestions(incoming, deletedIds).forEach((q) => {
-    if (!delSet.has(q.id)) map.set(q.id, q);
+    const key = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (key) map.set(key, q);
   });
   return Array.from(map.values());
 }
 
 function mergeRooms(existing: any[], incoming: any[], deletedIds: string[] = []): any[] {
   const map = new Map<string, any>();
-  const delSet = new Set(deletedIds.map((id) => id.toLowerCase()));
   cleanRooms(existing, deletedIds).forEach((r) => {
-    const key = (r.id || r.code || "").toLowerCase();
-    if (key && !delSet.has(key) && !delSet.has((r.code || "").toLowerCase())) {
+    const key = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (key) {
       map.set(key, r);
     }
   });
   cleanRooms(incoming, deletedIds).forEach((r) => {
-    const key = (r.id || r.code || "").toLowerCase();
-    if (key && !delSet.has(key) && !delSet.has((r.code || "").toLowerCase())) {
+    const key = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (key) {
       if (map.has(key)) {
         const prev = map.get(key);
         const combinedVisitors = [...(prev.visitors || [])];
@@ -81,7 +85,7 @@ function mergeRooms(existing: any[], incoming: any[], deletedIds: string[] = [])
             v &&
             v.name &&
             !combinedVisitors.some(
-              (cv) => cv.name?.toLowerCase() === v.name.toLowerCase()
+              (cv) => (cv.name || "").toLowerCase() === (v.name || "").toLowerCase()
             )
           ) {
             combinedVisitors.push(v);

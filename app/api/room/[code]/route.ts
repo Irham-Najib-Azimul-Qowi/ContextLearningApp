@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createLkbClient } from "@/lib/supabase/server";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question, resolveRoomQuestions } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, resolveRoomQuestions, isIdOrCodeMatch } from "@/lib/db/types";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +33,7 @@ export async function GET(
       for (const row of rows) {
         if (Array.isArray(row.rooms)) {
           for (const r of row.rooms) {
-            const rCode = (r.code || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-            const rId = (r.id || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-            if (rCode === cleanCode || rId === cleanCode) {
+            if (isIdOrCodeMatch(r.code, code, "room") || isIdOrCodeMatch(r.id, code, "room")) {
               matchedRoom = r;
               matchedTeacherRow = row;
               break;
@@ -48,13 +46,7 @@ export async function GET(
 
     // 2. Fallback to repository seed rooms if not in user_synced_data
     if (!matchedRoom) {
-      const seedRooms = repository.getRooms();
-      matchedRoom =
-        seedRooms.find((r) => {
-          const rCode = (r.code || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-          const rId = (r.id || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-          return rCode === cleanCode || rId === cleanCode;
-        }) || null;
+      matchedRoom = repository.getRoomByCode(code) || null;
     }
 
     if (!matchedRoom) {
@@ -75,14 +67,14 @@ export async function GET(
       // Search in teacher's synced materials
       if (matchedTeacherRow && Array.isArray(matchedTeacherRow.materials)) {
         resolvedMaterial =
-          matchedTeacherRow.materials.find((m: any) => m.id === matId) || null;
+          matchedTeacherRow.materials.find((m: any) => isIdOrCodeMatch(m.id, matId, "material")) || null;
       }
 
       // Search across all teachers if not found in creator's row
       if (!resolvedMaterial && Array.isArray(rows)) {
         for (const row of rows) {
           if (Array.isArray(row.materials)) {
-            resolvedMaterial = row.materials.find((m: any) => m.id === matId) || null;
+            resolvedMaterial = row.materials.find((m: any) => isIdOrCodeMatch(m.id, matId, "material")) || null;
             if (resolvedMaterial) break;
           }
         }

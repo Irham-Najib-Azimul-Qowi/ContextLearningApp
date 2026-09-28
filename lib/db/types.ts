@@ -135,6 +135,75 @@ export function getQuestionItems(q: Question): QuestionItem[] {
   ];
 }
 
+export type ResourceCategory = "room" | "material" | "question" | "unknown";
+
+export function detectResourceCategory(cleanStr: string): {
+  category: ResourceCategory;
+  stem: string;
+} {
+  if (!cleanStr) return { category: "unknown", stem: "" };
+  if (/^(room|rom|rm)/.test(cleanStr)) {
+    return { category: "room", stem: cleanStr.replace(/^(room|rom|rm)/, "") };
+  }
+  if (/^(materi|mat|mtr)/.test(cleanStr)) {
+    return { category: "material", stem: cleanStr.replace(/^(materi|mat|mtr)/, "") };
+  }
+  if (/^(soal|sol|que)/.test(cleanStr)) {
+    return { category: "question", stem: cleanStr.replace(/^(soal|sol|que)/, "") };
+  }
+  if (/^q[0-9]/.test(cleanStr)) {
+    return { category: "question", stem: cleanStr.substring(1) };
+  }
+  return { category: "unknown", stem: cleanStr };
+}
+
+export function isIdOrCodeMatch(
+  a: string | undefined | null,
+  b: string | undefined | null,
+  expectedCategory?: ResourceCategory
+): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+
+  const rawA = String(a).trim();
+  const rawB = String(b).trim();
+  if (rawA.toLowerCase() === rawB.toLowerCase()) return true;
+
+  const cleanA = rawA.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const cleanB = rawB.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!cleanA || !cleanB) return false;
+  if (cleanA === cleanB) return true;
+
+  const detA = detectResourceCategory(cleanA);
+  const detB = detectResourceCategory(cleanB);
+
+  // If both have explicit different categories, they cannot match (e.g. material vs question)
+  if (
+    detA.category !== "unknown" &&
+    detB.category !== "unknown" &&
+    detA.category !== detB.category
+  ) {
+    return false;
+  }
+
+  // If expected category is specified and either candidate is an opposing category, reject
+  if (
+    expectedCategory &&
+    expectedCategory !== "unknown" &&
+    ((detA.category !== "unknown" && detA.category !== expectedCategory) ||
+      (detB.category !== "unknown" && detB.category !== expectedCategory))
+  ) {
+    return false;
+  }
+
+  // Compare stems (e.g. "1001" and "rom1001" or "soal1001" and "sol1001")
+  if (detA.stem && detB.stem && detA.stem === detB.stem) {
+    return true;
+  }
+
+  return false;
+}
+
 export function resolveRoomQuestions(
   resourceIdString?: string,
   availableQuestions: Question[] = []
@@ -149,19 +218,14 @@ export function resolveRoomQuestions(
 
   const idTokens = resourceIdString
     .split(",")
-    .map((s) => s.trim().toLowerCase())
+    .map((s) => s.trim())
     .filter(Boolean);
 
   const matchedQuestions: Question[] = [];
   const seenIds = new Set<string>();
 
   for (const token of idTokens) {
-    const cleanToken = token.replace(/[^a-z0-9]/g, "");
-    const found = availableQuestions.find((q) => {
-      const qLower = (q.id || "").toLowerCase();
-      if (qLower === token) return true;
-      return cleanToken.length > 0 && qLower.replace(/[^a-z0-9]/g, "") === cleanToken;
-    });
+    const found = availableQuestions.find((q) => isIdOrCodeMatch(q.id, token, "question"));
     if (found && !seenIds.has(found.id.toLowerCase())) {
       seenIds.add(found.id.toLowerCase());
       matchedQuestions.push(found);
@@ -217,16 +281,14 @@ export function resolveRoomMaterials(
 
   const idTokens = resourceIdString
     .split(",")
-    .map((s) => s.trim().toLowerCase())
+    .map((s) => s.trim())
     .filter(Boolean);
 
   const matchedMaterials: LearningMaterial[] = [];
   const seenIds = new Set<string>();
 
   for (const token of idTokens) {
-    const found = availableMaterials.find(
-      (m) => (m.id || "").toLowerCase() === token
-    );
+    const found = availableMaterials.find((m) => isIdOrCodeMatch(m.id, token, "material"));
     if (found && !seenIds.has(found.id.toLowerCase())) {
       seenIds.add(found.id.toLowerCase());
       matchedMaterials.push(found);

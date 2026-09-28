@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createLkbClient } from "@/lib/supabase/server";
+import { isIdOrCodeMatch } from "@/lib/db/types";
 
 export async function POST(request: Request) {
   try {
@@ -145,8 +146,7 @@ export async function POST(request: Request) {
         let modified = false;
 
         const updatedRooms = row.rooms.map((r: any) => {
-          const rCode = (r.code || "").trim().toLowerCase();
-          if (rCode === cleanCode) {
+          if (isIdOrCodeMatch(r.code, room_code, "room") || isIdOrCodeMatch(r.id, room_code, "room")) {
             modified = true;
             r.access_count = (r.access_count || 0) + (existingSub ? 0 : 1);
             if (!r.visitors) r.visitors = [];

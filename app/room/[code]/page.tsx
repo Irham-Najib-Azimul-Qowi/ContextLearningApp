@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 import { repository } from "@/lib/db/repository";
-import { LearningRoom, LearningMaterial, Question, getQuestionItems, resolveRoomQuestions } from "@/lib/db/types";
+import { LearningRoom, LearningMaterial, Question, getQuestionItems, resolveRoomQuestions, isIdOrCodeMatch } from "@/lib/db/types";
 
 export default function RoomViewerPage() {
   const params = useParams();
@@ -75,7 +75,7 @@ export default function RoomViewerPage() {
         const allQs = repository.getQuestions();
 
         if (localRoom.type === "material" || localRoom.type === "both") {
-          const m = localRoom.material_snapshot || allMats.find((item) => item.id === localRoom.resource_id) || repository.getMaterialById(localRoom.resource_id, true) || null;
+          const m = localRoom.material_snapshot || repository.getMaterialById(localRoom.resource_id, true) || null;
           setMaterial(m);
         }
 

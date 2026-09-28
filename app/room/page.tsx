@@ -73,9 +73,12 @@ export default function RoomAccessPortalPage() {
     }
 
     const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const matchedRoom = repository.getRoomByCode(cleanCode);
+    const targetCode = matchedRoom?.code || cleanCode;
 
     // Save name locally for session
     try {
+      localStorage.setItem(`depaskan_reader_name_${targetCode}`, cleanName);
       localStorage.setItem(`depaskan_reader_name_${cleanCode}`, cleanName);
       localStorage.setItem("depaskan_last_reader_name", cleanName);
     } catch {
@@ -83,10 +86,10 @@ export default function RoomAccessPortalPage() {
     }
 
     // Record visitor
-    repository.recordRoomVisit(cleanCode, cleanName);
+    repository.recordRoomVisit(targetCode, cleanName);
 
     // Navigate to room viewer
-    router.push(`/room/${cleanCode}`);
+    router.push(`/room/${targetCode}`);
   };
 
   return (

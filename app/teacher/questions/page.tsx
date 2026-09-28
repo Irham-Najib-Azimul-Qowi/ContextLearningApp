@@ -1215,9 +1215,7 @@ function TeacherQuestionsContent() {
 
                 {/* Aggregated Rooms using this Question */}
                 {(() => {
-                  const roomsUsingQ = rooms.filter(
-                    (r) => r.resource_id === previewQuestion.id || r.secondary_resource_id === previewQuestion.id
-                  );
+                  const roomsUsingQ = repository.isContentUsedInRoom("question", previewQuestion.id).rooms;
                   const totalAccesses = roomsUsingQ.reduce(
                     (sum, r) => sum + (r.visitors?.length || r.access_count || 0),
                     0

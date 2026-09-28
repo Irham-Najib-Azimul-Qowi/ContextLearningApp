@@ -57,7 +57,7 @@ export default function PrintRoomPage({ params }: PrintRoomPageProps) {
         setRoom(localRoom);
 
         if (localRoom.type === "material" || localRoom.type === "both") {
-          const mat = repository.getMaterials().find((m) => m.id === localRoom.resource_id);
+          const mat = repository.getMaterialById(localRoom.resource_id, true);
           if (mat) setMaterial(mat);
         }
 

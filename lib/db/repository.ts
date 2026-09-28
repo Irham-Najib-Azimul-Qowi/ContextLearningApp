@@ -13,6 +13,7 @@ import {
   UserRole,
   LearningRoom,
   resolveRoomQuestions,
+  isIdOrCodeMatch,
 } from "./types";
 
 // ==============================================================================
@@ -710,17 +711,19 @@ class PahamiRepository {
     if (Array.isArray(materials)) {
       const currentMats = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
       const matMap = new Map<string, LearningMaterial>();
-      // 1. Masukkan materi dari cloud yang valid
+      // 1. Masukkan materi dari cloud yang tidak ada di tombstone
       materials.forEach((m) => {
-        if (m && m.id && !currentTombstones.materials.includes(m.id)) {
-          matMap.set(m.id, m);
+        if (m && m.id && !currentTombstones.materials.some((del) => isIdOrCodeMatch(del, m.id, "material"))) {
+          const canonical = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          matMap.set(canonical || m.id, m);
         }
       });
-      // 2. UNION dengan materi lokal agar draf/item yang baru saja dibuat tidak terhapus
+      // 2. UNION dengan materi lokal: item lokal yang belum di cloud tetap aman
       currentMats.forEach((m) => {
-        if (m && m.id && !currentTombstones.materials.includes(m.id)) {
-          if (!matMap.has(m.id)) {
-            matMap.set(m.id, m);
+        if (m && m.id && !currentTombstones.materials.some((del) => isIdOrCodeMatch(del, m.id, "material"))) {
+          const canonical = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (!matMap.has(canonical || m.id)) {
+            matMap.set(canonical || m.id, m);
           }
         }
       });
@@ -731,17 +734,19 @@ class PahamiRepository {
     if (Array.isArray(questions)) {
       const currentQs = this.getItem<Question[]>("questions", SEED_QUESTIONS);
       const qMap = new Map<string, Question>();
-      // 1. Masukkan butir soal dari cloud yang valid
+      // 1. Masukkan butir soal dari cloud yang tidak ada di tombstone
       questions.forEach((q) => {
-        if (q && q.id && !currentTombstones.questions.includes(q.id)) {
-          qMap.set(q.id, q);
+        if (q && q.id && !currentTombstones.questions.some((del) => isIdOrCodeMatch(del, q.id, "question"))) {
+          const canonical = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          qMap.set(canonical || q.id, q);
         }
       });
       // 2. UNION dengan butir soal lokal: JANGAN PERNAH menimpa/menghapus soal lokal yang baru dibuat!
       currentQs.forEach((q) => {
-        if (q && q.id && !currentTombstones.questions.includes(q.id)) {
-          if (!qMap.has(q.id)) {
-            qMap.set(q.id, q);
+        if (q && q.id && !currentTombstones.questions.some((del) => isIdOrCodeMatch(del, q.id, "question"))) {
+          const canonical = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (!qMap.has(canonical || q.id)) {
+            qMap.set(canonical || q.id, q);
           }
         }
       });
@@ -752,19 +757,45 @@ class PahamiRepository {
     if (Array.isArray(rooms)) {
       const currentRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
       const rMap = new Map<string, LearningRoom>();
-      // 1. Masukkan room dari cloud yang valid
+      // 1. Masukkan room dari cloud yang tidak ada di tombstone
       rooms.forEach((r) => {
-        const key = (r.id || r.code || "").toLowerCase();
-        if (key && !currentTombstones.rooms.includes(key)) {
-          rMap.set(key, r);
+        const isTombstoned = currentTombstones.rooms.some(
+          (del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room")
+        );
+        if (r && (r.id || r.code) && !isTombstoned) {
+          const canonical = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          rMap.set(canonical, r);
         }
       });
-      // 2. UNION dengan room lokal agar room baru tetap aman
+      // 2. UNION dengan room lokal agar room baru dan pengunjung lokal tetap terintegrasi
       currentRooms.forEach((r) => {
-        const key = (r.id || r.code || "").toLowerCase();
-        if (key && !currentTombstones.rooms.includes(key)) {
-          if (!rMap.has(key)) {
-            rMap.set(key, r);
+        const isTombstoned = currentTombstones.rooms.some(
+          (del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room")
+        );
+        if (r && (r.id || r.code) && !isTombstoned) {
+          const canonical = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (rMap.has(canonical)) {
+            const existing = rMap.get(canonical)!;
+            const combinedVisitors = [...(existing.visitors || [])];
+            (r.visitors || []).forEach((v: any) => {
+              if (
+                v &&
+                v.name &&
+                !combinedVisitors.some(
+                  (cv: any) => (cv.name || "").toLowerCase() === (v.name || "").toLowerCase()
+                )
+              ) {
+                combinedVisitors.push(v);
+              }
+            });
+            rMap.set(canonical, {
+              ...existing,
+              ...r,
+              access_count: Math.max(existing.access_count || 0, r.access_count || 0),
+              visitors: combinedVisitors,
+            });
+          } else {
+            rMap.set(canonical, r);
           }
         }
       });
@@ -1142,7 +1173,7 @@ class PahamiRepository {
   }
 
   getQuestion(id: string): Question | undefined {
-    return this.getQuestions({ includeArchived: true }).find((q) => q.id === id);
+    return this.getQuestionById(id, true);
   }
 
   getNextQuestionId(): string {
@@ -1262,12 +1293,13 @@ class PahamiRepository {
     rooms: LearningRoom[];
     activeRooms: LearningRoom[];
   } {
-    const cleanId = (id || "").toLowerCase().trim();
+    if (!id) return { isUsed: false, rooms: [], activeRooms: [] };
     const rooms = this.getRooms();
     const matched = rooms.filter((r) => {
-      const primary = (r.resource_id || "").toLowerCase().split(",").map((s) => s.trim());
-      const secondary = (r.secondary_resource_id || "").toLowerCase().split(",").map((s) => s.trim());
-      return primary.includes(cleanId) || secondary.includes(cleanId);
+      const primaryTokens = (r.resource_id || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const secondaryTokens = (r.secondary_resource_id || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const allTokens = [...primaryTokens, ...secondaryTokens];
+      return allTokens.some((tok) => isIdOrCodeMatch(tok, id, type));
     });
 
     const activeRooms = matched.filter((r) => r.status !== "closed" && r.status !== "archived");
@@ -1280,7 +1312,7 @@ class PahamiRepository {
 
   archiveQuestion(id: string): boolean {
     const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
-    const target = questions.find((q) => q.id === id);
+    const target = questions.find((q) => isIdOrCodeMatch(q.id, id, "question"));
     if (!target) return false;
 
     target.is_archived = true;
@@ -1300,14 +1332,19 @@ class PahamiRepository {
       return this.archiveQuestion(id);
     }
 
-    this.addDeletedId("question", id);
     const rawQuestions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
-    const filtered = rawQuestions.filter((q) => q.id !== id);
+    const target = rawQuestions.find((q) => isIdOrCodeMatch(q.id, id, "question"));
+    const targetId = target ? target.id : id;
+
+    this.addDeletedId("question", targetId);
+    if (id !== targetId) this.addDeletedId("question", id);
+
+    const filtered = rawQuestions.filter((q) => !isIdOrCodeMatch(q.id, id, "question"));
     this.setItem<Question[]>("questions", filtered);
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
-    this.syncToCloudImmediate({ deletedItem: { type: "question", id } });
+    this.syncToCloudImmediate({ deletedItem: { type: "question", id: targetId } });
     return true;
   }
 
@@ -1323,7 +1360,7 @@ class PahamiRepository {
   getMaterials(schoolId?: string, includeArchived?: boolean): LearningMaterial[] {
     const deleted = this.getDeletedIds().materials || [];
     let materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS).filter(
-      (m) => !deleted.includes(m.id)
+      (m) => !deleted.some((del) => isIdOrCodeMatch(del, m.id, "material"))
     );
     if (!includeArchived) {
       materials = materials.filter((m) => !m.is_archived);
@@ -1343,22 +1380,18 @@ class PahamiRepository {
     });
   }
 
-  getMaterial(id: string): LearningMaterial | undefined {
-    return this.getMaterials(undefined, true).find((m) => m.id === id);
+  getMaterialById(id: string, includeArchived: boolean = true): LearningMaterial | undefined {
+    if (!id) return undefined;
+    return this.getMaterials(undefined, includeArchived).find((m) => isIdOrCodeMatch(m.id, id, "material"));
   }
 
-  getMaterialById(id: string, includeArchived: boolean = true): LearningMaterial | undefined {
-    return this.getMaterials(undefined, includeArchived).find((m) => m.id === id);
+  getMaterial(id: string): LearningMaterial | undefined {
+    return this.getMaterialById(id, true);
   }
 
   getQuestionById(id: string, includeArchived: boolean = true): Question | undefined {
-    const clean = id.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    return this.getQuestions({ includeArchived }).find((q) => {
-      if (q.id === id) return true;
-      const qLower = (q.id || "").toLowerCase();
-      if (qLower === id.toLowerCase()) return true;
-      return clean.length > 0 && qLower.replace(/[^a-z0-9]/g, "") === clean;
-    });
+    if (!id) return undefined;
+    return this.getQuestions({ includeArchived }).find((q) => isIdOrCodeMatch(q.id, id, "question"));
   }
 
   saveMaterial(
@@ -1412,7 +1445,7 @@ class PahamiRepository {
 
   archiveMaterial(id: string): boolean {
     const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
-    const target = materials.find((m) => m.id === id);
+    const target = materials.find((m) => isIdOrCodeMatch(m.id, id, "material"));
     if (!target) return false;
 
     target.is_archived = true;
@@ -1432,14 +1465,19 @@ class PahamiRepository {
       return this.archiveMaterial(id);
     }
 
-    this.addDeletedId("material", id);
     const rawMaterials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
-    const filtered = rawMaterials.filter((m) => m.id !== id);
+    const target = rawMaterials.find((m) => isIdOrCodeMatch(m.id, id, "material"));
+    const targetId = target ? target.id : id;
+
+    this.addDeletedId("material", targetId);
+    if (id !== targetId) this.addDeletedId("material", id);
+
+    const filtered = rawMaterials.filter((m) => !isIdOrCodeMatch(m.id, id, "material"));
     this.setItem<LearningMaterial[]>("materials", filtered);
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
-    this.syncToCloudImmediate({ deletedItem: { type: "material", id } });
+    this.syncToCloudImmediate({ deletedItem: { type: "material", id: targetId } });
     return true;
   }
 
@@ -1617,9 +1655,13 @@ class PahamiRepository {
   }
 
   getRoomByCode(code: string): LearningRoom | undefined {
+    if (!code) return undefined;
     const rooms = this.getRooms();
-    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    return rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanCode);
+    return rooms.find((r) => isIdOrCodeMatch(r.code, code, "room") || isIdOrCodeMatch(r.id, code, "room"));
+  }
+
+  getRoom(idOrCode: string): LearningRoom | undefined {
+    return this.getRoomByCode(idOrCode);
   }
 
   createRoom(
@@ -1672,7 +1714,7 @@ class PahamiRepository {
 
   updateRoom(id: string, data: Partial<LearningRoom>): LearningRoom | undefined {
     const rooms = this.getRooms();
-    const index = rooms.findIndex((r) => r.id === id || r.code === id);
+    const index = rooms.findIndex((r) => isIdOrCodeMatch(r.id, id, "room") || isIdOrCodeMatch(r.code, id, "room"));
     if (index !== -1) {
       const updated = { ...rooms[index], ...data };
       rooms[index] = updated;
@@ -1685,15 +1727,14 @@ class PahamiRepository {
 
   recordRoomVisit(code: string, visitorName: string, score?: number): boolean {
     const rooms = this.getRooms();
-    const cleanCode = code.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-    const target = rooms.find((r) => r.code.toLowerCase().replace(/[^a-z0-9_-]/g, "") === cleanCode);
+    const target = rooms.find((r) => isIdOrCodeMatch(r.code, code, "room") || isIdOrCodeMatch(r.id, code, "room"));
     if (!target) return false;
 
     target.access_count = (target.access_count || 0) + 1;
     if (!target.visitors) target.visitors = [];
 
     const existingVisitor = target.visitors.find(
-      (v) => v.name.toLowerCase() === visitorName.trim().toLowerCase()
+      (v) => (v.name || "").toLowerCase() === visitorName.trim().toLowerCase()
     );
 
     if (existingVisitor) {
@@ -1715,19 +1756,19 @@ class PahamiRepository {
 
   deleteRoom(id: string): boolean {
     const rawRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
-    const target = rawRooms.find((r) => r.id === id || r.code === id);
+    const target = rawRooms.find((r) => isIdOrCodeMatch(r.id, id, "room") || isIdOrCodeMatch(r.code, id, "room"));
     if (target) {
       this.addDeletedId("room", target.id);
       if (target.code) this.addDeletedId("room", target.code);
     } else {
       this.addDeletedId("room", id);
     }
-    const filtered = rawRooms.filter((r) => r.id !== id && r.code !== id);
+    const filtered = rawRooms.filter((r) => !isIdOrCodeMatch(r.id, id, "room") && !isIdOrCodeMatch(r.code, id, "room"));
     this.setItem<LearningRoom[]>("rooms", filtered);
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
     }
-    this.syncToCloudImmediate({ deletedItem: { type: "room", id } });
+    this.syncToCloudImmediate({ deletedItem: { type: "room", id: target ? target.id : id } });
     return true;
   }
 

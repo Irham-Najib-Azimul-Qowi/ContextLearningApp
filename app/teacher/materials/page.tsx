@@ -597,9 +597,7 @@ export default function TeacherMaterialsPage() {
 
                 {/* Aggregated Rooms using this Material */}
                 {(() => {
-                  const roomsUsingMat = rooms.filter(
-                    (r) => r.resource_id === previewMaterial.id || r.secondary_resource_id === previewMaterial.id
-                  );
+                  const roomsUsingMat = repository.isContentUsedInRoom("material", previewMaterial.id).rooms;
                   const totalAccesses = roomsUsingMat.reduce(
                     (sum, r) => sum + (r.visitors?.length || r.access_count || 0),
                     0
