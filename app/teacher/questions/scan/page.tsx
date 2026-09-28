@@ -166,20 +166,42 @@ function ScanQuestionContent() {
         return;
       }
 
-      const mapped = ctxJson.data.questions.map((q: any, idx: number) => ({
-        id: q.id || `scan-q-${Date.now()}-${idx + 1}`,
-        type: q.type === "essay" ? "essay" : "multiple_choice",
-        question_text: q.question_text || q.question || "",
-        options: q.options && Array.isArray(q.options)
+      const mapped = ctxJson.data.questions.map((q: any, idx: number) => {
+        const itemType = q.type === "essay" ? "essay" : "multiple_choice";
+        const cAns = itemType === "multiple_choice" ? (q.correct_answer || q.correctAnswer || "A").toString().trim() : "";
+        const opts = q.options && Array.isArray(q.options)
           ? q.options.map((o: any, oIdx: number) => ({
               key: o.key || String.fromCharCode(65 + oIdx),
               text: o.text || String(o),
             }))
-          : [],
-        correct_answer: q.correct_answer || q.correctAnswer || "A",
-        explanation: q.explanation || "",
-        validation: q.validation || ctxJson.data.validation || undefined,
-      }));
+          : [];
+
+        let exp = (q.explanation || q.pembahasan || "").toString().trim();
+        if (!exp) {
+          if (itemType === "multiple_choice") {
+            const optMatch = opts.find((o: any) => o.key === cAns);
+            exp = `Kunci jawaban: ${cAns}${optMatch?.text ? ` (${optMatch.text})` : ""}. Pembahasan: Berdasarkan konsep materi, jawaban ini diperoleh melalui penalaran yang runtut.`;
+          } else {
+            exp = "Pembahasan esai: Siswa menguraikan konsep secara sistematis dan mengaitkannya dengan lingkungan sekitar.";
+          }
+        }
+
+        let rub = (q.rubric || q.rubrik || "").toString().trim();
+        if (!rub && itemType === "essay") {
+          rub = "Kriteria Penilaian Esai (Skor 0-4):\n- Skor 4: Jawaban sangat lengkap dan tepat.\n- Skor 3: Jawaban tepat namun penjelasan kurang mendalam.\n- Skor 2: Jawaban benar sebagian.\n- Skor 1: Jawaban kurang tepat.\n- Skor 0: Tidak menjawab.";
+        }
+
+        return {
+          id: q.id || `scan-q-${Date.now()}-${idx + 1}`,
+          type: itemType,
+          question_text: q.question_text || q.question || "",
+          options: opts,
+          correct_answer: cAns,
+          explanation: exp,
+          rubric: itemType === "essay" ? rub : "",
+          validation: q.validation || ctxJson.data.validation || undefined,
+        };
+      });
 
       setQuestionsList(mapped);
     } catch (err: any) {

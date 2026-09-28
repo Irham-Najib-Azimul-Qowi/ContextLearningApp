@@ -51,6 +51,50 @@ export interface AIExecutionResult<T = any> {
   requestId?: string;
 }
 
+function tryRepairTruncatedJson(str: string): any {
+  if (!str) return undefined;
+  const startBrace = str.indexOf("{");
+  const startBracket = str.indexOf("[");
+
+  if (startBrace !== -1 && (startBracket === -1 || startBrace < startBracket)) {
+    const sub = str.slice(startBrace);
+    let lastClose = sub.lastIndexOf("}");
+    while (lastClose > 0) {
+      const candidate = sub.slice(0, lastClose + 1).trim();
+      const testCases = [
+        candidate + "\n]}",
+        candidate + "\n}",
+        candidate + "]}",
+        candidate + "}",
+      ];
+      for (const tc of testCases) {
+        try {
+          return JSON.parse(tc);
+        } catch {
+          // continue
+        }
+      }
+      lastClose = sub.lastIndexOf("}", lastClose - 1);
+    }
+  } else if (startBracket !== -1) {
+    const sub = str.slice(startBracket);
+    let lastClose = sub.lastIndexOf("}");
+    while (lastClose > 0) {
+      const candidate = sub.slice(0, lastClose + 1).trim();
+      const testCases = [candidate + "\n]", candidate + "]"];
+      for (const tc of testCases) {
+        try {
+          return JSON.parse(tc);
+        } catch {
+          // continue
+        }
+      }
+      lastClose = sub.lastIndexOf("}", lastClose - 1);
+    }
+  }
+  return undefined;
+}
+
 export function extractJsonFromAiResponse<T = any>(text: string): T | undefined {
   if (!text) return undefined;
   const clean = text.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -75,8 +119,14 @@ export function extractJsonFromAiResponse<T = any>(text: string): T | undefined 
   try {
     return JSON.parse(clean) as T;
   } catch {
-    return undefined;
+    // Continue
   }
+
+  const salvaged = tryRepairTruncatedJson(clean);
+  if (salvaged !== undefined) {
+    return salvaged as T;
+  }
+  return undefined;
 }
 
 export class AIProviderManager {
@@ -328,7 +378,7 @@ export class AIProviderManager {
 
           const genConfig: any = {
             temperature: modelConfig?.temperature ?? 0.2,
-            maxOutputTokens: modelConfig?.max_output_tokens ?? 3072,
+            maxOutputTokens: Math.max(modelConfig?.max_output_tokens ?? 8192, 8192),
           };
           if (requiredCaps.includes("structured_output")) {
             genConfig.responseMimeType = "application/json";

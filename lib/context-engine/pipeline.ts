@@ -417,7 +417,10 @@ ${
 ${normalized.effectiveText}
 """
 ${normalized.options && normalized.options.length > 0 ? `Opsi Asli: ${JSON.stringify(normalized.options)}` : ""}
-${normalized.correctAnswer ? `Kunci Jawaban Asli: "${normalized.correctAnswer}"` : ""}`
+${normalized.correctAnswer ? `Kunci Jawaban Asli: "${normalized.correctAnswer}"` : ""}
+5. WAJIB MENGISI 'explanation' (pembahasan terperinci dan runtut cara penyelesaian/alasan jawaban benar) untuk SETIAP BUTIR SOAL!
+6. WAJIB MENGISI 'rubric' (pedoman penskoran kriteria skor 4, 3, 2, 1, 0) jika butir soal bertipe esai!
+7. Tuliskan nilai 'reason' pada context_variables secara ringkas (maksimal 1 kalimat).`
 }
 
 KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
@@ -443,7 +446,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
           "original_term": "istilah atau objek yang diganti",
           "replacement_term": "entitas lokal terverifikasi di ${normalized.regionName}",
           "category": "commodity / location / tradition / geography",
-          "reason": "alasan adaptasi lokal"
+          "reason": "alasan adaptasi lokal ringkas"
         }
       ]
     }
@@ -465,12 +468,34 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
       parsedQ = extractJsonFromAiResponse(aiRes.rawText);
     }
 
-    if (!parsedQ || !Array.isArray(parsedQ.questions) || parsedQ.questions.length === 0) {
+    // Flexible extractor for any JSON structure returned by LLM
+    let rawQuestionsList: any[] = [];
+    if (Array.isArray(parsedQ)) {
+      rawQuestionsList = parsedQ;
+    } else if (parsedQ && typeof parsedQ === "object") {
+      if (Array.isArray(parsedQ.questions)) {
+        rawQuestionsList = parsedQ.questions;
+      } else if (Array.isArray(parsedQ.items)) {
+        rawQuestionsList = parsedQ.items;
+      } else if (Array.isArray(parsedQ.soal)) {
+        rawQuestionsList = parsedQ.soal;
+      } else if (Array.isArray(parsedQ.data?.questions)) {
+        rawQuestionsList = parsedQ.data.questions;
+      } else if (Array.isArray(parsedQ.data)) {
+        rawQuestionsList = parsedQ.data;
+      } else if (Array.isArray(parsedQ.question)) {
+        rawQuestionsList = parsedQ.question;
+      } else if (parsedQ.question_text || parsedQ.question) {
+        rawQuestionsList = [parsedQ];
+      }
+    }
+
+    if (rawQuestionsList.length === 0) {
       throw new Error("Layanan AI menghasilkan struktur butir soal yang tidak valid.");
     }
 
-    const processedQuestions: QuestionDraftItem[] = parsedQ.questions.map((q: any, idx: number) => {
-      const qText = q.question_text || "Teks soal kontekstual.";
+    const processedQuestions: QuestionDraftItem[] = rawQuestionsList.map((q: any, idx: number) => {
+      const qText = q.question_text || q.question || "Teks soal kontekstual.";
       const origText = q.original_question_text || normalized.effectiveText || qText;
       const itemType: "multiple_choice" | "essay" =
         q.type === "essay"
@@ -480,8 +505,6 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
           : normalized.questionType === "essay"
           ? "essay"
           : "multiple_choice";
-
-      const mathValidation = this.validateEducationalIntegrity(origText, qText);
 
       let optionsList = q.options;
       if (itemType === "multiple_choice") {
@@ -500,6 +523,28 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
         }
       } else {
         optionsList = undefined;
+      }
+
+      const fullContextualString = `${qText} ${optionsList?.map((o: any) => o.text).join(" ") || ""}`;
+      const mathValidation = this.validateEducationalIntegrity(origText, fullContextualString);
+
+      const correctAnswer = itemType === "multiple_choice" ? (q.correct_answer || q.correctAnswer || "A").toString().trim() : "";
+
+      // Ensure explanation (pembahasan) is NEVER empty
+      let explanation = (q.explanation || q.pembahasan || q.penjelasan || "").toString().trim();
+      if (!explanation) {
+        if (itemType === "multiple_choice") {
+          const correctOpt = optionsList?.find((o: any) => o.key === correctAnswer);
+          explanation = `Kunci jawaban yang tepat adalah ${correctAnswer}${correctOpt?.text ? ` (${correctOpt.text})` : ""}. Pembahasan: Berdasarkan konsep materi ${normalized.subject} pada topik ${normalized.topic}, jawaban ini didasarkan pada perhitungan matematis dan penalaran kontekstual yang sesuai dengan kondisi lingkungan di ${normalized.regionName}.`;
+        } else {
+          explanation = `Pembahasan esai: Siswa diharapkan mampu menguraikan konsep ${normalized.topic} secara runtut serta menghubungkannya dengan contoh konkret di wilayah ${normalized.regionName}.`;
+        }
+      }
+
+      // Ensure rubric (rubrik penskoran) is NEVER empty for essay questions
+      let rubric = (q.rubric || q.rubrik || q.pedoman_penskoran || "").toString().trim();
+      if (!rubric && itemType === "essay") {
+        rubric = "Kriteria Penilaian Esai (Skor 0-4):\n- Skor 4: Jawaban sangat lengkap, analisis akurat, dan mencantumkan contoh kontekstual yang relevan di daerah setempat.\n- Skor 3: Jawaban tepat dan runtut, namun penjelasan pendukung kurang mendalam.\n- Skor 2: Jawaban benar sebagian atau hanya menyebutkan konsep inti tanpa penjelasan.\n- Skor 1: Jawaban kurang tepat, tetapi masih terkait dengan topik.\n- Skor 0: Tidak menjawab atau jawaban tidak relevan.";
       }
 
       const qTextLower = qText.toLowerCase();
@@ -526,9 +571,9 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
         question_text: qText,
         type: itemType,
         options: optionsList,
-        correct_answer: itemType === "multiple_choice" ? (q.correct_answer || "A") : "",
-        explanation: q.explanation || "Pembahasan terperinci sesuai kurikulum.",
-        rubric: itemType === "essay" ? (q.rubric || "Rubrik penilaian esai bertahap.") : undefined,
+        correct_answer: correctAnswer,
+        explanation: explanation,
+        rubric: itemType === "essay" ? rubric : "",
         points: q.points || 10,
         context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
         validation: {

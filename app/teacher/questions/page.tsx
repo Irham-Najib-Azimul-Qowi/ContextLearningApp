@@ -667,6 +667,21 @@ function TeacherQuestionsContent() {
       const type: "multiple_choice" | "essay" =
         options.length >= 2 && !isEssay ? "multiple_choice" : "essay";
 
+      let finalExplanation = explanation.trim();
+      if (!finalExplanation) {
+        if (type === "multiple_choice") {
+          const selectedOpt = options.find((o) => o.key === correctAnswer);
+          finalExplanation = `Kunci jawaban yang tepat adalah ${correctAnswer}${selectedOpt?.text ? ` (${selectedOpt.text})` : ""}. Pembahasan: Berdasarkan konsep materi ${defaultTopic || "terkait"}, jawaban yang sesuai adalah opsi ${correctAnswer}.`;
+        } else {
+          finalExplanation = `Pembahasan esai: Siswa menguraikan penjelasan terkait konsep ${defaultTopic || "materi"} secara runtut, logis, dan mengaitkannya dengan fenomena atau contoh di lingkungan nyata.`;
+        }
+      }
+
+      let finalRubric = rubric.trim();
+      if (!finalRubric && type === "essay") {
+        finalRubric = "Kriteria Penilaian Esai (Skor 0-4):\n- Skor 4: Jawaban sangat lengkap, analisis akurat, dan mencantumkan contoh kontekstual yang relevan di daerah setempat.\n- Skor 3: Jawaban tepat dan runtut, namun penjelasan pendukung kurang mendalam.\n- Skor 2: Jawaban benar sebagian atau hanya menyebutkan konsep inti tanpa penjelasan.\n- Skor 1: Jawaban kurang tepat, tetapi siswa telah berusaha menuliskan konsep terkait.\n- Skor 0: Tidak menjawab atau jawaban tidak relevan.";
+      }
+
       return {
         id: `q-draft-${Date.now()}-${idx + 1}`,
         type,
@@ -682,8 +697,8 @@ function TeacherQuestionsContent() {
                 { key: "D", text: "" },
               ],
         correct_answer: correctAnswer,
-        explanation,
-        rubric,
+        explanation: finalExplanation,
+        rubric: finalRubric,
       };
     });
   };
@@ -843,12 +858,10 @@ function TeacherQuestionsContent() {
           setOverallValidation(json.data.validation);
         }
         if (json.data.questions && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
-          const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => ({
-            id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
-            type: q.type === "essay" ? "essay" : "multiple_choice",
-            original_question_text: q.original_question_text || "",
-            question_text: q.question_text || q.question || "",
-            options: q.options && Array.isArray(q.options)
+          const mapped: QuestionDraftItem[] = json.data.questions.map((q: any, idx: number) => {
+            const itemType: "multiple_choice" | "essay" = q.type === "essay" ? "essay" : "multiple_choice";
+            const cAns = itemType === "multiple_choice" ? (q.correct_answer || q.correctAnswer || "A").toString().trim() : "";
+            const opts = q.options && Array.isArray(q.options)
               ? q.options.map((o: any, oIdx: number) => ({
                   key: o.key || String.fromCharCode(65 + oIdx),
                   text: o.text || String(o),
@@ -858,13 +871,36 @@ function TeacherQuestionsContent() {
                   { key: "B", text: "" },
                   { key: "C", text: "" },
                   { key: "D", text: "" },
-                ],
-            correct_answer: q.correct_answer || q.correctAnswer || "A",
-            explanation: q.explanation || "",
-            rubric: q.rubric || "",
-            context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
-            validation: q.validation || undefined,
-          }));
+                ];
+
+            let exp = (q.explanation || q.pembahasan || "").toString().trim();
+            if (!exp) {
+              if (itemType === "multiple_choice") {
+                const optMatch = opts.find((o: any) => o.key === cAns);
+                exp = `Kunci jawaban: ${cAns}${optMatch?.text ? ` (${optMatch.text})` : ""}. Pembahasan: Berdasarkan materi ${activeTopic}, jawaban diperoleh melalui penalaran dan perhitungan yang sesuai.`;
+              } else {
+                exp = `Pembahasan esai: Siswa menguraikan konsep ${activeTopic} secara runtut dan mengaitkannya dengan lingkungan sekitar.`;
+              }
+            }
+
+            let rub = (q.rubric || q.rubrik || "").toString().trim();
+            if (!rub && itemType === "essay") {
+              rub = "Kriteria Penilaian Esai (Skor 0-4):\n- Skor 4: Jawaban sangat lengkap, analisis tepat, dan memuat contoh kontekstual yang relevan.\n- Skor 3: Jawaban tepat dan runtut, namun penjelasan pendukung kurang mendalam.\n- Skor 2: Jawaban benar sebagian atau hanya memuat poin utama.\n- Skor 1: Jawaban kurang tepat, tetapi masih terkait materi.\n- Skor 0: Tidak menjawab atau jawaban tidak relevan.";
+            }
+
+            return {
+              id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
+              type: itemType,
+              original_question_text: q.original_question_text || "",
+              question_text: q.question_text || q.question || "",
+              options: opts,
+              correct_answer: cAns,
+              explanation: exp,
+              rubric: itemType === "essay" ? rub : "",
+              context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
+              validation: q.validation || undefined,
+            };
+          });
           setQuestionsList(mapped);
           return true;
         }
