@@ -166,7 +166,7 @@ export default function QuestionGeneratorPage() {
             </div>
 
             <div>
-              <label className="font-bold text-[#23212A] block mb-1.5">Bentuk Soal</label>
+              <label className="font-bold text-[#23212A] block mb-1.5">Variasi Soal</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as "multiple_choice" | "essay" | "mixed")}

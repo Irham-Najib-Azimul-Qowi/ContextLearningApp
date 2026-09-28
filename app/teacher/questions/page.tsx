@@ -2039,44 +2039,20 @@ function TeacherQuestionsContent() {
                       />
                     </div>
 
-                    {/* Pengaturan Jumlah & Variasi Bentuk Soal */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-white/5 border border-white/10">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-200 mb-1.5">
-                          Target Jumlah Soal: <span className="text-[#FFD36D] font-mono">{aiQuestionCount} Butir</span>
-                        </label>
-                        <div className="flex items-center gap-1.5">
-                          {[1, 3, 5, 10].map((num) => (
-                            <button
-                              key={num}
-                              type="button"
-                              onClick={() => setAiQuestionCount(num)}
-                              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                aiQuestionCount === num
-                                  ? "bg-[#FFD36D] text-[#251E2B] shadow-xs font-black"
-                                  : "bg-white/10 text-white hover:bg-white/20"
-                              }`}
-                            >
-                              {num}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-gray-200 mb-1.5">
-                          Bentuk / Variasi Soal
-                        </label>
-                        <select
-                          value={aiQuestionType}
-                          onChange={(e: any) => setAiQuestionType(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-xl border border-white/20 bg-[#251E2B] text-white text-xs font-bold focus:border-[#FFD36D] focus:outline-none cursor-pointer"
-                        >
-                          <option value="multiple_choice">Pilihan Ganda (A, B, C, D)</option>
-                          <option value="essay">Uraian / Esai</option>
-                          <option value="mixed">Campuran (Pilgan & Esai)</option>
-                        </select>
-                      </div>
+                    {/* Variasi Soal */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-200 mb-1">
+                        Variasi Soal
+                      </label>
+                      <select
+                        value={aiQuestionType}
+                        onChange={(e: any) => setAiQuestionType(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="multiple_choice">Pilihan Ganda (A, B, C, D)</option>
+                        <option value="essay">Uraian / Esai</option>
+                        <option value="mixed">Campuran (Pilgan & Esai)</option>
+                      </select>
                     </div>
                   </div>
                 )}
