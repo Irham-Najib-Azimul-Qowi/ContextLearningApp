@@ -547,24 +547,185 @@ function TeacherQuestionsContent() {
     handleOpenWizard("from_material", target);
   };
 
+  // Parser bantuan: Ubah naskah teks mentah menjadi array QuestionDraftItem terstruktur
+  const parseRawQuestionsToDraft = (rawText: string, defaultTopic: string = ""): QuestionDraftItem[] => {
+    if (!rawText || !rawText.trim()) {
+      return [
+        {
+          id: `q-draft-${Date.now()}-1`,
+          type: "multiple_choice",
+          question_text: defaultTopic ? `Berdasarkan topik ${defaultTopic}, jawablah pertanyaan berikut:` : "",
+          options: [
+            { key: "A", text: "" },
+            { key: "B", text: "" },
+            { key: "C", text: "" },
+            { key: "D", text: "" },
+          ],
+          correct_answer: "A",
+          explanation: "",
+          rubric: "",
+        },
+      ];
+    }
+
+    const lines = rawText.split("\n");
+    const chunks: string[] = [];
+    let currentChunk: string[] = [];
+
+    const isQuestionStart = (line: string) => {
+      const trimmed = line.trim();
+      return /^(?:soal\s*)?(?:\d+|[a-z])[\.\)]/i.test(trimmed) || /^#+\s*Soal\s*\d+/i.test(trimmed);
+    };
+
+    for (const line of lines) {
+      if (isQuestionStart(line) && currentChunk.length > 0) {
+        chunks.push(currentChunk.join("\n").trim());
+        currentChunk = [line];
+      } else {
+        currentChunk.push(line);
+      }
+    }
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk.join("\n").trim());
+    }
+
+    const actualChunks = chunks.length > 0 ? chunks : [rawText.trim()];
+
+    return actualChunks.map((chunk, idx) => {
+      const chunkLines = chunk.split("\n").map((l) => l.trim()).filter(Boolean);
+      const options: { key: string; text: string }[] = [];
+      let correctAnswer = "A";
+      let explanation = "";
+      let rubric = "";
+      let isEssay = false;
+
+      const questionTextLines: string[] = [];
+      for (const cl of chunkLines) {
+        const optMatch = cl.match(/^([A-D])[\.\)]\s*(.*)$/i);
+        const ansMatch = cl.match(/^(?:kunci|jawaban|kunci jawaban)[\s:]+(.*)$/i);
+        const expMatch = cl.match(/^(?:pembahasan|penjelasan|alasan)[\s:]+(.*)$/i);
+        const rubMatch = cl.match(/^(?:rubrik|pedoman penskoran)[\s:]+(.*)$/i);
+
+        if (ansMatch) {
+          const val = ansMatch[1].trim().toUpperCase();
+          if (/^[A-D]$/.test(val)) {
+            correctAnswer = val;
+          } else {
+            correctAnswer = val;
+            isEssay = true;
+          }
+        } else if (expMatch) {
+          explanation = expMatch[1].trim();
+        } else if (rubMatch) {
+          rubric = rubMatch[1].trim();
+          isEssay = true;
+        } else if (optMatch) {
+          options.push({
+            key: optMatch[1].toUpperCase(),
+            text: optMatch[2].trim(),
+          });
+        } else {
+          if (options.length === 0) {
+            questionTextLines.push(cl);
+          } else {
+            if (options.length > 0) {
+              options[options.length - 1].text += " " + cl;
+            }
+          }
+        }
+      }
+
+      let questionText = questionTextLines.join("\n").replace(/^(?:soal\s*)?(?:\d+|[a-z])[\.\)]\s*/i, "").trim();
+      if (!questionText && chunkLines.length > 0) {
+        questionText = chunkLines[0].replace(/^(?:soal\s*)?(?:\d+|[a-z])[\.\)]\s*/i, "").trim();
+      }
+
+      const type: "multiple_choice" | "essay" = options.length >= 2 && !isEssay ? "multiple_choice" : "essay";
+
+      return {
+        id: `q-draft-${Date.now()}-${idx + 1}`,
+        type,
+        original_question_text: chunk,
+        question_text: questionText || `Butir Soal ${idx + 1}`,
+        options:
+          options.length >= 2
+            ? options
+            : [
+                { key: "A", text: "" },
+                { key: "B", text: "" },
+                { key: "C", text: "" },
+                { key: "D", text: "" },
+              ],
+        correct_answer: correctAnswer,
+        explanation,
+        rubric,
+      };
+    });
+  };
+
   // Step 2 -> Step 3: Validasi Identitas & Masuk Form Konten Soal
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!topic.trim() && selectedMethod !== "ai") return;
-    if (selectedMethod === "ai" && !aiPrompt.trim() && !topic.trim()) return;
 
-    if (selectedMethod === "ai" || manualQuestionDraft.trim()) {
-      await handleTriggerAiContextTransformation();
+    // Auto-derive effectiveTopic if user left topic blank
+    let effectiveTopic = topic.trim();
+    if (!effectiveTopic) {
+      if (aiPrompt.trim()) {
+        effectiveTopic = aiPrompt.trim().slice(0, 60);
+      } else if (manualQuestionDraft.trim()) {
+        const firstLine = manualQuestionDraft.trim().split("\n")[0].replace(/^[\d\.\-\s]+/, "").slice(0, 60);
+        effectiveTopic = firstLine || "Asesmen Tematik";
+      } else {
+        effectiveTopic = "Asesmen Tematik Kontekstual";
+      }
+      setTopic(effectiveTopic);
+    }
+
+    // AI contextualization runs if AI method selected OR if manual/camera/pdf text was entered
+    const shouldRunAi =
+      selectedMethod === "ai" ||
+      ((selectedMethod === "manual" || selectedMethod === "camera" || selectedMethod === "pdf") &&
+        Boolean(manualQuestionDraft.trim()));
+
+    if (shouldRunAi) {
+      const success = await handleTriggerAiContextTransformation(undefined, effectiveTopic);
+      if (!success) {
+        // AI returned error or was unavailable:
+        // Do NOT block or leave the teacher on step 2! Fallback parse the draft into separate question items!
+        if (manualQuestionDraft.trim()) {
+          const parsed = parseRawQuestionsToDraft(manualQuestionDraft, effectiveTopic);
+          setQuestionsList(parsed);
+        } else if (selectedMethod === "ai") {
+          setQuestionsList([
+            {
+              id: `q-draft-${Date.now()}-1`,
+              type: aiQuestionType === "essay" ? "essay" : "multiple_choice",
+              question_text: `Berdasarkan topik ${effectiveTopic}, jawablah pertanyaan kontekstual berikut:`,
+              options: [
+                { key: "A", text: "" },
+                { key: "B", text: "" },
+                { key: "C", text: "" },
+                { key: "D", text: "" },
+              ],
+              correct_answer: "A",
+              explanation: "",
+              rubric: "",
+            },
+          ]);
+        }
+      }
+      setWizardStep(3);
       return;
     }
 
+    // For manual and from_material methods without draft: proceed directly to Step 3
     setQuestionsList((prev) => {
-      if (prev.length === 0) {
+      if (prev.length === 0 || !prev[0].question_text.trim()) {
         return [
           {
             id: "q-draft-1",
             type: "multiple_choice",
-            question_text: manualQuestionDraft || `Berdasarkan topik ${topic}, jawablah pertanyaan kontekstual berikut:`,
+            question_text: `Berdasarkan topik ${effectiveTopic}, jawablah pertanyaan kontekstual berikut:`,
             options: [
               { key: "A", text: "" },
               { key: "B", text: "" },
@@ -577,24 +738,21 @@ function TeacherQuestionsContent() {
           },
         ];
       }
-      const updated = [...prev];
-      if (!updated[0].question_text.trim()) {
-        updated[0] = {
-          ...updated[0],
-          question_text: manualQuestionDraft || `Berdasarkan topik ${topic}, jawablah pertanyaan kontekstual berikut:`,
-        };
-      }
-      return updated;
+      return prev;
     });
 
     setWizardStep(3);
   };
 
   // Process AI Context Transformation (Server-Side Gemini + LKB RAG)
-  const handleTriggerAiContextTransformation = async (overrideText?: string | React.MouseEvent) => {
+  const handleTriggerAiContextTransformation = async (
+    overrideText?: string | React.MouseEvent,
+    overrideTopic?: string
+  ): Promise<boolean> => {
     setIsAiGenerating(true);
     setAiError(null);
     try {
+      const activeTopic = overrideTopic || topic || aiPrompt || "Asesmen Tematik";
       let textToUse = typeof overrideText === "string" ? overrideText : manualQuestionDraft;
       if (!textToUse && questionsList.some((q) => q.question_text.trim())) {
         textToUse = questionsList
@@ -618,9 +776,9 @@ function TeacherQuestionsContent() {
         body: JSON.stringify({
           type: "question",
           inputMode: selectedMethod,
-          prompt: selectedMethod === "ai" ? (aiPrompt || topic) : "",
-          rawText: textToUse,
-          topic: topic || aiPrompt || "Asesmen Tematik",
+          prompt: selectedMethod === "ai" ? (aiPrompt || activeTopic) : "",
+          rawText: textToUse || (selectedMethod === "ai" ? aiPrompt : activeTopic),
+          topic: activeTopic,
           subject,
           grade,
           regionId: activeSchool?.region_id || "35.02",
@@ -673,14 +831,22 @@ function TeacherQuestionsContent() {
             validation: q.validation || undefined,
           }));
           setQuestionsList(mapped);
-          setWizardStep(3);
+          return true;
         }
+        return false;
       } else {
-        setAiError(json.error || "Gagal menghasilkan butir soal kontekstual.");
+        const errMsg =
+          typeof json?.error === "object"
+            ? json.error?.message || json.error?.code || "Gagal menghasilkan butir soal kontekstual."
+            : json?.error || "Gagal menghasilkan butir soal kontekstual.";
+        setAiError(String(errMsg));
+        return false;
       }
     } catch (err: any) {
       console.error("AI question contextualization error:", err);
-      setAiError(err.message || "Gagal memproses butir soal dengan AI. Silakan coba kembali.");
+      const errMsg = err?.message || String(err) || "Gagal memproses butir soal dengan AI. Silakan coba kembali.";
+      setAiError(errMsg);
+      return false;
     } finally {
       setIsAiGenerating(false);
     }
@@ -802,15 +968,15 @@ function TeacherQuestionsContent() {
 
     try {
       const user = currentUser || repository.getCurrentUser();
-      const questionId = patentQuestionId || `q-${Date.now()}`;
+      const questionId = patentQuestionId || repository.getNextQuestionId();
       const saved = repository.saveQuestion({
         id: questionId,
-        school_id: school.id,
+        school_id: school?.id || "school-active",
         subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
         grade,
         topic: effectiveTopic,
         items: itemsToSave,
-        teacher_id: user.id || "usr-teacher-01",
+        teacher_id: user?.id || "usr-teacher-01",
         is_contextualized: true,
       });
 
@@ -2162,7 +2328,6 @@ function TeacherQuestionsContent() {
                   </label>
                   <input
                     type="text"
-                    required={selectedMethod !== "ai"}
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Operasi Hitung Belanja Pasar Tradisional"
@@ -2207,6 +2372,14 @@ function TeacherQuestionsContent() {
                   </div>
                 </div>
 
+                {/* Step 2 AI Error Display */}
+                {aiError && (
+                  <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="font-medium">{aiError}</span>
+                  </div>
+                )}
+
                 {/* Footer Navigasi Identitas: Button 'Generate' jika AI, 'Lanjut' jika method lain */}
                 <div className="pt-3 flex items-center justify-between border-t border-white/10 gap-3">
                   <button
@@ -2218,7 +2391,7 @@ function TeacherQuestionsContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isAiGenerating || (selectedMethod === "ai" ? !aiPrompt.trim() && !topic.trim() : !topic.trim())}
+                    disabled={isAiGenerating || (selectedMethod === "ai" && !aiPrompt.trim() && !topic.trim())}
                     className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
                     {isAiGenerating ? (

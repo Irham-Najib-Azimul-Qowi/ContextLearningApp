@@ -1174,6 +1174,12 @@ class PahamiRepository {
           ) {
             return true;
           }
+          if (currentUser?.id && q.teacher_id === currentUser.id) {
+            return true;
+          }
+          if (!q.teacher_id || q.teacher_id === "usr-teacher-01") {
+            return true;
+          }
           return false;
         });
       }
@@ -1416,6 +1422,20 @@ class PahamiRepository {
     return this.getQuestions({ includeArchived }).find((q) => isIdOrCodeMatch(q.id, id, "question"));
   }
 
+  getNextMaterialId(): string {
+    const materials = this.getMaterials(undefined, true);
+    let maxNum = 1000;
+    materials.forEach((m) => {
+      const match = (m.id || "").match(/(?:mat|mtr|materi)-?(\d+)/i);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val > maxNum && val < 99999) maxNum = val;
+      }
+    });
+    const nextNum = Math.max(maxNum + 1, 1001);
+    return `mat${nextNum}`;
+  }
+
   saveMaterial(
     data: Partial<LearningMaterial> & {
       title: string;
@@ -1426,7 +1446,7 @@ class PahamiRepository {
     }
   ): LearningMaterial {
     const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
-    const id = data.id || `mat-${Date.now()}`;
+    const id = data.id ? data.id.trim() : this.getNextMaterialId();
     this.removeDeletedId("material", id);
 
     const currentUser = this.getCurrentUser();

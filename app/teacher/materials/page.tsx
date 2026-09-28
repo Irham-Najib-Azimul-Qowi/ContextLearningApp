@@ -187,7 +187,7 @@ export default function TeacherMaterialsPage() {
     setCapturedPhotoName(null);
     setPreviewTitle("");
     setPreviewNarrative("");
-    setPatentMaterialId(`mat-${Date.now()}`);
+    setPatentMaterialId(repository.getNextMaterialId());
     setIsWizardOpen(true);
   };
 
@@ -387,11 +387,11 @@ export default function TeacherMaterialsPage() {
 
     try {
       const user = currentUser || repository.getCurrentUser();
-      const materialId = patentMaterialId || `mat-${Date.now()}`;
+      const materialId = patentMaterialId || repository.getNextMaterialId();
       const newMat = repository.saveMaterial({
         id: materialId,
-        school_id: school.id,
-        teacher_id: user.id || "usr-teacher-01",
+        school_id: school?.id || "school-active",
+        teacher_id: user?.id || "usr-teacher-01",
         title: effectiveTitle,
         subject,
         grade,
@@ -461,7 +461,7 @@ export default function TeacherMaterialsPage() {
 
   const handleOpenPublishRoom = (mat: LearningMaterial) => {
     setMaterialToPublish(mat);
-    const randomCode = `mtr${Math.floor(1000 + Math.random() * 9000)}`;
+    const randomCode = repository.getNextRoomCode();
     setGeneratedRoomCode(randomCode);
     setRoomCreatedSuccess(false);
     setIsRoomModalOpen(true);
