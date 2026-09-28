@@ -17,18 +17,21 @@ import {
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
-import { Exam, LearningMaterial, School } from "@/lib/db/types";
+import { Exam, LearningMaterial, LearningRoom, School } from "@/lib/db/types";
+import { Users } from "lucide-react";
 
 export default function TeacherPrintHubPage() {
   const [activeSchool, setActiveSchool] = useState<School | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
   const [materials, setMaterials] = useState<LearningMaterial[]>([]);
+  const [rooms, setRooms] = useState<LearningRoom[]>([]);
 
   useEffect(() => {
     const school = repository.getActiveSchool();
     setActiveSchool(school);
     setExams(repository.getExams(school.id));
     setMaterials(repository.getMaterials(school.id));
+    setRooms(repository.getRooms());
   }, []);
 
   return (
@@ -171,6 +174,65 @@ export default function TeacherPrintHubPage() {
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* Section 3: Ruang Belajar & Lembar Kerja Siswa (Room A4) */}
+        <div className="bg-white rounded-[28px] sm:rounded-[36px] border border-[#E9E5E8] p-6 sm:p-8 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-[#FFD36D] text-[#23212A] flex items-center justify-center font-bold">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-[#23212A]">
+                  Lembar Cetak Ruang Belajar Siswa (Room A4)
+                </h2>
+                <span className="text-[11px] text-[#756F7A]">
+                  Paket dokumen lengkap room siap cetak dengan QR Code verifikasi token digital
+                </span>
+              </div>
+            </div>
+
+            <Link
+              href="/teacher/rooms"
+              className="text-xs font-bold text-[#51465B] hover:underline flex items-center gap-1 self-start sm:self-auto"
+            >
+              <span>Buka Manajemen Room</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {rooms.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-[#FAF7F3] border border-[#E9E5E8] text-center">
+              <p className="text-xs text-[#756F7A]">Belum ada ruang belajar yang dibuat.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {rooms.slice(0, 6).map((rm) => (
+                <div
+                  key={rm.id}
+                  className="p-3.5 rounded-[18px] bg-[#FAF7F3] border border-[#E9E5E8] flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <span className="font-extrabold text-xs text-[#23212A] block truncate">
+                      {rm.title}
+                    </span>
+                    <span className="text-[11px] text-[#756F7A] block">
+                      Kode: <strong className="font-mono text-[#51465B]">{rm.code}</strong> &bull; {rm.subject}
+                    </span>
+                  </div>
+
+                  <Link
+                    href={`/teacher/print/room/${rm.code}`}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#51465B] hover:bg-[#3E3547] text-white text-xs font-bold shrink-0 shadow-2xs flex items-center gap-1 transition-transform active:scale-95"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-[#FFD36D]" />
+                    <span>Cetak A4</span>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </TeacherWorkspaceShell>

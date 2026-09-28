@@ -174,16 +174,55 @@ button:disabled {
   border: 1px solid #C7D2FE;
 }
 
-/* Print Stylesheet for A4 Exam Papers and Materials */
+/* Print Stylesheet for A4 Exam Papers, Rooms, and Materials */
 @media print {
-  body {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  html, body {
     background-color: #FFFFFF !important;
     color: #000000 !important;
     font-size: 11pt;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .no-print, nav, aside, header, button:not(.print-include) {
+  /* Reset all overflow constraints from SPA shells so pages paginate properly */
+  div, main, section {
+    overflow: visible !important;
+  }
+
+  /* Hide app navigation chrome and non-print buttons */
+  .no-print, 
+  nav, 
+  aside, 
+  header, 
+  button:not(.print-include) {
     display: none !important;
+  }
+
+  /* When DepaskanPrintableDocument modal is mounted, hide everything else in the body */
+  body.depaskan-print-modal-active > *:not(.depaskan-printable-portal) {
+    display: none !important;
+  }
+
+  body.depaskan-print-modal-active .depaskan-printable-portal {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    display: block !important;
   }
 
   .print-only {
@@ -198,11 +237,13 @@ button:disabled {
     background: white;
   }
 
-  .avoid-break {
-    page-break-inside: avoid;
-    break-inside: avoid;
+  .avoid-break,
+  .break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
+
 
 /* ==============================================================================
    DEPASKAN — CLAYMORPHISM & SOFT UI DESIGN TOKENS & UTILITIES

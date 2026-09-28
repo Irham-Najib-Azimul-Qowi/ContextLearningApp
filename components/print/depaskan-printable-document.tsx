@@ -1,7 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { Printer, Loader2, CheckCircle2, ShieldCheck, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import {
+  Printer,
+  Loader2,
+  CheckCircle2,
+  ShieldCheck,
+  X,
+  ExternalLink,
+  BookOpen,
+  HelpCircle,
+} from "lucide-react";
 import { PahamiPuzzleLogo } from "@/components/landing/puzzle-logo";
 
 export interface PrintableDocumentProps {
@@ -37,6 +48,7 @@ export function DepaskanPrintableDocument({
   teacherName,
   onClose,
 }: PrintableDocumentProps) {
+  const [mounted, setMounted] = useState(false);
   const [isIssuing, setIsIssuing] = useState(false);
   const [issuedDocId, setIssuedDocId] = useState<string | null>(null);
   const [issuedToken, setIssuedToken] = useState<string | null>(null);
@@ -47,6 +59,14 @@ export function DepaskanPrintableDocument({
       year: "numeric",
     })
   );
+
+  useEffect(() => {
+    setMounted(true);
+    document.body.classList.add("depaskan-print-modal-active");
+    return () => {
+      document.body.classList.remove("depaskan-print-modal-active");
+    };
+  }, []);
 
   const handlePrint = async () => {
     setIsIssuing(true);
@@ -88,30 +108,61 @@ export function DepaskanPrintableDocument({
     }
   };
 
-  const displayDocId = issuedDocId || `DOC-${contentId.toUpperCase()}`;
+  const displayDocId = issuedDocId || `DOC-${(roomCode || contentId).toUpperCase()}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
-    JSON.stringify({ app: "DEPASKAN", id: displayDocId, tok: issuedToken || "SIGNATURE_VALID", type: docType, code: roomCode || "" })
+    JSON.stringify({
+      app: "DEPASKAN",
+      id: displayDocId,
+      tok: issuedToken || "SIGNATURE_VALID",
+      type: docType,
+      code: roomCode || "",
+    })
   )}`;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-sm p-3 sm:p-6 md:p-8 flex justify-center items-start print:p-0 print:static print:bg-white print:overflow-visible print:z-auto">
-      {/* Container A4 */}
-      <div className="bg-white text-[#23212A] w-full max-w-3xl rounded-3xl shadow-2xl p-5 sm:p-8 md:p-10 border border-[#E9E5E8] relative my-3 sm:my-6 print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:rounded-none">
+  // Determine standalone dedicated print URL
+  const standaloneUrl =
+    docType === "room" && roomCode
+      ? `/teacher/print/room/${encodeURIComponent(roomCode)}`
+      : docType === "material"
+      ? `/teacher/print/material/${encodeURIComponent(contentId)}`
+      : docType === "question"
+      ? `/teacher/print/exam/${encodeURIComponent(contentId)}`
+      : null;
+
+  const modalMarkup = (
+    <div className="depaskan-printable-portal fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/80 backdrop-blur-sm p-3 sm:p-6 md:p-8 flex justify-center items-start print:p-0 print:m-0 print:static print:bg-white print:overflow-visible print:z-auto print:w-full print:max-w-none">
+      {/* Container A4 Sheet: Constrained on screen, exact A4 210mm in print */}
+      <div className="bg-white text-[#23212A] w-full max-w-3xl rounded-3xl shadow-2xl p-5 sm:p-8 md:p-10 border border-[#E9E5E8] relative my-3 sm:my-6 print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-[210mm] print:w-full print:rounded-none">
         {/* Screen Action Bar (Hidden when printing) */}
-        <div className="flex items-center justify-between pb-4 sm:pb-6 mb-5 sm:mb-6 border-b border-slate-200 print:hidden">
+        <div className="flex flex-wrap items-center justify-between pb-4 sm:pb-6 mb-5 sm:mb-6 border-b border-slate-200 gap-3 print:hidden">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-[#51465B] text-[#FFD36D] flex items-center justify-center shrink-0 shadow-xs">
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-black text-[#23212A]">Pratinjau Cetak Dokumen A4</h3>
+              <h3 className="text-sm sm:text-base font-black text-[#23212A]">
+                Pratinjau Cetak Dokumen A4 Resmi
+              </h3>
               <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-                Dokumen resmi DEPASKAN dilengkapi QR Token dan nomor penerbitan unik.
+                Dilengkapi QR Token validasi anti-pemalsuan dan layout baku Depaskan.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {standaloneUrl && (
+              <a
+                href={standaloneUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Buka halaman cetak mandiri di tab baru"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
+                <span className="hidden sm:inline">Buka Tab Cetak Penuh</span>
+              </a>
+            )}
+
             <button
               type="button"
               onClick={handlePrint}
@@ -149,7 +200,7 @@ export function DepaskanPrintableDocument({
         {/* ============================================================== */}
         <div className="space-y-6 print:space-y-5 text-left font-sans">
           {/* HEADER: Logo & Brand Kiri, QR Code & Doc ID Kanan */}
-          <div className="flex items-start justify-between pb-4 border-b-2 border-[#51465B]">
+          <div className="flex items-start justify-between pb-4 border-b-2 border-[#51465B] print:flex-row print:justify-between print:items-start print:border-slate-900 break-inside-avoid">
             <div className="flex flex-col items-start">
               <PahamiPuzzleLogo size="md" asButton className="pointer-events-none p-0" />
               <div className="mt-1.5 space-y-0.5">
@@ -163,7 +214,7 @@ export function DepaskanPrintableDocument({
             </div>
 
             {/* QR Code Pojok Kanan Atas */}
-            <div className="flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center shrink-0">
               <div className="w-20 h-20 p-1 border border-slate-300 rounded-lg bg-white shadow-2xs">
                 <img
                   src={qrUrl}
@@ -181,8 +232,8 @@ export function DepaskanPrintableDocument({
             </div>
           </div>
 
-          {/* METADATA BANNER */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold">
+          {/* METADATA BANNER: Always 4 Columns in Print (HP & Laptop identical) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200 print:border-slate-300 text-xs font-semibold break-inside-avoid">
             <div>
               <span className="text-[10px] text-slate-400 block uppercase font-bold">Mata Pelajaran</span>
               <span className="text-slate-900 font-bold">{subject}</span>
@@ -201,8 +252,8 @@ export function DepaskanPrintableDocument({
             </div>
           </div>
 
-          {/* AREA IDENTITAS SISWA (Dotted writing area for offline work) */}
-          <div className="p-3.5 rounded-2xl border-2 border-dashed border-slate-300 bg-white grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-bold">
+          {/* AREA IDENTITAS SISWA: Always 3 Columns in Print (HP & Laptop identical) */}
+          <div className="p-3.5 rounded-2xl border-2 border-dashed border-slate-300 print:border-slate-400 bg-white grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-4 text-xs font-bold break-inside-avoid">
             <div>
               <span className="text-slate-700">Nama Siswa:</span>
               <div className="border-b border-dotted border-slate-400 mt-5 w-full" />
@@ -218,7 +269,7 @@ export function DepaskanPrintableDocument({
           </div>
 
           {/* TITLE DOKUMEN */}
-          <div className="space-y-1">
+          <div className="space-y-1 break-inside-avoid">
             <h2 className="text-lg sm:text-xl font-black text-[#23212A] tracking-tight">
               {title}
             </h2>
@@ -232,10 +283,11 @@ export function DepaskanPrintableDocument({
           {/* ISI KONTEN (Materi Narrative) */}
           {content && (
             <div className="space-y-2">
-              <h3 className="text-xs font-black uppercase tracking-wider text-[#51465B]">
-                Materi / Stimulus Pembelajaran:
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#51465B] flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Materi / Stimulus Pembelajaran:</span>
               </h3>
-              <div className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-wrap p-4 rounded-2xl bg-slate-50/70 border border-slate-200">
+              <div className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-wrap p-4 rounded-2xl bg-slate-50/70 border border-slate-200 print:bg-transparent">
                 {content}
               </div>
             </div>
@@ -244,14 +296,15 @@ export function DepaskanPrintableDocument({
           {/* DAFTAR SOAL / ASESMEN */}
           {questions && questions.length > 0 && (
             <div className="space-y-4 pt-2">
-              <h3 className="text-xs font-black uppercase tracking-wider text-[#51465B]">
-                Lembar Soal & Pilihan Jawaban:
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#51465B] flex items-center gap-1.5">
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>Lembar Soal & Pilihan Jawaban:</span>
               </h3>
 
               {questions.map((q, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3"
+                  className="p-4 rounded-2xl border border-slate-200 print:border-slate-300 bg-white space-y-3 break-inside-avoid"
                 >
                   <div className="flex items-start gap-2.5">
                     <span className="w-6 h-6 rounded-full bg-[#51465B] text-[#FFD36D] text-xs font-black flex items-center justify-center shrink-0">
@@ -262,9 +315,9 @@ export function DepaskanPrintableDocument({
                     </p>
                   </div>
 
-                  {/* Multiple Choice Options with Bubble Mark */}
+                  {/* Multiple Choice Options: Always 2 Columns in Print */}
                   {q.type === "multiple_choice" && q.options && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-2 pl-8 pt-1">
                       {q.options.map((opt) => (
                         <div
                           key={opt.key}
@@ -299,7 +352,7 @@ export function DepaskanPrintableDocument({
           )}
 
           {/* FOOTER VERIFIKASI */}
-          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[10px] text-slate-500 gap-2">
+          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row print:flex-row items-center justify-between text-[10px] text-slate-500 gap-2 break-inside-avoid">
             <span>
               Dicetak melalui DEPASKAN &bull; Keaslian dokumen terverifikasi &bull; Halaman 1 dari 1
             </span>
@@ -309,6 +362,37 @@ export function DepaskanPrintableDocument({
           </div>
         </div>
       </div>
+
+      {/* EMBEDDED GLOBAL PRINT STYLES SPECIFIC TO PORTAL */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+          }
+          body.depaskan-print-modal-active > *:not(.depaskan-printable-portal) {
+            display: none !important;
+          }
+          body.depaskan-print-modal-active {
+            background-color: white !important;
+            color: black !important;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 100% !important;
+            max-height: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .break-inside-avoid {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+        }
+      `}</style>
     </div>
   );
+
+  if (!mounted) return null;
+
+  return createPortal(modalMarkup, document.body);
 }
