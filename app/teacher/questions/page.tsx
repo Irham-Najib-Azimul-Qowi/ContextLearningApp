@@ -47,6 +47,7 @@ import {
   School,
   UserProfile,
   LearningRoom,
+  isSubjectMatch,
 } from "@/lib/db/types";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
@@ -480,8 +481,25 @@ function TeacherQuestionsContent() {
   useEffect(() => {
     loadData();
     const handleSync = () => loadData();
+    const handleQuestionSaved = (e: any) => {
+      const q = e?.detail;
+      if (q?.id) {
+        setCreatedQuestionId(q.id);
+        setCreatedQuestionIds((prev) => Array.from(new Set([q.id, ...prev])));
+      }
+      loadData();
+    };
+
     window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("questionSaved", handleQuestionSaved as EventListener);
     window.addEventListener("storage", handleSync);
+
+    const createdParam = searchParams?.get("created");
+    if (createdParam) {
+      setCreatedQuestionId(createdParam);
+      setCreatedQuestionIds([createdParam]);
+    }
+
     const methodParam = searchParams?.get("method");
     const actionParam = searchParams?.get("action");
     if (!hasAutoOpenedRef.current && (methodParam === "manual" || actionParam === "manual" || actionParam === "new")) {
@@ -490,6 +508,7 @@ function TeacherQuestionsContent() {
     }
     return () => {
       window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("questionSaved", handleQuestionSaved as EventListener);
       window.removeEventListener("storage", handleSync);
     };
   }, [searchParams]);
@@ -907,10 +926,11 @@ function TeacherQuestionsContent() {
     try {
       const user = currentUser || repository.getCurrentUser();
       const questionId = patentQuestionId || repository.getNextQuestionId();
+      const effectiveSchoolId = activeSchool?.id || school?.id || "school-active";
       const saved = repository.saveQuestion({
         id: questionId,
-        school_id: school?.id || "school-active",
-        subject: subject as "Matematika" | "Bahasa Indonesia" | "IPS",
+        school_id: effectiveSchoolId,
+        subject: subject as any,
         grade,
         topic: effectiveTopic,
         items: itemsToSave,
@@ -920,6 +940,19 @@ function TeacherQuestionsContent() {
 
       setCreatedQuestionId(saved.id);
       setCreatedQuestionIds([saved.id]);
+
+      // Reset any active filters so newly saved question is NEVER hidden!
+      setSearchQuery("");
+      setFilterSubject("Semua Mapel");
+      setFilterType("all");
+      setPreviewQuestion(null);
+      setIsEditingPreview(false);
+
+      // Clean up URL query parameters (?method=manual, etc.)
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, "", "/teacher/questions");
+      }
+
       loadData();
       setWizardStep(4);
     } catch (saveErr: any) {
@@ -998,6 +1031,11 @@ function TeacherQuestionsContent() {
   };
 
   const filteredQuestions = questions.filter((q) => {
+    // Newly created questions always bypass filters so the teacher sees them immediately
+    if ((createdQuestionId && q.id === createdQuestionId) || createdQuestionIds.includes(q.id)) {
+      return true;
+    }
+
     const qItems = getQuestionItems(q);
     const matchesSearch =
       q.question_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1016,7 +1054,7 @@ function TeacherQuestionsContent() {
           (qItems.some((it) => it.type === "multiple_choice") &&
             qItems.some((it) => it.type === "essay"))));
 
-    const matchesSubject = filterSubject === "Semua Mapel" || q.subject.toLowerCase() === filterSubject.toLowerCase();
+    const matchesSubject = isSubjectMatch(q.subject, filterSubject);
     return matchesSearch && matchesType && matchesSubject;
   });
 
@@ -1823,6 +1861,12 @@ function TeacherQuestionsContent() {
                               {items.length} Butir Soal
                             </span>
 
+                            {((createdQuestionId && q.id === createdQuestionId) || createdQuestionIds.includes(q.id)) && (
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white border border-emerald-700 font-black animate-pulse shadow-xs text-[10px]">
+                                Baru Disimpan
+                              </span>
+                            )}
+
                             {mcCount > 0 && essayCount > 0 ? (
                               <span className="px-2.5 py-0.5 rounded-full bg-purple-900/15 text-purple-900 border border-purple-900/20">
                                 {mcCount} PG &amp; {essayCount} Esai
@@ -2040,7 +2084,20 @@ function TeacherQuestionsContent() {
               {/* Close / Batal Button di pojok kanan atas */}
               <button
                 type="button"
-                onClick={() => setIsWizardOpen(false)}
+                onClick={() => {
+                  setIsWizardOpen(false);
+                  if (wizardStep === 4) {
+                    setSearchQuery("");
+                    setFilterSubject("Semua Mapel");
+                    setFilterType("all");
+                    setPreviewQuestion(null);
+                    setIsEditingPreview(false);
+                    loadData();
+                    if (typeof window !== "undefined") {
+                      window.history.replaceState({}, "", "/teacher/questions");
+                    }
+                  }
+                }}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                 title="Batal / Tutup"
               >
@@ -2945,7 +3002,7 @@ function TeacherQuestionsContent() {
                     onClick={() => {
                       setIsWizardOpen(false);
                       const firstId = createdQuestionIds[0] || createdQuestionId;
-                      const q = questions.find((item) => item.id === firstId) || questions[0];
+                      const q = (firstId ? repository.getQuestion(firstId) : null) || questions.find((item) => item.id === firstId) || questions[0];
                       if (q) handleOpenPublishRoom(q);
                     }}
                     className="w-full sm:w-auto py-3 px-6 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold border border-[#645770]/40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
@@ -2956,7 +3013,21 @@ function TeacherQuestionsContent() {
 
                   <button
                     type="button"
-                    onClick={() => setIsWizardOpen(false)}
+                    onClick={() => {
+                      setIsWizardOpen(false);
+                      setSearchQuery("");
+                      setFilterSubject("Semua Mapel");
+                      setFilterType("all");
+                      loadData();
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("new");
+                        url.searchParams.delete("generate");
+                        url.searchParams.delete("fromMaterial");
+                        url.searchParams.delete("materialId");
+                        window.history.replaceState({}, "", url.toString());
+                      }
+                    }}
                     className="w-full sm:w-auto py-3 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-extrabold shadow-md cursor-pointer"
                   >
                     Selesai & Lihat Soal

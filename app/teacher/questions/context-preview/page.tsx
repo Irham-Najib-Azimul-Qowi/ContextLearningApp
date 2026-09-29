@@ -127,7 +127,7 @@ function ContextPreviewContent() {
 
     setIsSaved(true);
     setTimeout(() => {
-      router.push("/teacher/questions");
+      router.push(`/teacher/questions?created=${question.id}`);
     }, 1500);
   };
 

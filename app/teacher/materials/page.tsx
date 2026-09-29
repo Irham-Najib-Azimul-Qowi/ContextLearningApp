@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { TeacherWorkspaceShell } from "@/components/layout/teacher-workspace-shell";
 import { repository } from "@/lib/db/repository";
-import { LearningMaterial, School, UserProfile, LearningRoom } from "@/lib/db/types";
+import { LearningMaterial, School, UserProfile, LearningRoom, isSubjectMatch } from "@/lib/db/types";
 import { DepaskanPrintableDocument } from "@/components/print/depaskan-printable-document";
 import { DeleteConfirmationModal } from "@/components/dialog/delete-confirmation-modal";
 import { CameraCaptureModal } from "@/components/media/camera-capture-modal";
@@ -169,9 +169,25 @@ export default function TeacherMaterialsPage() {
     loadData();
     const handleSync = () => loadData();
     window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("materialSaved", handleSync);
     window.addEventListener("storage", handleSync);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const createdId = params.get("created");
+      if (createdId) {
+        setCreatedMaterialId(createdId);
+        setSearchQuery("");
+        setFilterSubject("Semua Mapel");
+      }
+      if (params.get("new") === "true") {
+        handleOpenWizard();
+      }
+    }
+
     return () => {
       window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("materialSaved", handleSync);
       window.removeEventListener("storage", handleSync);
     };
   }, []);
@@ -443,6 +459,9 @@ export default function TeacherMaterialsPage() {
       });
 
       setCreatedMaterialId(newMat.id);
+      setSearchQuery("");
+      setFilterSubject("Semua Mapel");
+      setPreviewMaterial(null);
       loadData();
       setWizardStep(4);
     } catch (saveErr: any) {
@@ -521,11 +540,14 @@ export default function TeacherMaterialsPage() {
   };
 
   const filteredMaterials = materials.filter((m) => {
+    if (createdMaterialId && m.id === createdMaterialId) return true;
+
     const matchesSearch =
+      !searchQuery.trim() ||
       m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterSubject === "Semua Mapel" || m.subject.toLowerCase() === filterSubject.toLowerCase();
+    const matchesFilter = isSubjectMatch(m.subject, filterSubject);
     return matchesSearch && matchesFilter;
   });
 
@@ -821,9 +843,16 @@ export default function TeacherMaterialsPage() {
 
                         {/* Top: Judul di kiri, ID di kanan tanpa kapsul */}
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
-                            {mat.title}
-                          </h3>
+                          <div className="space-y-1">
+                            {createdMaterialId === mat.id && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-emerald-950 shadow-xs mb-1">
+                                <CheckCircle className="w-3 h-3" /> Baru Disimpan
+                              </span>
+                            )}
+                            <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
+                              {mat.title}
+                            </h3>
+                          </div>
                           <span className="shrink-0 font-mono text-[11px] font-bold text-[#FFD36D] tracking-wider pt-0.5">
                             {mat.id}
                           </span>
@@ -904,7 +933,20 @@ export default function TeacherMaterialsPage() {
               {/* Close / Batal Button di pojok kanan atas */}
               <button
                 type="button"
-                onClick={() => setIsWizardOpen(false)}
+                onClick={() => {
+                  setIsWizardOpen(false);
+                  if (wizardStep === 4) {
+                    setSearchQuery("");
+                    setFilterSubject("Semua Mapel");
+                    loadData();
+                    if (typeof window !== "undefined") {
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete("new");
+                      url.searchParams.delete("created");
+                      window.history.replaceState({}, "", url.toString());
+                    }
+                  }
+                }}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                 title="Batal / Tutup"
               >
@@ -1565,7 +1607,7 @@ export default function TeacherMaterialsPage() {
                     type="button"
                     onClick={() => {
                       setIsWizardOpen(false);
-                      const mat = materials.find((m) => m.id === createdMaterialId) || materials[0];
+                      const mat = (createdMaterialId ? repository.getMaterialById(createdMaterialId) : null) || materials.find((m) => m.id === createdMaterialId) || materials[0];
                       if (mat) handleOpenPublishRoom(mat);
                     }}
                     className="w-full sm:w-auto py-3 px-6 rounded-2xl bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] text-xs font-bold border border-[#645770]/40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
@@ -1576,7 +1618,18 @@ export default function TeacherMaterialsPage() {
 
                   <button
                     type="button"
-                    onClick={() => setIsWizardOpen(false)}
+                    onClick={() => {
+                      setIsWizardOpen(false);
+                      setSearchQuery("");
+                      setFilterSubject("Semua Mapel");
+                      loadData();
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("new");
+                        url.searchParams.delete("created");
+                        window.history.replaceState({}, "", url.toString());
+                      }
+                    }}
                     className="w-full sm:w-auto py-3 px-7 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-extrabold shadow-md cursor-pointer"
                   >
                     Selesai & Lihat Modul

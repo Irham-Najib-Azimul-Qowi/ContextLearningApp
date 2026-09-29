@@ -309,7 +309,7 @@ function CreateMaterialContent() {
     }
 
     const teacher = repository.getCurrentUser();
-    repository.saveMaterial({
+    const saved = repository.saveMaterial({
       school_id: school.id,
       teacher_id: teacher.id || "usr-teacher-01",
       title: effectiveTitle,
@@ -321,7 +321,7 @@ function CreateMaterialContent() {
       published_to_classes: asDraft ? [] : selectedClasses,
     });
 
-    router.push("/teacher/materials");
+    router.push(`/teacher/materials?created=${saved.id}`);
   };
 
   return (

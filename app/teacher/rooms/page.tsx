@@ -164,14 +164,25 @@ function TeacherRoomsContent() {
     loadData();
     const handleSync = () => loadData();
     window.addEventListener("repositorySyncCompleted", handleSync);
+    window.addEventListener("roomSaved", handleSync);
     window.addEventListener("storage", handleSync);
     const actionParam = searchParams?.get("action");
+    const createdCode = searchParams?.get("created");
+    if (createdCode) {
+      const found = repository.getRoomByCode(createdCode) || repository.getRoom(createdCode);
+      if (found) {
+        setCreatedRoom(found);
+      }
+      setSearchQuery("");
+      setFilterType("all");
+    }
     if (!hasAutoOpenedRef.current && (actionParam === "new" || actionParam === "create")) {
       hasAutoOpenedRef.current = true;
       handleOpenWizard();
     }
     return () => {
       window.removeEventListener("repositorySyncCompleted", handleSync);
+      window.removeEventListener("roomSaved", handleSync);
       window.removeEventListener("storage", handleSync);
     };
   }, [searchParams]);
@@ -284,13 +295,19 @@ function TeacherRoomsContent() {
 
     setIsSubmitting(false);
     setCreatedRoom(newRoom);
-    setWizardStep(4);
+    setSearchQuery("");
+    setFilterType("all");
+    setPreviewRoom(null);
     loadData();
+    setWizardStep(4);
   };
 
   const filteredRooms = rooms.filter((r) => {
+    if (createdRoom && (r.id === createdRoom.id || r.code === createdRoom.code)) return true;
+
     const matchesFilter = filterType === "all" || r.type === filterType;
     const matchesSearch =
+      !searchQuery.trim() ||
       r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.subject.toLowerCase().includes(searchQuery.toLowerCase());
@@ -921,9 +938,16 @@ function TeacherRoomsContent() {
 
                           {/* Top: Judul di kiri, Kode di kanan tanpa kapsul */}
                           <div className="flex items-start justify-between gap-3">
-                            <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
-                              {room.title}
-                            </h3>
+                            <div className="space-y-1">
+                              {createdRoom && (room.id === createdRoom.id || room.code === createdRoom.code) && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-emerald-950 shadow-xs mb-1">
+                                  <Check className="w-3 h-3 stroke-[3]" /> Baru Diterbitkan
+                                </span>
+                              )}
+                              <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
+                                {room.title}
+                              </h3>
+                            </div>
                             <span className="shrink-0 font-mono text-[11px] font-bold text-[#FFD36D] tracking-wider pt-0.5">
                               {room.code}
                             </span>
@@ -964,9 +988,16 @@ function TeacherRoomsContent() {
 
                           {/* Top: Judul di kiri, Kode di kanan tanpa kapsul */}
                           <div className="flex items-start justify-between gap-3">
-                            <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
-                              {room.title}
-                            </h3>
+                            <div className="space-y-1">
+                              {createdRoom && (room.id === createdRoom.id || room.code === createdRoom.code) && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-emerald-950 shadow-xs mb-1">
+                                  <Check className="w-3 h-3 stroke-[3]" /> Baru Diterbitkan
+                                </span>
+                              )}
+                              <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
+                                {room.title}
+                              </h3>
+                            </div>
                             <span className="shrink-0 font-mono text-[11px] font-bold text-[#FFD36D] tracking-wider pt-0.5">
                               {room.code}
                             </span>
@@ -1007,9 +1038,16 @@ function TeacherRoomsContent() {
 
                         {/* Top: Judul di kiri, Kode di kanan tanpa kapsul */}
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm sm:text-base font-black text-[#23212A] leading-snug line-clamp-2">
-                            {room.title}
-                          </h3>
+                          <div className="space-y-1">
+                            {createdRoom && (room.id === createdRoom.id || room.code === createdRoom.code) && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-xs mb-1">
+                                <Check className="w-3 h-3 stroke-[3]" /> Baru Diterbitkan
+                              </span>
+                            )}
+                            <h3 className="text-sm sm:text-base font-black text-[#23212A] leading-snug line-clamp-2">
+                              {room.title}
+                            </h3>
+                          </div>
                           <span className="shrink-0 font-mono text-[11px] font-bold text-[#51465B] tracking-wider pt-0.5">
                             {room.code}
                           </span>
@@ -1078,7 +1116,20 @@ function TeacherRoomsContent() {
               {/* Close / Batal Button di pojok kanan atas */}
               <button
                 type="button"
-                onClick={() => setIsWizardOpen(false)}
+                onClick={() => {
+                  setIsWizardOpen(false);
+                  if (wizardStep === 4) {
+                    setSearchQuery("");
+                    setFilterType("all");
+                    loadData();
+                    if (typeof window !== "undefined") {
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete("action");
+                      url.searchParams.delete("created");
+                      window.history.replaceState({}, "", url.toString());
+                    }
+                  }
+                }}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                 title="Batal / Tutup"
               >
@@ -1490,10 +1541,21 @@ function TeacherRoomsContent() {
 
                   <button
                     type="button"
-                    onClick={() => setIsWizardOpen(false)}
+                    onClick={() => {
+                      setIsWizardOpen(false);
+                      setSearchQuery("");
+                      setFilterType("all");
+                      loadData();
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("action");
+                        url.searchParams.delete("created");
+                        window.history.replaceState({}, "", url.toString());
+                      }
+                    }}
                     className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg transition-all cursor-pointer"
                   >
-                    Selesai & Tutup
+                    Selesai & Lihat Daftar Room
                   </button>
                 </div>
               </div>

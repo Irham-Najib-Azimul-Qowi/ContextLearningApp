@@ -86,7 +86,7 @@ export interface Question {
   id: string;
   school_id: string;
   teacher_id: string;
-  subject: "Matematika" | "Bahasa Indonesia" | "IPS";
+  subject: string;
   grade: number; // 1-6 SD
   topic: string;
   type: "multiple_choice" | "essay" | "mixed";
@@ -396,3 +396,45 @@ export interface LearningRoom {
   visitors?: RoomVisitor[];
 }
 
+/**
+ * Normalizes and matches subject names across filters, seed data, and user input.
+ * Handles abbreviations and variants (e.g. IPAS, IPS, IPA, Seni Budaya, PPKn, etc.)
+ */
+export function isSubjectMatch(itemSubject?: string, filterSubject?: string): boolean {
+  if (!filterSubject || filterSubject === "Semua Mapel" || filterSubject === "Semua" || filterSubject === "all") {
+    return true;
+  }
+  if (!itemSubject) return false;
+
+  const s1 = itemSubject.trim().toLowerCase();
+  const s2 = filterSubject.trim().toLowerCase();
+
+  if (s1 === s2) return true;
+
+  // IPAS / IPA / IPS / Ilmu Pengetahuan Alam & Sosial
+  const isIpas1 = s1.includes("ipas") || s1.includes("ips") || s1.includes("ipa") || s1.includes("alam") || s1.includes("sosial");
+  const isIpas2 = s2.includes("ipas") || s2.includes("ips") || s2.includes("ipa") || s2.includes("alam") || s2.includes("sosial");
+  if (isIpas1 && isIpas2) return true;
+
+  // Seni Budaya & Prakarya / SBdP / Seni
+  const isSeni1 = s1.includes("seni") || s1.includes("sbdp") || s1.includes("prakarya");
+  const isSeni2 = s2.includes("seni") || s2.includes("sbdp") || s2.includes("prakarya");
+  if (isSeni1 && isSeni2) return true;
+
+  // Pancasila / PPKn / Pendidikan Pancasila
+  const isPancasila1 = s1.includes("pancasila") || s1.includes("ppkn") || s1.includes("kewarganegaraan");
+  const isPancasila2 = s2.includes("pancasila") || s2.includes("ppkn") || s2.includes("kewarganegaraan");
+  if (isPancasila1 && isPancasila2) return true;
+
+  // Bahasa Indonesia
+  const isBIndo1 = s1.includes("indonesia") || s1.includes("bahasa");
+  const isBIndo2 = s2.includes("indonesia") || s2.includes("bahasa");
+  if (isBIndo1 && isBIndo2) return true;
+
+  // Matematika
+  const isMath1 = s1.includes("matematika") || s1.includes("mtk") || s1.includes("math");
+  const isMath2 = s2.includes("matematika") || s2.includes("mtk") || s2.includes("math");
+  if (isMath1 && isMath2) return true;
+
+  return s1.includes(s2) || s2.includes(s1);
+}

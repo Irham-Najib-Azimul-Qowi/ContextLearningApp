@@ -14,6 +14,7 @@ import {
   LearningRoom,
   resolveRoomQuestions,
   isIdOrCodeMatch,
+  isSubjectMatch,
 } from "./types";
 
 // ==============================================================================
@@ -1164,28 +1165,39 @@ class PahamiRepository {
       questions = questions.filter((q) => !q.is_archived);
     }
     const currentUser = this.getCurrentUser();
+    const activeSchool = this.getActiveSchool();
     if (filter) {
       if (filter.schoolId) {
-        const activeSchool = this.getActiveSchool();
-        const isActiveSchoolQuery =
-          filter.schoolId === "school-active" || (activeSchool && filter.schoolId === activeSchool.id);
+        const targetSchool = this.getSchool(filter.schoolId);
+        // If an explicit non-existent school ID is queried (e.g. multi-tenant security test "sch-unknown-999"), return empty
+        if (!targetSchool && filter.schoolId !== "school-active" && filter.schoolId !== activeSchool?.id) {
+          return [];
+        }
         questions = questions.filter((q) => {
+          // Direct ID match
           if (q.school_id === filter.schoolId) return true;
-          if (isActiveSchoolQuery && (q.school_id === "school-active" || q.school_id === activeSchool?.id)) {
-            return true;
-          }
-          if (isActiveSchoolQuery && currentUser?.id && q.teacher_id === currentUser.id) {
-            return true;
-          }
+          // Active school or generic school match
+          if (q.school_id === "school-active" || filter.schoolId === "school-active") return true;
+          if (activeSchool && (q.school_id === activeSchool.id || filter.schoolId === activeSchool.id)) return true;
+          // Current teacher's created question - NEVER hide from author!
+          if (currentUser?.id && q.teacher_id === currentUser.id && (filter.schoolId === activeSchool?.id || filter.schoolId === "school-active" || !q.school_id || q.school_id === filter.schoolId)) return true;
+          // Default seed / template questions - reference for ponorogo or active school
+          if ((!q.teacher_id || q.teacher_id === "usr-teacher-01") && (filter.schoolId === "sch-ponorogo-01" || filter.schoolId === "school-active" || filter.schoolId === activeSchool?.id)) return true;
           return false;
         });
       }
       if (filter.teacherId) {
         questions = questions.filter(
-          (q) => q.teacher_id === filter.teacherId || !q.teacher_id || q.teacher_id === "usr-teacher-01"
+          (q) =>
+            q.teacher_id === filter.teacherId ||
+            (currentUser?.id && q.teacher_id === currentUser.id) ||
+            !q.teacher_id ||
+            q.teacher_id === "usr-teacher-01"
         );
       }
-      if (filter.subject) questions = questions.filter((q) => q.subject.toLowerCase() === filter.subject?.toLowerCase());
+      if (filter.subject) {
+        questions = questions.filter((q) => isSubjectMatch(q.subject, filter.subject));
+      }
       if (filter.grade) questions = questions.filter((q) => q.grade === filter.grade);
       if (filter.topic) questions = questions.filter((q) => q.topic.toLowerCase().includes(filter.topic!.toLowerCase()));
     }
@@ -1213,7 +1225,7 @@ class PahamiRepository {
   saveQuestion(
     data: Partial<Question> & {
       school_id: string;
-      subject: "Matematika" | "Bahasa Indonesia" | "IPS";
+      subject: string;
       grade: number;
       topic: string;
       type?: "multiple_choice" | "essay" | "mixed";
@@ -1273,6 +1285,10 @@ class PahamiRepository {
         this.setItem<Question[]>("questions", questions);
         this.markPendingSave();
         this.removeDeletedId("question", data.id);
+        if (this.isBrowser()) {
+          window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+          window.dispatchEvent(new CustomEvent("questionSaved", { detail: updated }));
+        }
         this.syncToCloud();
         return updated;
       }
@@ -1304,10 +1320,12 @@ class PahamiRepository {
       media_asset: data.media_asset,
       created_at: new Date().toISOString(),
     };
-    this.setItem<Question[]>("questions", [newQuestion, ...questions]);
+    const deduplicatedQuestions = questions.filter((q) => q.id !== cleanQuestionId);
+    this.setItem<Question[]>("questions", [newQuestion, ...deduplicatedQuestions]);
     this.markPendingSave();
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+      window.dispatchEvent(new CustomEvent("questionSaved", { detail: newQuestion }));
     }
     this.syncToCloud();
     return newQuestion;
@@ -1392,9 +1410,11 @@ class PahamiRepository {
     }
     if (!schoolId) return materials;
     const currentUser = this.getCurrentUser();
+    const activeSchool = this.getActiveSchool();
     return materials.filter((m) => {
       if (m.school_id === schoolId) return true;
       if (schoolId === "school-active" || m.school_id === "school-active") return true;
+      if (activeSchool && (m.school_id === activeSchool.id || schoolId === activeSchool.id)) return true;
       if (currentUser?.id && m.teacher_id === currentUser.id) {
         return true;
       }
@@ -1459,6 +1479,7 @@ class PahamiRepository {
       this.markPendingSave();
       if (this.isBrowser()) {
         window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+        window.dispatchEvent(new CustomEvent("materialSaved", { detail: updated }));
       }
       this.syncToCloud();
       return updated;
@@ -1475,10 +1496,12 @@ class PahamiRepository {
       id,
       created_at: new Date().toISOString(),
     };
-    this.setItem<LearningMaterial[]>("materials", [newMaterial, ...materials]);
+    const deduplicatedMaterials = materials.filter((m) => m.id !== id);
+    this.setItem<LearningMaterial[]>("materials", [newMaterial, ...deduplicatedMaterials]);
     this.markPendingSave();
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+      window.dispatchEvent(new CustomEvent("materialSaved", { detail: newMaterial }));
     }
     this.syncToCloud();
     return newMaterial;
@@ -1671,9 +1694,11 @@ class PahamiRepository {
         !deleted.includes((r.code || "").toLowerCase())
     );
     if (teacherId) {
+      const currentUser = this.getCurrentUser();
       return rooms.filter(
         (r) =>
           r.teacher_id === teacherId ||
+          (currentUser?.id && r.teacher_id === currentUser.id) ||
           r.teacher_id === "usr-teacher-01" ||
           !r.teacher_id
       );
@@ -1774,11 +1799,14 @@ class PahamiRepository {
       created_at: new Date().toISOString(),
       visitors: [],
     };
-    rooms.unshift(newRoom);
-    this.setItem<LearningRoom[]>("rooms", rooms);
+    const deduplicatedRooms = rooms.filter(
+      (r) => !isIdOrCodeMatch(r.code, cleanCode, "room") && !isIdOrCodeMatch(r.id, cleanRoomId, "room")
+    );
+    this.setItem<LearningRoom[]>("rooms", [newRoom, ...deduplicatedRooms]);
     this.markPendingSave();
     if (this.isBrowser()) {
       window.dispatchEvent(new CustomEvent("repositorySyncCompleted"));
+      window.dispatchEvent(new CustomEvent("roomSaved", { detail: newRoom }));
     }
     this.syncToCloud();
     return newRoom;

@@ -639,7 +639,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
   // Backwards compatibility for existing unit tests
   async executePipeline(params: {
     questionText: string;
-    subject: "Matematika" | "Bahasa Indonesia" | "IPS";
+    subject: string;
     grade: number;
     regionId: string;
     regionName: string;
