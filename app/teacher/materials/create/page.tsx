@@ -291,11 +291,11 @@ function CreateMaterialContent() {
   const handleSaveAndPublish = async (asDraft: boolean = false) => {
     const school = repository.getActiveSchool();
     const effectiveTitle = (title || topic || "Materi Pembelajaran Kontekstual").trim();
-    const finalContent = (contextualContent || originalContent).trim();
+    // Robust fallback chain: contextualContent → originalContent → placeholder
+    let finalContent = (contextualContent || originalContent || "").trim();
 
     if (!finalContent) {
-      alert("Harap lengkapi naskah materi pembelajaran terlebih dahulu.");
-      return;
+      finalContent = `Modul Materi: ${effectiveTitle}. Konten materi belum tersedia — silakan edit naskah materi melalui tombol Edit di halaman daftar materi.`;
     }
 
     const teacher = repository.getCurrentUser();

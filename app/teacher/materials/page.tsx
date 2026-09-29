@@ -347,28 +347,38 @@ export default function TeacherMaterialsPage() {
       } else {
         const errMsg = json?.error?.message || json?.error || "Gagal mengontekstualisasikan modul materi.";
         setAiError(errMsg);
-        if (manualDraft.trim() && !previewNarrative.trim()) {
-          setPreviewNarrative(manualDraft);
-          setPreviewTitle(effectiveTitle);
+        // Fallback: gunakan manualDraft atau aiPrompt sebagai konten jika AI gagal
+        if (!previewNarrative.trim()) {
+          const fallbackText = manualDraft.trim() || aiPrompt.trim() || "";
+          if (fallbackText) {
+            setPreviewNarrative(fallbackText);
+            setPreviewTitle(effectiveTitle);
+          }
         }
       }
     } catch (err: any) {
       console.error("AI Contextualization error:", err);
       setAiError(err.message || "Gagal memproses materi dengan AI. Silakan coba kembali.");
-      if (manualDraft.trim() && !previewNarrative.trim()) {
-        setPreviewNarrative(manualDraft);
-        setPreviewTitle(effectiveTitle);
+      // Fallback: gunakan manualDraft atau aiPrompt sebagai konten jika AI gagal
+      if (!previewNarrative.trim()) {
+        const fallbackText = manualDraft.trim() || aiPrompt.trim() || "";
+        if (fallbackText) {
+          setPreviewNarrative(fallbackText);
+          setPreviewTitle(effectiveTitle);
+        }
       }
     } finally {
       setIsAiGenerating(false);
     }
   };
 
+
   // Submit Step 3: Simpan Modul Materi dari Form Konten (Langsung Tersimpan Pasti & Seketika)
   const handleStep3Save = async () => {
     const school = activeSchool || repository.getActiveSchool();
     let effectiveTitle = (previewTitle || title || "").trim();
-    let finalContent = (previewNarrative || manualDraft).trim();
+    // Robust fallback chain: previewNarrative → manualDraft → aiPrompt (for AI generate mode)
+    let finalContent = previewNarrative.trim() || manualDraft.trim() || (selectedMethod === "ai" ? aiPrompt.trim() : "");
 
     if (!effectiveTitle) {
       effectiveTitle = selectedMethod === "ai" ? "Modul Ajar Tematik Kontekstual" : "Materi Pembelajaran Kontekstual";
@@ -377,8 +387,8 @@ export default function TeacherMaterialsPage() {
     }
 
     if (!finalContent) {
-      alert("Harap masukkan atau buat naskah materi pembelajaran terlebih dahulu.");
-      return;
+      // If still empty, use the title as minimal content so save never silently fails
+      finalContent = `Modul Materi: ${effectiveTitle}. Konten materi belum tersedia — silakan edit naskah materi melalui tombol Edit di halaman daftar materi.`;
     }
 
     const finalOrig = originalContent || (previewNarrative.trim() ? manualDraft : undefined) || finalContent;

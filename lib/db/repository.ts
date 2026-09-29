@@ -683,10 +683,10 @@ class PahamiRepository {
 
   private applyAuthoritativeCloudData(cloudData: any): void {
     if (!this.isBrowser() || !cloudData) return;
-    // If a local save happened very recently (within 2s), skip cloud overwrite to avoid race
+    // If a local save happened very recently (within 8s), skip cloud overwrite to avoid race
     // The next sync cycle will reconcile properly
     const timeSinceLastSave = Date.now() - this.pendingSaveTimestamp;
-    if (this.pendingSaveTimestamp > 0 && timeSinceLastSave < 2000) {
+    if (this.pendingSaveTimestamp > 0 && timeSinceLastSave < 8000) {
       return;
     }
     const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted, deletedIds } = cloudData;
@@ -729,15 +729,15 @@ class PahamiRepository {
     if (Array.isArray(materials)) {
       const currentMats = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
       const matMap = new Map<string, LearningMaterial>();
-      // 1. Masukkan materi dari cloud yang tidak ada di tombstone
-      materials.forEach((m) => {
+      // 1. Masukkan materi LOKAL DULUAN agar item baru yang baru disimpan TIDAK tertimpa oleh cloud
+      currentMats.forEach((m) => {
         if (m && m.id && !currentTombstones.materials.some((del) => isIdOrCodeMatch(del, m.id, "material"))) {
           const canonical = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           matMap.set(canonical || m.id, m);
         }
       });
-      // 2. UNION dengan materi lokal: item lokal yang belum di cloud tetap aman
-      currentMats.forEach((m) => {
+      // 2. UNION dengan materi dari cloud: cloud hanya menambahkan item yang belum ada di lokal
+      materials.forEach((m) => {
         if (m && m.id && !currentTombstones.materials.some((del) => isIdOrCodeMatch(del, m.id, "material"))) {
           const canonical = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           if (!matMap.has(canonical || m.id)) {
@@ -752,15 +752,15 @@ class PahamiRepository {
     if (Array.isArray(questions)) {
       const currentQs = this.getItem<Question[]>("questions", SEED_QUESTIONS);
       const qMap = new Map<string, Question>();
-      // 1. Masukkan butir soal dari cloud yang tidak ada di tombstone
-      questions.forEach((q) => {
+      // 1. Masukkan butir soal LOKAL DULUAN agar soal baru yang baru disimpan TIDAK tertimpa oleh cloud
+      currentQs.forEach((q) => {
         if (q && q.id && !currentTombstones.questions.some((del) => isIdOrCodeMatch(del, q.id, "question"))) {
           const canonical = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           qMap.set(canonical || q.id, q);
         }
       });
-      // 2. UNION dengan butir soal lokal: JANGAN PERNAH menimpa/menghapus soal lokal yang baru dibuat!
-      currentQs.forEach((q) => {
+      // 2. UNION dengan butir soal dari cloud: cloud hanya menambahkan item yang belum ada di lokal
+      questions.forEach((q) => {
         if (q && q.id && !currentTombstones.questions.some((del) => isIdOrCodeMatch(del, q.id, "question"))) {
           const canonical = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           if (!qMap.has(canonical || q.id)) {
@@ -775,8 +775,8 @@ class PahamiRepository {
     if (Array.isArray(rooms)) {
       const currentRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
       const rMap = new Map<string, LearningRoom>();
-      // 1. Masukkan room dari cloud yang tidak ada di tombstone
-      rooms.forEach((r) => {
+      // 1. Masukkan room LOKAL DULUAN agar room baru yang baru disimpan TIDAK tertimpa oleh cloud
+      currentRooms.forEach((r) => {
         const isTombstoned = currentTombstones.rooms.some(
           (del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room")
         );
@@ -785,16 +785,17 @@ class PahamiRepository {
           rMap.set(canonical, r);
         }
       });
-      // 2. UNION dengan room lokal agar room baru dan pengunjung lokal tetap terintegrasi
-      currentRooms.forEach((r) => {
+      // 2. UNION dengan room dari cloud: cloud menambahkan item baru atau menggabungkan visitors
+      rooms.forEach((r) => {
         const isTombstoned = currentTombstones.rooms.some(
           (del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room")
         );
         if (r && (r.id || r.code) && !isTombstoned) {
           const canonical = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           if (rMap.has(canonical)) {
-            const existing = rMap.get(canonical)!;
-            const combinedVisitors = [...(existing.visitors || [])];
+            // Room sudah ada di lokal — hanya gabungkan visitors, jangan timpa data lokal
+            const localRoom = rMap.get(canonical)!;
+            const combinedVisitors = [...(localRoom.visitors || [])];
             (r.visitors || []).forEach((v: any) => {
               if (
                 v &&
@@ -807,9 +808,8 @@ class PahamiRepository {
               }
             });
             rMap.set(canonical, {
-              ...existing,
-              ...r,
-              access_count: Math.max(existing.access_count || 0, r.access_count || 0),
+              ...localRoom,
+              access_count: Math.max(localRoom.access_count || 0, r.access_count || 0),
               visitors: combinedVisitors,
             });
           } else {
