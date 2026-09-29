@@ -420,9 +420,8 @@ ${
     : `INSTRUKSI ADAPTASI DARI NASKAH ASLI GURU:
 1. PARSING LENGKAP SEMUA BUTIR SOAL:
    Periksa naskah asli berikut (sumber: ${normalized.sourceType}).
-   Naskah asli guru memuat ${normalized.questionCount} butir soal.
-   ANDA WAJIB MENGHASILKAN PERSIS ${normalized.questionCount} BUTIR SOAL yang dikontekstualisasikan!
-   DILARANG MENGURANGI (jangan hanya buat 1 soal) DAN DILARANG MEMECAH OPSI MENJADI SOAL BARU.
+   Ekstrak dan kontekstualisasikan SETIAP BUTIR SOAL yang Anda temukan di naskah asli.
+   JANGAN MENGURANGI SOAL (misal jika ada 3 soal di teks, hasilkan 3 soal) DAN JANGAN MENGGABUNGKAN SOAL.
 2. Pertahankan tipe soal masing-masing butir (multiple_choice atau essay).
 3. Pertahankan angka-angka hitungan dan kunci jawaban asli.
 4. Naskah Asli Guru:
