@@ -140,16 +140,27 @@ function TeacherRoomsContent() {
 
   // Open Wizard
   const handleOpenWizard = () => {
+    const freshMats = repository.getMaterials();
+    const freshQs = repository.getQuestions();
+    const school = repository.getActiveSchool();
+    setActiveSchool(school);
+    const user = repository.getCurrentUser();
+    setCurrentUser(user);
+    const allRooms = repository.getRooms();
+    setRooms(allRooms);
+    setMaterials(freshMats);
+    setQuestions(freshQs);
+
     setWizardStep(1);
     setRoomType("material");
     const patentCode = repository.getNextRoomCode();
     setRoomCode(patentCode);
-    if (materials.length > 0) {
-      setSelectedResourceId(materials[0].id);
+    if (freshMats.length > 0) {
+      setSelectedResourceId(freshMats[0].id);
     }
-    if (questions.length > 0) {
-      setSecondaryResourceId(questions[0].id);
-      setSelectedQuestionIds(questions.map((q) => q.id));
+    if (freshQs.length > 0) {
+      setSecondaryResourceId(freshQs[0].id);
+      setSelectedQuestionIds(freshQs.map((q) => q.id));
     } else {
       setSelectedQuestionIds([]);
     }
@@ -240,20 +251,25 @@ function TeacherRoomsContent() {
 
   // Step 1: Select Type
   const handleSelectType = (type: "material" | "question" | "both") => {
+    const freshMats = repository.getMaterials();
+    const freshQs = repository.getQuestions();
+    setMaterials(freshMats);
+    setQuestions(freshQs);
+
     setRoomType(type);
     setCustomTitle("");
-    if (type === "material" && materials.length > 0) {
-      setSelectedResourceId(materials[0].id);
-    } else if (type === "question" && questions.length > 0) {
-      setSelectedResourceId(questions[0].id);
-      setSelectedQuestionIds(questions.map((q) => q.id));
+    if (type === "material" && freshMats.length > 0) {
+      setSelectedResourceId(freshMats[0].id);
+    } else if (type === "question" && freshQs.length > 0) {
+      setSelectedResourceId(freshQs[0].id);
+      setSelectedQuestionIds(freshQs.map((q) => q.id));
     } else if (type === "both") {
-      if (materials.length > 0) {
-        setSelectedResourceId(materials[0].id);
+      if (freshMats.length > 0) {
+        setSelectedResourceId(freshMats[0].id);
       }
-      if (questions.length > 0) {
-        setSecondaryResourceId(questions[0].id);
-        setSelectedQuestionIds([questions[0].id]);
+      if (freshQs.length > 0) {
+        setSecondaryResourceId(freshQs[0].id);
+        setSelectedQuestionIds([freshQs[0].id]);
       }
     }
     setWizardStep(2);
@@ -263,6 +279,17 @@ function TeacherRoomsContent() {
   const handleStep2Next = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customTitle.trim()) return;
+    const freshMats = repository.getMaterials();
+    const freshQs = repository.getQuestions();
+    setMaterials(freshMats);
+    setQuestions(freshQs);
+    if (!selectedResourceId && freshMats.length > 0) {
+      setSelectedResourceId(freshMats[0].id);
+    }
+    if (selectedQuestionIds.length === 0 && freshQs.length > 0) {
+      setSecondaryResourceId(freshQs[0].id);
+      setSelectedQuestionIds(freshQs.map((q) => q.id));
+    }
     setWizardStep(3);
   };
 

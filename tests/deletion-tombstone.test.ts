@@ -124,4 +124,63 @@ describe("Tombstone Deletion & Synchronization Integrity Tests", () => {
       "Deleted room ID or code must be present in tombstones"
     );
   });
+
+  it("Next ID generators strictly skip all tombstoned IDs and never resurrect deleted items", () => {
+    // 1. Manually add tombstoned IDs
+    repository.addDeletedId("material", "mat1001");
+    repository.addDeletedId("material", "mat1002");
+    repository.addDeletedId("question", "sol1001");
+    repository.addDeletedId("question", "sol1002");
+    repository.addDeletedId("room", "rom1001");
+    repository.addDeletedId("room", "rom1002");
+
+    // 2. Generating next IDs must be strictly > 1002
+    const nextMatId = repository.getNextMaterialId();
+    const nextQId = repository.getNextQuestionId();
+    const nextRoomCode = repository.getNextRoomCode();
+
+    const matNum = parseInt(nextMatId.replace(/\D/g, ""), 10);
+    const qNum = parseInt(nextQId.replace(/\D/g, ""), 10);
+    const roomNum = parseInt(nextRoomCode.replace(/\D/g, ""), 10);
+
+    assert.ok(matNum > 1002, `Next material ID (${nextMatId}) must be > 1002`);
+    assert.ok(qNum > 1002, `Next question ID (${nextQId}) must be > 1002`);
+    assert.ok(roomNum > 1002, `Next room code (${nextRoomCode}) must be > 1002`);
+  });
+
+  it("Active local items are never wiped out even if cloud sends conflicting tombstones", () => {
+    // Save a new active question and material
+    const activeQ = repository.saveQuestion({
+      school_id: "sch-ponorogo-01",
+      subject: "Matematika",
+      grade: 5,
+      topic: "Active Question Must Survive Sync",
+      question_text: "Soal aktif harus bertahan",
+    });
+    const activeMat = repository.saveMaterial({
+      title: "Active Material Must Survive Sync",
+      content: "Materi aktif harus bertahan",
+      subject: "IPS",
+      grade: 5,
+    });
+
+    // Emulate cloud sync sending authoritative payload that contains tombstone matching the active items
+    (repository as any).applyAuthoritativeCloudData({
+      questions: [],
+      materials: [],
+      rooms: [],
+      deletedIds: {
+        questions: [activeQ.id],
+        materials: [activeMat.id],
+        rooms: [],
+      },
+    });
+
+    // Verify active items survived
+    const retrievedQ = repository.getQuestion(activeQ.id);
+    const retrievedMat = repository.getMaterial(activeMat.id);
+
+    assert.ok(retrievedQ, "Active question must survive sync and not be tombstoned");
+    assert.ok(retrievedMat, "Active material must survive sync and not be tombstoned");
+  });
 });

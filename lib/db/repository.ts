@@ -692,14 +692,26 @@ class PahamiRepository {
     const { materials, questions, rooms, schools, activeSchool, profile, onboardingCompleted, deletedIds } = cloudData;
     let hasChanges = false;
 
+    const localMats = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const localQs = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const localRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+
     if (deletedIds && typeof deletedIds === "object") {
       const currentDeleted = this.getDeletedIds();
-      const mergedDeleted = {
-        materials: Array.from(new Set([...(currentDeleted.materials || []), ...(deletedIds.materials || [])])),
-        questions: Array.from(new Set([...(currentDeleted.questions || []), ...(deletedIds.questions || [])])),
-        rooms: Array.from(new Set([...(currentDeleted.rooms || []), ...(deletedIds.rooms || [])])),
-      };
-      this.setItem("deleted_ids", mergedDeleted);
+      const mergedMaterials = Array.from(new Set([...(currentDeleted.materials || []), ...(deletedIds.materials || [])]))
+        .filter((del) => !localMats.some((m) => m && m.id && isIdOrCodeMatch(del, m.id, "material")));
+
+      const mergedQuestions = Array.from(new Set([...(currentDeleted.questions || []), ...(deletedIds.questions || [])]))
+        .filter((del) => !localQs.some((q) => q && q.id && isIdOrCodeMatch(del, q.id, "question")));
+
+      const mergedRooms = Array.from(new Set([...(currentDeleted.rooms || []), ...(deletedIds.rooms || [])]))
+        .filter((del) => !localRooms.some((r) => r && (r.code || r.id) && (isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room"))));
+
+      this.setItem("deleted_ids", {
+        materials: mergedMaterials,
+        questions: mergedQuestions,
+        rooms: mergedRooms,
+      });
     }
 
     const currentTombstones = this.getDeletedIds();
@@ -1209,15 +1221,19 @@ class PahamiRepository {
   }
 
   getNextQuestionId(): string {
-    const questions = this.getQuestions({ includeArchived: true });
+    const questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const deleted = this.getDeletedIds().questions || [];
     let maxNum = 1000;
-    questions.forEach((q) => {
-      const match = q.id.match(/(?:sol|q|soal)-?(\d+)/i);
+    const checkNum = (idStr?: string) => {
+      if (!idStr) return;
+      const match = idStr.match(/(?:sol|q|soal)?-?(\d+)/i);
       if (match) {
         const val = parseInt(match[1], 10);
-        if (val > maxNum && val < 99999) maxNum = val;
+        if (val > maxNum && val < 999999) maxNum = val;
       }
-    });
+    };
+    questions.forEach((q) => checkNum(q.id));
+    deleted.forEach((d) => checkNum(d));
     const nextNum = Math.max(maxNum + 1, 1001);
     return `sol${nextNum}`;
   }
@@ -1440,15 +1456,19 @@ class PahamiRepository {
   }
 
   getNextMaterialId(): string {
-    const materials = this.getMaterials(undefined, true);
+    const materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const deleted = this.getDeletedIds().materials || [];
     let maxNum = 1000;
-    materials.forEach((m) => {
-      const match = (m.id || "").match(/(?:mat|mtr|materi)-?(\d+)/i);
+    const checkNum = (idStr?: string) => {
+      if (!idStr) return;
+      const match = idStr.match(/(?:mat|mtr|materi)?-?(\d+)/i);
       if (match) {
         const val = parseInt(match[1], 10);
-        if (val > maxNum && val < 99999) maxNum = val;
+        if (val > maxNum && val < 999999) maxNum = val;
       }
-    });
+    };
+    materials.forEach((m) => checkNum(m.id));
+    deleted.forEach((d) => checkNum(d));
     const nextNum = Math.max(maxNum + 1, 1001);
     return `mat${nextNum}`;
   }
@@ -1711,15 +1731,22 @@ class PahamiRepository {
   }
 
   getNextRoomCode(): string {
-    const rooms = this.getRooms();
+    const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+    const deleted = this.getDeletedIds().rooms || [];
     let maxNum = 1000;
-    rooms.forEach((r) => {
-      const match = (r.code || r.id).match(/(?:rom|room|mtr|sol)-?(\d+)/i);
+    const checkNum = (idStr?: string) => {
+      if (!idStr) return;
+      const match = idStr.match(/(?:rom|room|mtr|sol)?-?(\d+)/i);
       if (match) {
         const val = parseInt(match[1], 10);
-        if (val > maxNum && val < 99999) maxNum = val;
+        if (val > maxNum && val < 999999) maxNum = val;
       }
+    };
+    rooms.forEach((r) => {
+      checkNum(r.code);
+      checkNum(r.id);
     });
+    deleted.forEach((d) => checkNum(d));
     const nextNum = Math.max(maxNum + 1, 1001);
     return `rom${nextNum}`;
   }

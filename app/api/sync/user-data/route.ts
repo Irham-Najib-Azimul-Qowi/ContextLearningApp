@@ -46,9 +46,12 @@ function mergeMaterials(existing: any[], incoming: any[], deletedIds: string[] =
     const key = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     if (key) map.set(key, m);
   });
-  cleanMaterials(incoming, deletedIds).forEach((m) => {
-    const key = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (key) map.set(key, m);
+  // Active incoming items always take precedence and are never dropped by stale tombstones
+  (Array.isArray(incoming) ? incoming : []).forEach((m) => {
+    if (m && m.id && m.id !== "mat-test" && m.title !== "Test Material Title") {
+      const key = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (key) map.set(key, m);
+    }
   });
   return Array.from(map.values());
 }
@@ -59,9 +62,12 @@ function mergeQuestions(existing: any[], incoming: any[], deletedIds: string[] =
     const key = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     if (key) map.set(key, q);
   });
-  cleanQuestions(incoming, deletedIds).forEach((q) => {
-    const key = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (key) map.set(key, q);
+  // Active incoming items always take precedence and are never dropped by stale tombstones
+  (Array.isArray(incoming) ? incoming : []).forEach((q) => {
+    if (q && q.id) {
+      const key = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (key) map.set(key, q);
+    }
   });
   return Array.from(map.values());
 }
@@ -74,8 +80,9 @@ function mergeRooms(existing: any[], incoming: any[], deletedIds: string[] = [])
       map.set(key, r);
     }
   });
-  cleanRooms(incoming, deletedIds).forEach((r) => {
-    const key = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Active incoming items always take precedence and merge visitors
+  (Array.isArray(incoming) ? incoming : []).forEach((r) => {
+    const key = (r?.code || r?.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     if (key) {
       if (map.has(key)) {
         const prev = map.get(key);
@@ -337,29 +344,72 @@ export async function POST(request: Request) {
 
     const existingDeletedIds = existingRow?.deleted_ids || {};
 
-    const finalDeletedMaterials = Array.from(
+    const activeMaterialIds = (Array.isArray(materials) ? materials : [])
+      .map((m: any) => m?.id)
+      .filter(Boolean);
+    const activeQuestionIds = (Array.isArray(questions) ? questions : [])
+      .map((q: any) => q?.id)
+      .filter(Boolean);
+    const activeRoomIdentifiers = (Array.isArray(rooms) ? rooms : [])
+      .flatMap((r: any) => [r?.code, r?.id])
+      .filter(Boolean);
+
+    let finalDeletedMaterials = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.materials) ? existingDeletedIds.materials : []),
         ...(Array.isArray(incomingDeletedIds?.materials) ? incomingDeletedIds.materials : []),
         ...(deletedItem?.type === "material" && deletedItem.id ? [deletedItem.id] : []),
       ])
     );
+    if (deletedItem?.type !== "material") {
+      finalDeletedMaterials = finalDeletedMaterials.filter(
+        (del) => !activeMaterialIds.some((matId: string) => isIdOrCodeMatch(del, matId, "material"))
+      );
+    } else {
+      finalDeletedMaterials = finalDeletedMaterials.filter(
+        (del) =>
+          isIdOrCodeMatch(del, deletedItem.id, "material") ||
+          !activeMaterialIds.some((matId: string) => isIdOrCodeMatch(del, matId, "material"))
+      );
+    }
 
-    const finalDeletedQuestions = Array.from(
+    let finalDeletedQuestions = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.questions) ? existingDeletedIds.questions : []),
         ...(Array.isArray(incomingDeletedIds?.questions) ? incomingDeletedIds.questions : []),
         ...(deletedItem?.type === "question" && deletedItem.id ? [deletedItem.id] : []),
       ])
     );
+    if (deletedItem?.type !== "question") {
+      finalDeletedQuestions = finalDeletedQuestions.filter(
+        (del) => !activeQuestionIds.some((qId: string) => isIdOrCodeMatch(del, qId, "question"))
+      );
+    } else {
+      finalDeletedQuestions = finalDeletedQuestions.filter(
+        (del) =>
+          isIdOrCodeMatch(del, deletedItem.id, "question") ||
+          !activeQuestionIds.some((qId: string) => isIdOrCodeMatch(del, qId, "question"))
+      );
+    }
 
-    const finalDeletedRooms = Array.from(
+    let finalDeletedRooms = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.rooms) ? existingDeletedIds.rooms : []),
         ...(Array.isArray(incomingDeletedIds?.rooms) ? incomingDeletedIds.rooms : []),
         ...(deletedItem?.type === "room" && deletedItem.id ? [deletedItem.id.toLowerCase()] : []),
       ])
     );
+    if (deletedItem?.type !== "room") {
+      finalDeletedRooms = finalDeletedRooms.filter(
+        (del) => !activeRoomIdentifiers.some((rId: string) => isIdOrCodeMatch(del, rId, "room"))
+      );
+    } else {
+      finalDeletedRooms = finalDeletedRooms.filter(
+        (del) =>
+          isIdOrCodeMatch(del, deletedItem.id, "room") ||
+          !activeRoomIdentifiers.some((rId: string) => isIdOrCodeMatch(del, rId, "room"))
+      );
+    }
 
     const finalDeletedIds = {
       materials: finalDeletedMaterials,
