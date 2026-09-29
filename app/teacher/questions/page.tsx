@@ -428,9 +428,9 @@ function TeacherQuestionsContent() {
     setActiveSchool(school);
     setCurrentUser(user);
     setRegion(school.region_name || "Kota Madiun");
-    setQuestions(repository.getQuestions({ schoolId: school.id }));
-    setMaterials(repository.getMaterials(school.id));
-    setRooms(repository.getRooms(user.id));
+    setQuestions(repository.getQuestions());
+    setMaterials(repository.getMaterials());
+    setRooms(repository.getRooms());
   };
 
   // Open Wizard (Step 1: Pilih Metode)
@@ -802,7 +802,7 @@ function TeacherQuestionsContent() {
     }
   };
 
-  // Step 3 Save: Simpan Butir Soal dari Form Konten (Semua Input Dikontekstualisasikan Sebelum Disimpan)
+  // Step 3 Save: Simpan Butir Soal dari Form Konten (Langsung Tersimpan Pasti & Seketika)
   const handleStep3Save = async () => {
     const school = activeSchool || repository.getActiveSchool();
     let effectiveTopic = (topic || "").trim();
@@ -817,94 +817,6 @@ function TeacherQuestionsContent() {
     if (validQuestions.length === 0) {
       alert("Harap masukkan minimal satu butir pertanyaan soal sebelum menyimpan.");
       return;
-    }
-
-    // PASTIKAN SEMUA INPUT DIKONTEKSTUALISASIKAN SEBELUM DISIMPAN
-    // Untuk semua input (manual, camera, pdf, ai): jika belum dikontekstualisasikan atau context_variables belum ada, jalankan kontekstualisasi AI otomatis sekarang!
-    const needsContextualization =
-      !overallValidation ||
-      validQuestions.some(
-        (q) => !q.context_variables || q.context_variables.length === 0 || !q.original_question_text
-      );
-
-    if (needsContextualization) {
-      setIsAiGenerating(true);
-      try {
-        const rawItemsText = validQuestions
-          .map((q, idx) => {
-            let itemStr = `Soal ${idx + 1} (${q.type === "essay" ? "Esai" : "Pilihan Ganda"}):\n${q.question_text.trim()}`;
-            if (q.type === "multiple_choice" && q.options && q.options.length > 0) {
-              itemStr += "\n" + q.options.map((o) => `${o.key}. ${o.text}`).join("\n");
-              itemStr += `\nKunci Jawaban: ${q.correct_answer || "A"}`;
-            }
-            if (q.rubric) {
-              itemStr += `\nRubrik: ${q.rubric}`;
-            }
-            return itemStr;
-          })
-          .join("\n\n");
-
-        const res = await fetch("/api/ai/contextualize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "question",
-            inputMode: selectedMethod,
-            prompt: selectedMethod === "ai" ? (aiPrompt || effectiveTopic) : "",
-            rawText: rawItemsText,
-            topic: effectiveTopic,
-            subject,
-            grade,
-            regionId: school.region_id || "35.02",
-            regionName: school.region_name || region || "Kota Madiun",
-          }),
-        });
-
-        const responseText = await res.text();
-        let json: any = null;
-        try {
-          json = JSON.parse(responseText);
-        } catch {
-          json = null;
-        }
-
-        if (json && json.success && json.data && Array.isArray(json.data.questions) && json.data.questions.length > 0) {
-          const validAiItems = json.data.questions.filter((q: any) => {
-            const txt = (q.question_text || q.question || "").trim();
-            return !isSectionHeaderOrMetadata(txt) && txt.length >= 3;
-          });
-          const listToMap = validAiItems.length > 0 ? validAiItems : json.data.questions;
-          const mapped: QuestionDraftItem[] = listToMap.map((q: any, idx: number) => ({
-            id: q.id || `q-draft-${Date.now()}-${idx + 1}`,
-            type: q.type === "essay" ? "essay" : "multiple_choice",
-            original_question_text: q.original_question_text || validQuestions[idx]?.question_text || "",
-            question_text: q.question_text || q.question || "",
-            options: q.options && Array.isArray(q.options)
-              ? q.options.map((o: any, oIdx: number) => ({
-                  key: o.key || String.fromCharCode(65 + oIdx),
-                  text: o.text || String(o),
-                }))
-              : [
-                  { key: "A", text: "" },
-                  { key: "B", text: "" },
-                  { key: "C", text: "" },
-                  { key: "D", text: "" },
-                ],
-            correct_answer: q.correct_answer || q.correctAnswer || "A",
-            explanation: q.explanation || "",
-            rubric: q.rubric || "",
-            context_variables: Array.isArray(q.context_variables) ? q.context_variables : [],
-            validation: q.validation || undefined,
-          }));
-          validQuestions = mapped;
-          setQuestionsList(mapped);
-          if (json.data.validation) setOverallValidation(json.data.validation);
-        }
-      } catch (err) {
-        console.error("Auto-contextualize fallback on save:", err);
-      } finally {
-        setIsAiGenerating(false);
-      }
     }
 
     const itemsToSave: QuestionItem[] = validQuestions.map((q, idx) => ({

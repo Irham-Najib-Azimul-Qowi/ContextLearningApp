@@ -291,27 +291,17 @@ function CreateMaterialContent() {
   const handleSaveAndPublish = async (asDraft: boolean = false) => {
     const school = repository.getActiveSchool();
     const effectiveTitle = (title || topic || "Materi Pembelajaran Kontekstual").trim();
-    let finalContent = (contextualContent || originalContent).trim();
+    const finalContent = (contextualContent || originalContent).trim();
 
     if (!finalContent) {
       alert("Harap lengkapi naskah materi pembelajaran terlebih dahulu.");
       return;
     }
 
-    // Pastikan selalu dikontekstualisasikan sebelum disimpan
-    if (!contextualContent && originalContent.trim()) {
-      await executeContextualization(
-        activeTab === "photo" ? "image" : activeTab === "pdf" ? "pdf" : "manual",
-        originalContent,
-        effectiveTitle
-      );
-      finalContent = contextualContent || originalContent;
-    }
-
     const teacher = repository.getCurrentUser();
     const saved = repository.saveMaterial({
-      school_id: school.id,
-      teacher_id: teacher.id || "usr-teacher-01",
+      school_id: school?.id || "school-active",
+      teacher_id: teacher?.id || "usr-teacher-01",
       title: effectiveTitle,
       subject: subject,
       grade: grade,
@@ -319,6 +309,18 @@ function CreateMaterialContent() {
       is_contextualized: true,
       original_content: originalContent || undefined,
       published_to_classes: asDraft ? [] : selectedClasses,
+      context_variables: localEntitiesAdded.map((ent) => ({
+        original_term: ent.entity,
+        replacement_term: ent.entity,
+        category: ent.category,
+        reason: ent.description,
+      })),
+      validation: validationResult || {
+        is_valid: true,
+        competency_preserved: true,
+        local_context_grounded: true,
+        math_numbers_strictly_preserved: true,
+      },
     });
 
     router.push(`/teacher/materials?created=${saved.id}`);

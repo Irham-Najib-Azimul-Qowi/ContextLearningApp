@@ -504,11 +504,11 @@ class PahamiRepository {
   removeDeletedId(type: "material" | "question" | "room", id: string): void {
     const current = this.getDeletedIds();
     if (type === "material") {
-      current.materials = (current.materials || []).filter((x) => x !== id);
+      current.materials = (current.materials || []).filter((x) => !isIdOrCodeMatch(x, id, "material"));
     } else if (type === "question") {
-      current.questions = (current.questions || []).filter((x) => x !== id);
+      current.questions = (current.questions || []).filter((x) => !isIdOrCodeMatch(x, id, "question"));
     } else if (type === "room") {
-      current.rooms = (current.rooms || []).filter((x) => x !== id.toLowerCase());
+      current.rooms = (current.rooms || []).filter((x) => !isIdOrCodeMatch(x, id, "room"));
     }
     this.setItem("deleted_ids", current);
   }
@@ -1180,7 +1180,7 @@ class PahamiRepository {
           if (q.school_id === "school-active" || filter.schoolId === "school-active") return true;
           if (activeSchool && (q.school_id === activeSchool.id || filter.schoolId === activeSchool.id)) return true;
           // Current teacher's created question - NEVER hide from author!
-          if (currentUser?.id && q.teacher_id === currentUser.id && (filter.schoolId === activeSchool?.id || filter.schoolId === "school-active" || !q.school_id || q.school_id === filter.schoolId)) return true;
+          if (currentUser?.id && (q.teacher_id === currentUser.id || q.teacher_id === "usr-teacher-active" || q.teacher_id === "usr-teacher-01")) return true;
           // Default seed / template questions - reference for ponorogo or active school
           if ((!q.teacher_id || q.teacher_id === "usr-teacher-01") && (filter.schoolId === "sch-ponorogo-01" || filter.schoolId === "school-active" || filter.schoolId === activeSchool?.id)) return true;
           return false;
@@ -1415,7 +1415,7 @@ class PahamiRepository {
       if (m.school_id === schoolId) return true;
       if (schoolId === "school-active" || m.school_id === "school-active") return true;
       if (activeSchool && (m.school_id === activeSchool.id || schoolId === activeSchool.id)) return true;
-      if (currentUser?.id && m.teacher_id === currentUser.id) {
+      if (currentUser?.id && (m.teacher_id === currentUser.id || m.teacher_id === "usr-teacher-active" || m.teacher_id === "usr-teacher-01")) {
         return true;
       }
       if (!m.teacher_id || m.teacher_id === "usr-teacher-01") {
@@ -1690,15 +1690,19 @@ class PahamiRepository {
     const deleted = this.getDeletedIds().rooms || [];
     const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS).filter(
       (r) =>
-        !deleted.includes((r.id || "").toLowerCase()) &&
-        !deleted.includes((r.code || "").toLowerCase())
+        !deleted.some(
+          (del) =>
+            isIdOrCodeMatch(del, r.id || "", "room") ||
+            isIdOrCodeMatch(del, r.code || "", "room")
+        )
     );
     if (teacherId) {
       const currentUser = this.getCurrentUser();
       return rooms.filter(
         (r) =>
+          !teacherId ||
           r.teacher_id === teacherId ||
-          (currentUser?.id && r.teacher_id === currentUser.id) ||
+          (currentUser?.id && (r.teacher_id === currentUser.id || r.teacher_id === "usr-teacher-active")) ||
           r.teacher_id === "usr-teacher-01" ||
           !r.teacher_id
       );

@@ -130,7 +130,7 @@ function TeacherRoomsContent() {
     setActiveSchool(school);
     const user = repository.getCurrentUser();
     setCurrentUser(user);
-    const allRooms = repository.getRooms(user?.id);
+    const allRooms = repository.getRooms();
     setRooms(allRooms);
     const mats = repository.getMaterials();
     setMaterials(mats);

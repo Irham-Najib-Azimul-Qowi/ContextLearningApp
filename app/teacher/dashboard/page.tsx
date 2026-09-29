@@ -31,9 +31,9 @@ export default function TeacherDashboardPage() {
     const currentUser = repository.getCurrentUser();
 
     setUser(currentUser);
-    setQuestions(repository.getQuestions({ schoolId: activeSchool.id }));
-    setMaterials(repository.getMaterials(activeSchool.id));
-    setRooms(repository.getRooms(currentUser?.id));
+    setQuestions(repository.getQuestions());
+    setMaterials(repository.getMaterials());
+    setRooms(repository.getRooms());
   };
 
   useEffect(() => {
