@@ -485,30 +485,73 @@ class PahamiRepository {
   }
 
   // --- DELETED IDS TOMBSTONES ---
+  sanitizeTombstones(): void {
+    const rawMats = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
+    const rawQs = this.getItem<Question[]>("questions", SEED_QUESTIONS);
+    const rawRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
+    const current = this.getItem<{ materials: string[]; questions: string[]; rooms: string[] }>(
+      "deleted_ids",
+      { materials: [], questions: [], rooms: [] }
+    );
+
+    const activeMatIds = new Set(rawMats.map((m) => (m.id || "").trim().toLowerCase()).filter(Boolean));
+    const activeQIds = new Set(rawQs.map((q) => (q.id || "").trim().toLowerCase()).filter(Boolean));
+    const activeRoomIds = new Set(
+      rawRooms.flatMap((r) => [(r.code || "").trim().toLowerCase(), (r.id || "").trim().toLowerCase()]).filter(Boolean)
+    );
+
+    const cleanMaterials = (current.materials || []).filter(
+      (del) => del && !activeMatIds.has(del.trim().toLowerCase())
+    );
+    const cleanQuestions = (current.questions || []).filter(
+      (del) => del && !activeQIds.has(del.trim().toLowerCase())
+    );
+    const cleanRooms = (current.rooms || []).filter(
+      (del) => del && !activeRoomIds.has(del.trim().toLowerCase())
+    );
+
+    if (
+      cleanMaterials.length !== (current.materials || []).length ||
+      cleanQuestions.length !== (current.questions || []).length ||
+      cleanRooms.length !== (current.rooms || []).length
+    ) {
+      this.setItem("deleted_ids", {
+        materials: cleanMaterials,
+        questions: cleanQuestions,
+        rooms: cleanRooms,
+      });
+    }
+  }
+
   getDeletedIds(): { materials: string[]; questions: string[]; rooms: string[] } {
+    this.sanitizeTombstones();
     return this.getItem("deleted_ids", { materials: [], questions: [], rooms: [] });
   }
 
   addDeletedId(type: "material" | "question" | "room", id: string): void {
+    if (!id) return;
+    const clean = id.trim().toLowerCase();
     const current = this.getDeletedIds();
     if (type === "material") {
-      current.materials = Array.from(new Set([...(current.materials || []), id]));
+      current.materials = Array.from(new Set([...(current.materials || []), clean]));
     } else if (type === "question") {
-      current.questions = Array.from(new Set([...(current.questions || []), id]));
+      current.questions = Array.from(new Set([...(current.questions || []), clean]));
     } else if (type === "room") {
-      current.rooms = Array.from(new Set([...(current.rooms || []), id.toLowerCase()]));
+      current.rooms = Array.from(new Set([...(current.rooms || []), clean]));
     }
     this.setItem("deleted_ids", current);
   }
 
   removeDeletedId(type: "material" | "question" | "room", id: string): void {
+    if (!id) return;
+    const clean = id.trim().toLowerCase();
     const current = this.getDeletedIds();
     if (type === "material") {
-      current.materials = (current.materials || []).filter((x) => !isIdOrCodeMatch(x, id, "material"));
+      current.materials = (current.materials || []).filter((x) => (x || "").trim().toLowerCase() !== clean);
     } else if (type === "question") {
-      current.questions = (current.questions || []).filter((x) => !isIdOrCodeMatch(x, id, "question"));
+      current.questions = (current.questions || []).filter((x) => (x || "").trim().toLowerCase() !== clean);
     } else if (type === "room") {
-      current.rooms = (current.rooms || []).filter((x) => !isIdOrCodeMatch(x, id, "room"));
+      current.rooms = (current.rooms || []).filter((x) => (x || "").trim().toLowerCase() !== clean);
     }
     this.setItem("deleted_ids", current);
   }
@@ -741,18 +784,20 @@ class PahamiRepository {
     if (Array.isArray(materials)) {
       const currentMats = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
       const matMap = new Map<string, LearningMaterial>();
-      // 1. Masukkan materi LOKAL DULUAN agar item baru yang baru disimpan TIDAK tertimpa oleh cloud
+      // 1. Masukkan seluruh materi LOKAL DULUAN - item lokal aktif TIDAK PERNAH boleh dihapus oleh sync
       currentMats.forEach((m) => {
-        if (m && m.id && !currentTombstones.materials.some((del) => isIdOrCodeMatch(del, m.id, "material"))) {
+        if (m && m.id) {
           const canonical = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           matMap.set(canonical || m.id, m);
         }
       });
-      // 2. UNION dengan materi dari cloud: cloud hanya menambahkan item yang belum ada di lokal
+      // 2. UNION dengan materi dari cloud: hanya tambahkan jika belum ada di lokal dan tidak di-tombstone
+      const delMatSet = new Set((currentTombstones.materials || []).map((d) => (d || "").trim().toLowerCase()));
       materials.forEach((m) => {
-        if (m && m.id && !currentTombstones.materials.some((del) => isIdOrCodeMatch(del, m.id, "material"))) {
+        if (m && m.id) {
           const canonical = (m.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-          if (!matMap.has(canonical || m.id)) {
+          const isDeleted = delMatSet.has((m.id || "").trim().toLowerCase());
+          if (!isDeleted && !matMap.has(canonical || m.id)) {
             matMap.set(canonical || m.id, m);
           }
         }
@@ -764,18 +809,20 @@ class PahamiRepository {
     if (Array.isArray(questions)) {
       const currentQs = this.getItem<Question[]>("questions", SEED_QUESTIONS);
       const qMap = new Map<string, Question>();
-      // 1. Masukkan butir soal LOKAL DULUAN agar soal baru yang baru disimpan TIDAK tertimpa oleh cloud
+      // 1. Masukkan seluruh butir soal LOKAL DULUAN - item lokal aktif TIDAK PERNAH boleh dihapus oleh sync
       currentQs.forEach((q) => {
-        if (q && q.id && !currentTombstones.questions.some((del) => isIdOrCodeMatch(del, q.id, "question"))) {
+        if (q && q.id) {
           const canonical = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           qMap.set(canonical || q.id, q);
         }
       });
-      // 2. UNION dengan butir soal dari cloud: cloud hanya menambahkan item yang belum ada di lokal
+      // 2. UNION dengan butir soal dari cloud: hanya tambahkan jika belum ada di lokal dan tidak di-tombstone
+      const delQSet = new Set((currentTombstones.questions || []).map((d) => (d || "").trim().toLowerCase()));
       questions.forEach((q) => {
-        if (q && q.id && !currentTombstones.questions.some((del) => isIdOrCodeMatch(del, q.id, "question"))) {
+        if (q && q.id) {
           const canonical = (q.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-          if (!qMap.has(canonical || q.id)) {
+          const isDeleted = delQSet.has((q.id || "").trim().toLowerCase());
+          if (!isDeleted && !qMap.has(canonical || q.id)) {
             qMap.set(canonical || q.id, q);
           }
         }
@@ -787,45 +834,45 @@ class PahamiRepository {
     if (Array.isArray(rooms)) {
       const currentRooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
       const rMap = new Map<string, LearningRoom>();
-      // 1. Masukkan room LOKAL DULUAN agar room baru yang baru disimpan TIDAK tertimpa oleh cloud
+      // 1. Masukkan room LOKAL DULUAN - room lokal aktif TIDAK PERNAH boleh dihapus oleh sync
       currentRooms.forEach((r) => {
-        const isTombstoned = currentTombstones.rooms.some(
-          (del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room")
-        );
-        if (r && (r.id || r.code) && !isTombstoned) {
+        if (r && (r.id || r.code)) {
           const canonical = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
           rMap.set(canonical, r);
         }
       });
-      // 2. UNION dengan room dari cloud: cloud menambahkan item baru atau menggabungkan visitors
+      // 2. UNION dengan room dari cloud: hanya tambahkan jika belum ada di lokal dan tidak di-tombstone
+      const delRoomSet = new Set((currentTombstones.rooms || []).map((d) => (d || "").trim().toLowerCase()));
       rooms.forEach((r) => {
-        const isTombstoned = currentTombstones.rooms.some(
-          (del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room")
-        );
-        if (r && (r.id || r.code) && !isTombstoned) {
+        if (r && (r.id || r.code)) {
           const canonical = (r.code || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-          if (rMap.has(canonical)) {
-            // Room sudah ada di lokal — hanya gabungkan visitors, jangan timpa data lokal
-            const localRoom = rMap.get(canonical)!;
-            const combinedVisitors = [...(localRoom.visitors || [])];
-            (r.visitors || []).forEach((v: any) => {
-              if (
-                v &&
-                v.name &&
-                !combinedVisitors.some(
-                  (cv: any) => (cv.name || "").toLowerCase() === (v.name || "").toLowerCase()
-                )
-              ) {
-                combinedVisitors.push(v);
-              }
-            });
-            rMap.set(canonical, {
-              ...localRoom,
-              access_count: Math.max(localRoom.access_count || 0, r.access_count || 0),
-              visitors: combinedVisitors,
-            });
-          } else {
-            rMap.set(canonical, r);
+          const isDeleted =
+            delRoomSet.has((r.code || "").trim().toLowerCase()) ||
+            delRoomSet.has((r.id || "").trim().toLowerCase());
+          if (!isDeleted) {
+            if (rMap.has(canonical)) {
+              // Room sudah ada di lokal — hanya gabungkan visitors, jangan timpa data lokal
+              const localRoom = rMap.get(canonical)!;
+              const combinedVisitors = [...(localRoom.visitors || [])];
+              (r.visitors || []).forEach((v: any) => {
+                if (
+                  v &&
+                  v.name &&
+                  !combinedVisitors.some(
+                    (cv: any) => (cv.name || "").toLowerCase() === (v.name || "").toLowerCase()
+                  )
+                ) {
+                  combinedVisitors.push(v);
+                }
+              });
+              rMap.set(canonical, {
+                ...localRoom,
+                access_count: Math.max(localRoom.access_count || 0, r.access_count || 0),
+                visitors: combinedVisitors,
+              });
+            } else {
+              rMap.set(canonical, r);
+            }
           }
         }
       });
@@ -1169,10 +1216,8 @@ class PahamiRepository {
     topic?: string;
     includeArchived?: boolean;
   }): Question[] {
-    const deleted = this.getDeletedIds().questions || [];
-    let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS).filter(
-      (q) => !deleted.some((del) => del === q.id || isIdOrCodeMatch(del, q.id, "question"))
-    );
+    this.sanitizeTombstones();
+    let questions = this.getItem<Question[]>("questions", SEED_QUESTIONS);
     if (!filter?.includeArchived) {
       questions = questions.filter((q) => !q.is_archived);
     }
@@ -1417,10 +1462,8 @@ class PahamiRepository {
 
   // --- MATERIALS ---
   getMaterials(schoolId?: string, includeArchived?: boolean): LearningMaterial[] {
-    const deleted = this.getDeletedIds().materials || [];
-    let materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS).filter(
-      (m) => !deleted.some((del) => isIdOrCodeMatch(del, m.id, "material"))
-    );
+    this.sanitizeTombstones();
+    let materials = this.getItem<LearningMaterial[]>("materials", SEED_MATERIALS);
     if (!includeArchived) {
       materials = materials.filter((m) => !m.is_archived);
     }
@@ -1707,15 +1750,8 @@ class PahamiRepository {
 
   // --- LEARNING ROOMS (URL / KODE AKSES SISWA TANPA LOGIN) ---
   getRooms(teacherId?: string): LearningRoom[] {
-    const deleted = this.getDeletedIds().rooms || [];
-    const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS).filter(
-      (r) =>
-        !deleted.some(
-          (del) =>
-            isIdOrCodeMatch(del, r.id || "", "room") ||
-            isIdOrCodeMatch(del, r.code || "", "room")
-        )
-    );
+    this.sanitizeTombstones();
+    const rooms = this.getItem<LearningRoom[]>("rooms", SEED_ROOMS);
     if (teacherId) {
       const currentUser = this.getCurrentUser();
       return rooms.filter(

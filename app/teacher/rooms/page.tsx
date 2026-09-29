@@ -300,19 +300,27 @@ function TeacherRoomsContent() {
 
     setIsSubmitting(true);
     const cleanCode = roomCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    const qIdsPayload =
-      selectedQuestionIds.length > 0
-        ? selectedQuestionIds.join(",")
-        : roomType === "both"
-        ? secondaryResourceId
-        : selectedResourceId;
+
+    let finalResourceId = "";
+    let finalSecondaryResourceId: string | undefined = undefined;
+
+    if (roomType === "material") {
+      finalResourceId = selectedResourceId;
+      finalSecondaryResourceId = undefined;
+    } else if (roomType === "question") {
+      finalResourceId = selectedQuestionIds.length > 0 ? selectedQuestionIds.join(",") : selectedResourceId;
+      finalSecondaryResourceId = undefined;
+    } else if (roomType === "both") {
+      finalResourceId = selectedResourceId;
+      finalSecondaryResourceId = selectedQuestionIds.length > 0 ? selectedQuestionIds.join(",") : secondaryResourceId;
+    }
 
     const newRoom = repository.createRoom({
       code: cleanCode,
       title: customTitle.trim(),
       type: roomType,
-      resource_id: roomType === "both" ? selectedResourceId : qIdsPayload,
-      secondary_resource_id: roomType === "both" ? qIdsPayload : undefined,
+      resource_id: finalResourceId,
+      secondary_resource_id: finalSecondaryResourceId,
       subject,
       grade,
       region_name: activeSchool?.region_name || "Kota Madiun",

@@ -7,12 +7,13 @@ import { isIdOrCodeMatch } from "@/lib/db/types";
 // Helper functions for conflict-free data merging with tombstone support
 function cleanMaterials(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
+  const delSet = new Set(deletedIds.map((d) => (d || "").trim().toLowerCase()).filter(Boolean));
   return list.filter(
     (m) =>
       m &&
       typeof m === "object" &&
       m.id &&
-      !deletedIds.some((del) => isIdOrCodeMatch(del, m.id, "material")) &&
+      !delSet.has((m.id || "").trim().toLowerCase()) &&
       m.id !== "mat-test" &&
       m.title !== "Test Material Title"
   );
@@ -20,23 +21,26 @@ function cleanMaterials(list: any[], deletedIds: string[] = []): any[] {
 
 function cleanQuestions(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
+  const delSet = new Set(deletedIds.map((d) => (d || "").trim().toLowerCase()).filter(Boolean));
   return list.filter(
     (q) =>
       q &&
       typeof q === "object" &&
       q.id &&
-      !deletedIds.some((del) => isIdOrCodeMatch(del, q.id, "question"))
+      !delSet.has((q.id || "").trim().toLowerCase())
   );
 }
 
 function cleanRooms(list: any[], deletedIds: string[] = []): any[] {
   if (!Array.isArray(list)) return [];
+  const delSet = new Set(deletedIds.map((d) => (d || "").trim().toLowerCase()).filter(Boolean));
   return list.filter(
     (r) =>
       r &&
       typeof r === "object" &&
       (r.id || r.code) &&
-      !deletedIds.some((del) => isIdOrCodeMatch(del, r.code, "room") || isIdOrCodeMatch(del, r.id, "room"))
+      !delSet.has((r.code || "").trim().toLowerCase()) &&
+      !delSet.has((r.id || "").trim().toLowerCase())
   );
 }
 
@@ -344,72 +348,45 @@ export async function POST(request: Request) {
 
     const existingDeletedIds = existingRow?.deleted_ids || {};
 
-    const activeMaterialIds = (Array.isArray(materials) ? materials : [])
-      .map((m: any) => m?.id)
-      .filter(Boolean);
-    const activeQuestionIds = (Array.isArray(questions) ? questions : [])
-      .map((q: any) => q?.id)
-      .filter(Boolean);
-    const activeRoomIdentifiers = (Array.isArray(rooms) ? rooms : [])
-      .flatMap((r: any) => [r?.code, r?.id])
-      .filter(Boolean);
+    const activeMaterialIds = new Set(
+      (Array.isArray(materials) ? materials : [])
+        .map((m: any) => (m?.id || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const activeQuestionIds = new Set(
+      (Array.isArray(questions) ? questions : [])
+        .map((q: any) => (q?.id || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const activeRoomIdentifiers = new Set(
+      (Array.isArray(rooms) ? rooms : [])
+        .flatMap((r: any) => [(r?.code || "").trim().toLowerCase(), (r?.id || "").trim().toLowerCase()])
+        .filter(Boolean)
+    );
 
     let finalDeletedMaterials = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.materials) ? existingDeletedIds.materials : []),
         ...(Array.isArray(incomingDeletedIds?.materials) ? incomingDeletedIds.materials : []),
-        ...(deletedItem?.type === "material" && deletedItem.id ? [deletedItem.id] : []),
+        ...(deletedItem?.type === "material" && deletedItem.id ? [deletedItem.id.trim().toLowerCase()] : []),
       ])
-    );
-    if (deletedItem?.type !== "material") {
-      finalDeletedMaterials = finalDeletedMaterials.filter(
-        (del) => !activeMaterialIds.some((matId: string) => isIdOrCodeMatch(del, matId, "material"))
-      );
-    } else {
-      finalDeletedMaterials = finalDeletedMaterials.filter(
-        (del) =>
-          isIdOrCodeMatch(del, deletedItem.id, "material") ||
-          !activeMaterialIds.some((matId: string) => isIdOrCodeMatch(del, matId, "material"))
-      );
-    }
+    ).filter((del) => Boolean(del) && !activeMaterialIds.has(del.trim().toLowerCase()));
 
     let finalDeletedQuestions = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.questions) ? existingDeletedIds.questions : []),
         ...(Array.isArray(incomingDeletedIds?.questions) ? incomingDeletedIds.questions : []),
-        ...(deletedItem?.type === "question" && deletedItem.id ? [deletedItem.id] : []),
+        ...(deletedItem?.type === "question" && deletedItem.id ? [deletedItem.id.trim().toLowerCase()] : []),
       ])
-    );
-    if (deletedItem?.type !== "question") {
-      finalDeletedQuestions = finalDeletedQuestions.filter(
-        (del) => !activeQuestionIds.some((qId: string) => isIdOrCodeMatch(del, qId, "question"))
-      );
-    } else {
-      finalDeletedQuestions = finalDeletedQuestions.filter(
-        (del) =>
-          isIdOrCodeMatch(del, deletedItem.id, "question") ||
-          !activeQuestionIds.some((qId: string) => isIdOrCodeMatch(del, qId, "question"))
-      );
-    }
+    ).filter((del) => Boolean(del) && !activeQuestionIds.has(del.trim().toLowerCase()));
 
     let finalDeletedRooms = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.rooms) ? existingDeletedIds.rooms : []),
         ...(Array.isArray(incomingDeletedIds?.rooms) ? incomingDeletedIds.rooms : []),
-        ...(deletedItem?.type === "room" && deletedItem.id ? [deletedItem.id.toLowerCase()] : []),
+        ...(deletedItem?.type === "room" && deletedItem.id ? [deletedItem.id.trim().toLowerCase()] : []),
       ])
-    );
-    if (deletedItem?.type !== "room") {
-      finalDeletedRooms = finalDeletedRooms.filter(
-        (del) => !activeRoomIdentifiers.some((rId: string) => isIdOrCodeMatch(del, rId, "room"))
-      );
-    } else {
-      finalDeletedRooms = finalDeletedRooms.filter(
-        (del) =>
-          isIdOrCodeMatch(del, deletedItem.id, "room") ||
-          !activeRoomIdentifiers.some((rId: string) => isIdOrCodeMatch(del, rId, "room"))
-      );
-    }
+    ).filter((del) => Boolean(del) && !activeRoomIdentifiers.has(del.trim().toLowerCase()));
 
     const finalDeletedIds = {
       materials: finalDeletedMaterials,
