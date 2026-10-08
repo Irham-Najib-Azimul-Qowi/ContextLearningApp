@@ -13,7 +13,6 @@ import {
 } from "./types";
 import { defaultRetriever, LocalContextRetriever } from "./retrieval-adapter";
 import { aiProviderManager, extractJsonFromAiResponse } from "../ai/ai-provider-manager";
-import { createStructuredError } from "../ai/error-contract";
 
 // Recognized terms for extraction across SD subjects
 const COMMODITY_PATTERNS = ["beras", "gula", "jagung", "ikan", "apel", "buah", "sayuran", "telur", "kedelai", "kopi", "teh"];
@@ -48,9 +47,9 @@ export class ContextualAIEngine {
     const title = (input.title || "").trim();
     const rawTopic = (input.topic || "").trim();
 
-    // Clean section headers and exam metadata from raw text for questions
+    // Clean section headers and exam metadata from raw text for questions, except when input is a learning material
     let cleanRaw = raw;
-    if (input.contentType === "question" && raw) {
+    if (input.contentType === "question" && raw && input.sourceType !== "from_material") {
       cleanRaw = cleanDocumentPreambleAndHeaders(raw);
     }
 
@@ -68,14 +67,14 @@ export class ContextualAIEngine {
         questionCount = Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10);
       }
     }
-    if (questionCount <= 0 && cleanRaw) {
+    if (questionCount <= 0 && cleanRaw && input.sourceType !== "from_material") {
       const parsedDrafts = parseRawQuestionsToDraft(cleanRaw);
       if (parsedDrafts.length > 0) {
         questionCount = Math.min(Math.max(parsedDrafts.length, 1), 15);
       }
     }
     if (questionCount <= 0) {
-      questionCount = input.sourceType === "ai" || input.sourceType === "generate" ? 3 : 1;
+      questionCount = input.sourceType === "ai" || input.sourceType === "generate" || input.sourceType === "from_material" ? 3 : 1;
     }
 
     let questionType: "multiple_choice" | "essay" | "mixed" = input.questionType || "multiple_choice";
@@ -159,7 +158,7 @@ export class ContextualAIEngine {
 
   classifyVariables(
     entities: { term: string; category: ContextCategory }[],
-    text: string
+    _text?: string
   ): ContextVariable[] {
     return entities.map((item, idx) => ({
       id: `var-${idx + 1}`,
@@ -381,6 +380,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI DENGAN SKEMA:
 
     // 3. Branch: QUESTION Contextualization
     const isGenerateQ = normalized.sourceType === "ai" || normalized.sourceType === "generate";
+    const isFromMaterial = normalized.sourceType === "from_material";
     const originalNumbers = this.extractNumbers(normalized.effectiveText);
 
     const questionPrompt = `Anda adalah Contextualization Engine untuk butir soal evaluasi Sekolah Dasar Kurikulum Merdeka (DEPASKAN).
@@ -388,7 +388,7 @@ TUGAS UTAMA:
 "Konteks berubah, kompetensi tetap."
 Artinya Anda boleh mengubah latar tempat, nama tokoh, komoditas, atau aktivitas lokal agar akrab bagi siswa SD di ${normalized.regionName}, TETAPI:
 1. DILARANG KERAS MENGUBAH ANGKA-ANGKA MATEMATIKA, RELASI HITUNGAN, DAN KUNCI JAWABAN.
-   ${originalNumbers.length > 0 ? `ANGKA WAJIB DIJAGA SAMA PERSIS: [${originalNumbers.join(", ")}]` : ""}
+   ${originalNumbers.length > 0 && !isFromMaterial ? `ANGKA WAJIB DIJAGA SAMA PERSIS: [${originalNumbers.join(", ")}]` : ""}
 2. DILARANG MENGUBAH MAKSUD SOAL, TINGKAT KESULITAN, ATAU BENTUK SOAL.
 3. HANYA gunakan fakta lokal yang disediakan di Basis Pengetahuan (LKB). JANGAN MENGARANG FAKTA LOKAL PALSU.
 4. Kunci jawaban (A, B, C, D) harus tetap valid dan logis setelah dikontekstualisasikan.
@@ -417,6 +417,26 @@ ${
        : "Seluruh butir soal harus bertipe multiple_choice dengan 4 opsi (A-D) dan 1 kunci jawaban benar."
    }
 3. Permintaan: "${normalized.effectiveText}"`
+    : isFromMaterial
+    ? `INSTRUKSI PEMBUATAN SOAL BERDASARKAN MODUL MATERI AJAR:
+1. Anda diberikan materi ajar / bacaan tematik berikut (sumber: Modul Materi):
+"""
+${normalized.effectiveText}
+"""
+2. Tugas Anda adalah menyusun PERSIS ${normalized.questionCount} BUTIR SOAL asesmen evaluasi yang secara langsung menguji pemahaman siswa SD Kelas ${normalized.grade} terhadap isi bacaan di atas, dengan konteks wilayah ${normalized.regionName}.
+3. Variasi Tipe Soal (${normalized.questionType}):
+   ${
+     normalized.questionType === "mixed"
+       ? "Buatkan kombinasi berimbang antara pilihan ganda (4 opsi A-D) dan esai/uraian penalaran."
+       : normalized.questionType === "essay"
+       ? "Seluruh butir soal harus bertipe esai/uraian yang menguji penalaran dan pemahaman siswa, lengkap dengan rubrik penskoran."
+       : "Seluruh butir soal harus bertipe pilihan ganda dengan 4 opsi (A, B, C, D) dan tepat 1 kunci jawaban benar."
+   }
+4. KETENTUAN KHUSUS:
+   - Pertanyaan harus bersumber langsung dari konsep, narasi, tokoh, aktivitas, atau data dalam teks materi di atas.
+   - Pilihan pengecoh (distractor) harus mendidik dan relevan.
+   - WAJIB mengisi 'explanation' dengan pembahasan terperinci yang merujuk pada konsep materi.
+   - WAJIB mengisi 'rubric' (kriteria skor 4, 3, 2, 1, 0) jika butir soal bertipe esai.`
     : `INSTRUKSI ADAPTASI DARI NASKAH ASLI GURU:
 1. PARSING LENGKAP SEMUA BUTIR SOAL:
    Periksa naskah asli berikut (sumber: ${normalized.sourceType}).
@@ -570,12 +590,12 @@ KEMBALIKAN HANYA OBJEK JSON MURNI TANPA MARKDOWN BACKTICKS DENGAN SKEMA:
             cv.replacement_term && qTextLower.includes(cv.replacement_term.toLowerCase())
           ));
 
-      const warnings: string[] = [...mathValidation.warnings];
+      const warnings: string[] = isFromMaterial ? [] : [...mathValidation.warnings];
       if (!hasLocalGrounding) {
         warnings.push(`Peringatan: Teks butir soal nomor ${idx + 1} belum mencantumkan entitas spesifik dari ${normalized.regionName}.`);
       }
 
-      const isValid = (mathValidation.is_valid || isGenerateQ) && qText.trim().length > 10;
+      const isValid = (mathValidation.is_valid || isGenerateQ || isFromMaterial) && qText.trim().length > 10;
 
       return {
         id: `q-item-${Date.now()}-${idx + 1}`,

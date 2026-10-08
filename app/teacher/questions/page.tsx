@@ -134,6 +134,7 @@ function TeacherQuestionsContent() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedMethod, setSelectedMethod] = useState<"manual" | "camera" | "pdf" | "ai" | "from_material">("manual");
+  const [selectedMaterialForQuestions, setSelectedMaterialForQuestions] = useState<LearningMaterial | null>(null);
 
   // Step 2: Identitas Soal (Topik, Mata Pelajaran, Jenjang) - Tipe Soal dipindah ke Step 3 per butir soal
   const [topic, setTopic] = useState("");
@@ -463,15 +464,31 @@ function TeacherQuestionsContent() {
 
     if (linkedMaterial) {
       setSelectedMethod("from_material");
+      setSelectedMaterialForQuestions(linkedMaterial);
       setTopic(linkedMaterial.title);
       setSubject(linkedMaterial.subject);
       setGrade(linkedMaterial.grade);
+      setManualQuestionDraft(linkedMaterial.content || "");
+      setWizardStep(2);
+    } else if (method === "from_material") {
+      setSelectedMethod("from_material");
+      const currentMaterials = repository.getMaterials();
+      const firstMat = currentMaterials[0] || null;
+      setSelectedMaterialForQuestions(firstMat);
+      if (firstMat) {
+        setTopic(firstMat.title);
+        setSubject(firstMat.subject);
+        setGrade(firstMat.grade);
+        setManualQuestionDraft(firstMat.content || "");
+      }
       setWizardStep(2);
     } else if (method) {
       setSelectedMethod(method);
+      setSelectedMaterialForQuestions(null);
       setWizardStep(2);
     } else {
       setSelectedMethod("manual");
+      setSelectedMaterialForQuestions(null);
       setWizardStep(1);
     }
 
@@ -500,11 +517,28 @@ function TeacherQuestionsContent() {
       setCreatedQuestionIds([createdParam]);
     }
 
+    const fromMaterialParam = searchParams?.get("from_material");
     const methodParam = searchParams?.get("method");
     const actionParam = searchParams?.get("action");
-    if (!hasAutoOpenedRef.current && (methodParam === "manual" || actionParam === "manual" || actionParam === "new")) {
-      hasAutoOpenedRef.current = true;
-      handleOpenWizard("manual");
+    if (!hasAutoOpenedRef.current) {
+      if (fromMaterialParam) {
+        hasAutoOpenedRef.current = true;
+        const allMats = repository.getMaterials();
+        const targetMat = allMats.find(
+          (m) => m.id.toLowerCase() === fromMaterialParam.toLowerCase() || m.id === fromMaterialParam
+        );
+        if (targetMat) {
+          handleOpenWizard("from_material", targetMat);
+        } else {
+          handleOpenWizard("from_material");
+        }
+      } else if (methodParam === "from_material") {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard("from_material");
+      } else if (methodParam === "manual" || actionParam === "manual" || actionParam === "new") {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard("manual");
+      }
     }
     return () => {
       window.removeEventListener("repositorySyncCompleted", handleSync);
@@ -544,10 +578,18 @@ function TeacherQuestionsContent() {
       },
     ]);
 
-    if (method === "from_material" && materials.length > 0) {
-      setTopic(materials[0].title);
-      setSubject(materials[0].subject);
-      setGrade(materials[0].grade);
+    if (method === "from_material") {
+      const allMats = repository.getMaterials();
+      const firstMat = allMats[0] || null;
+      setSelectedMaterialForQuestions(firstMat);
+      if (firstMat) {
+        setTopic(firstMat.title);
+        setSubject(firstMat.subject);
+        setGrade(firstMat.grade);
+        setManualQuestionDraft(firstMat.content || "");
+      }
+    } else {
+      setSelectedMaterialForQuestions(null);
     }
     setWizardStep(2);
   };
@@ -592,9 +634,10 @@ function TeacherQuestionsContent() {
       setTopic(effectiveTopic);
     }
 
-    // AI contextualization runs if AI method selected OR if manual/camera/pdf text was entered
+    // AI contextualization runs if AI or from_material method selected OR if manual/camera/pdf text was entered
     const shouldRunAi =
       selectedMethod === "ai" ||
+      selectedMethod === "from_material" ||
       ((selectedMethod === "manual" || selectedMethod === "camera" || selectedMethod === "pdf") &&
         Boolean(manualQuestionDraft.trim()));
 
@@ -603,13 +646,13 @@ function TeacherQuestionsContent() {
       if (!success) {
         // AI returned error or was unavailable:
         // Do NOT block or leave the teacher on step 2! Fallback parse the draft into separate question items!
-        if (manualQuestionDraft.trim()) {
+        if (manualQuestionDraft.trim() && selectedMethod !== "from_material") {
           const parsed = parseRawQuestionsToDraft(manualQuestionDraft, effectiveTopic);
           setQuestionsList(parsed);
-        } else if (selectedMethod === "ai") {
+        } else if (selectedMethod === "ai" || selectedMethod === "from_material") {
           setQuestionsList([
             {
-              id: `q-draft-${Date.now()}-1`,
+              id: "q-draft-fallback-1",
               type: aiQuestionType === "essay" ? "essay" : "multiple_choice",
               question_text: `Berdasarkan topik ${effectiveTopic}, jawablah pertanyaan kontekstual berikut:`,
               options: [
@@ -663,8 +706,21 @@ function TeacherQuestionsContent() {
     setIsAiGenerating(true);
     setAiError(null);
     try {
-      const activeTopic = overrideTopic || topic || aiPrompt || "Asesmen Tematik";
+      const activeTopic =
+        overrideTopic ||
+        topic ||
+        (selectedMaterialForQuestions ? selectedMaterialForQuestions.title : "") ||
+        aiPrompt ||
+        "Asesmen Tematik";
       let textToUse = typeof overrideText === "string" ? overrideText : manualQuestionDraft;
+
+      // For from_material mode: ensure textToUse has material narrative
+      if (selectedMethod === "from_material" && (!textToUse || !textToUse.trim())) {
+        if (selectedMaterialForQuestions?.content) {
+          textToUse = selectedMaterialForQuestions.content;
+        }
+      }
+
       if (textToUse) {
         textToUse = cleanDocumentPreambleAndHeaders(textToUse);
       }
@@ -686,13 +742,16 @@ function TeacherQuestionsContent() {
       }
 
       let detectedCount: number | undefined = undefined;
-      if (textToUse && textToUse.trim()) {
+      if (textToUse && textToUse.trim() && selectedMethod !== "from_material") {
         const detectedDrafts = parseRawQuestionsToDraft(textToUse, activeTopic);
         if (detectedDrafts.length > 0) {
           detectedCount = detectedDrafts.length;
         }
       }
-      const effectiveQuestionCount = selectedMethod === "ai" ? aiQuestionCount : detectedCount;
+      const effectiveQuestionCount =
+        selectedMethod === "ai" || selectedMethod === "from_material"
+          ? aiQuestionCount
+          : detectedCount;
 
       const res = await fetch("/api/ai/contextualize", {
         method: "POST",
@@ -700,7 +759,12 @@ function TeacherQuestionsContent() {
         body: JSON.stringify({
           type: "question",
           inputMode: selectedMethod,
-          prompt: selectedMethod === "ai" ? (aiPrompt || activeTopic) : "",
+          prompt:
+            selectedMethod === "ai"
+              ? aiPrompt || activeTopic
+              : selectedMethod === "from_material"
+              ? aiPrompt || ""
+              : "",
           rawText: textToUse || (selectedMethod === "ai" ? aiPrompt : activeTopic),
           topic: activeTopic,
           subject,
@@ -708,7 +772,10 @@ function TeacherQuestionsContent() {
           regionId: activeSchool?.region_id || "35.02",
           regionName: region,
           questionCount: effectiveQuestionCount,
-          questionType: selectedMethod === "ai" ? aiQuestionType : undefined,
+          questionType:
+            selectedMethod === "ai" || selectedMethod === "from_material"
+              ? aiQuestionType
+              : undefined,
         }),
       });
 
@@ -811,7 +878,7 @@ function TeacherQuestionsContent() {
       setTopic(effectiveTopic);
     }
 
-    let validQuestions = questionsList.filter(
+    const validQuestions = questionsList.filter(
       (q) => q.question_text.trim() && !isSectionHeaderOrMetadata(q.question_text)
     );
     if (validQuestions.length === 0) {
@@ -2152,6 +2219,118 @@ function TeacherQuestionsContent() {
                   </span>
                 </div>
 
+                {/* Modul Rujukan jika metode Dari Materi */}
+                {selectedMethod === "from_material" && (
+                  <div className="space-y-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-[#FFD36D] flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Pilih Modul Materi Rujukan</span>
+                        </label>
+                        {materials.length > 0 && (
+                          <span className="text-[11px] text-gray-400 font-mono">
+                            {materials.length} materi tersedia
+                          </span>
+                        )}
+                      </div>
+
+                      {materials.length === 0 ? (
+                        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+                          Belum ada modul materi pembelajaran. Silakan buat modul terlebih dahulu di menu Modul Ajar.
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedMaterialForQuestions?.id || ""}
+                          onChange={(e) => {
+                            const chosen = materials.find((m) => m.id === e.target.value);
+                            if (chosen) {
+                              setSelectedMaterialForQuestions(chosen);
+                              setTopic(chosen.title);
+                              setSubject(chosen.subject);
+                              setGrade(chosen.grade);
+                              setManualQuestionDraft(chosen.content || "");
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none cursor-pointer"
+                        >
+                          {materials.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              [{m.id}] {m.title} — {m.subject} (Kelas {m.grade})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    {/* Preview Cuplikan Teks Modul */}
+                    {selectedMaterialForQuestions && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">
+                            Cuplikan Teks Bacaan Modul
+                          </label>
+                          <span className="text-[10px] text-gray-400 font-mono">
+                            {selectedMaterialForQuestions.content?.length || 0} karakter
+                          </span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#251E2B]/90 border border-white/10 text-xs text-gray-200 font-mono line-clamp-3 leading-relaxed max-h-24 overflow-y-auto">
+                          {selectedMaterialForQuestions.content || "(Materi ini belum memiliki teks narasi bacaan)"}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Variasi Soal & Jumlah Soal */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-200 mb-1">
+                          Variasi Soal
+                        </label>
+                        <select
+                          value={aiQuestionType}
+                          onChange={(e: any) => setAiQuestionType(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none cursor-pointer"
+                        >
+                          <option value="multiple_choice">Pilihan Ganda (A, B, C, D)</option>
+                          <option value="essay">Uraian / Esai</option>
+                          <option value="mixed">Campuran (Pilgan & Esai)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-200 mb-1">
+                          Jumlah Soal
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={aiQuestionCount}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            setAiQuestionCount(isNaN(val) ? 1 : Math.max(1, Math.min(10, val)));
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Catatan Tambahan AI (Opsional) */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-200 mb-1">
+                        Fokus Penilaian Tambahan (Opsional)
+                      </label>
+                      <input
+                        type="text"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        placeholder="Contoh: Fokuskan pada pemahaman bacaan dan penalaran sebab-akibat..."
+                        className="w-full px-3.5 py-2 rounded-xl border border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs text-white placeholder:text-white/30 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* AI Prompt Area jika metode Generate AI */}
                 {selectedMethod === "ai" && (
                   <div className="space-y-3">
@@ -2298,7 +2477,11 @@ function TeacherQuestionsContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isAiGenerating || (selectedMethod === "ai" && !aiPrompt.trim() && !topic.trim())}
+                    disabled={
+                      isAiGenerating ||
+                      (selectedMethod === "ai" && !aiPrompt.trim() && !topic.trim()) ||
+                      (selectedMethod === "from_material" && materials.length === 0)
+                    }
                     className="py-2.5 px-6 rounded-2xl bg-[#FFD36D] hover:bg-[#F5C754] text-[#251E2B] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                   >
                     {isAiGenerating ? (
@@ -2306,10 +2489,10 @@ function TeacherQuestionsContent() {
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>Merumuskan AI...</span>
                       </>
-                    ) : selectedMethod === "ai" ? (
+                    ) : selectedMethod === "ai" || selectedMethod === "from_material" ? (
                       <>
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Generate</span>
+                        <span>Generate Soal</span>
                       </>
                     ) : (
                       <>
@@ -2358,32 +2541,7 @@ function TeacherQuestionsContent() {
                   }}
                 />
 
-                {/* Pemilihan Modul Rujukan jika dari materi */}
-                {selectedMethod === "from_material" && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-200 mb-1">
-                      Modul Rujukan
-                    </label>
-                    <select
-                      value={topic}
-                      onChange={(e) => {
-                        const selectedMat = materials.find((m) => m.title === e.target.value);
-                        if (selectedMat) {
-                          setTopic(selectedMat.title);
-                          setSubject(selectedMat.subject);
-                          setGrade(selectedMat.grade);
-                        }
-                      }}
-                      className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-white/20 bg-[#251E2B] focus:border-[#FFD36D] text-xs font-bold text-white focus:outline-none"
-                    >
-                      {materials.map((m) => (
-                        <option key={m.id} value={m.title}>
-                          [{m.id}] {m.title} ({m.subject})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+
 
                 {/* Motret Naskah: Scan Camera & Editor */}
                 {selectedMethod === "camera" && (

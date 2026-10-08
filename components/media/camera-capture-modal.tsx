@@ -146,6 +146,7 @@ export function CameraCaptureModal({
     // Draw the current video frame onto canvas
     ctx.drawImage(video, 0, 0, width, height);
 
+    // Compress canvas snapshot
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -160,16 +161,82 @@ export function CameraCaptureModal({
         onClose();
       },
       "image/jpeg",
-      0.92
+      0.85
     );
   };
 
-  const handleFallbackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image file to stay within Vercel Serverless 4.5 MB payload limit
+  const compressImageFile = (inputFile: File): Promise<File> => {
+    return new Promise((resolve) => {
+      // If already small (< 1.5MB) and JPEG, return as is
+      if (inputFile.size < 1.5 * 1024 * 1024 && inputFile.type === "image/jpeg") {
+        resolve(inputFile);
+        return;
+      }
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(inputFile);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const maxDim = 1600;
+        let { width, height } = img;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const offscreenCanvas = document.createElement("canvas");
+        offscreenCanvas.width = width;
+        offscreenCanvas.height = height;
+        const ctx = offscreenCanvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(inputFile);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        offscreenCanvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(inputFile);
+              return;
+            }
+            const cleanName = inputFile.name.replace(/\.[^/.]+$/, "") + ".jpg";
+            const compressedFile = new File([blob], cleanName, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          0.82
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(inputFile);
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  const handleFallbackFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const previewUrl = URL.createObjectURL(file);
+      const processedFile = await compressImageFile(file);
+      const previewUrl = URL.createObjectURL(processedFile);
       stopCamera();
-      onCapture(file, previewUrl);
+      onCapture(processedFile, previewUrl);
       onClose();
     }
   };

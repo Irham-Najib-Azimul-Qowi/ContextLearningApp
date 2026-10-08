@@ -364,7 +364,7 @@ export async function POST(request: Request) {
         .filter(Boolean)
     );
 
-    let finalDeletedMaterials = Array.from(
+    const finalDeletedMaterials = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.materials) ? existingDeletedIds.materials : []),
         ...(Array.isArray(incomingDeletedIds?.materials) ? incomingDeletedIds.materials : []),
@@ -372,7 +372,7 @@ export async function POST(request: Request) {
       ])
     ).filter((del) => Boolean(del) && !activeMaterialIds.has(del.trim().toLowerCase()));
 
-    let finalDeletedQuestions = Array.from(
+    const finalDeletedQuestions = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.questions) ? existingDeletedIds.questions : []),
         ...(Array.isArray(incomingDeletedIds?.questions) ? incomingDeletedIds.questions : []),
@@ -380,7 +380,7 @@ export async function POST(request: Request) {
       ])
     ).filter((del) => Boolean(del) && !activeQuestionIds.has(del.trim().toLowerCase()));
 
-    let finalDeletedRooms = Array.from(
+    const finalDeletedRooms = Array.from(
       new Set([
         ...(Array.isArray(existingDeletedIds.rooms) ? existingDeletedIds.rooms : []),
         ...(Array.isArray(incomingDeletedIds?.rooms) ? incomingDeletedIds.rooms : []),

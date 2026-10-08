@@ -165,6 +165,20 @@ export default function TeacherMaterialsPage() {
     setRooms(repository.getRooms());
   };
 
+  // Open Wizard (Declared before useEffect to avoid TDZ)
+  const handleOpenWizard = () => {
+    setSelectedMethod("manual");
+    setWizardStep(1);
+    setTitle("");
+    setManualDraft("");
+    setUploadedFileName(null);
+    setCapturedPhotoName(null);
+    setPreviewTitle("");
+    setPreviewNarrative("");
+    setPatentMaterialId(repository.getNextMaterialId());
+    setIsWizardOpen(true);
+  };
+
   useEffect(() => {
     loadData();
     const handleSync = () => loadData();
@@ -196,20 +210,6 @@ export default function TeacherMaterialsPage() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  // Open Wizard
-  const handleOpenWizard = () => {
-    setSelectedMethod("manual");
-    setWizardStep(1);
-    setTitle("");
-    setManualDraft("");
-    setUploadedFileName(null);
-    setCapturedPhotoName(null);
-    setPreviewTitle("");
-    setPreviewNarrative("");
-    setPatentMaterialId(repository.getNextMaterialId());
-    setIsWizardOpen(true);
   };
 
   const handleSelectMethod = (method: "manual" | "camera" | "pdf" | "ai") => {
@@ -583,6 +583,13 @@ export default function TeacherMaterialsPage() {
                       <DoorOpen className="w-3.5 h-3.5" />
                       <span>Buat Room</span>
                     </button>
+                    <Link
+                      href={`/teacher/questions?from_material=${encodeURIComponent(previewMaterial.id)}`}
+                      className="px-4 py-2 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#FFD36D]/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-[#FFD36D]" />
+                      <span>Buat Soal dari Materi</span>
+                    </Link>
                   </>
                 ) : (
                   <>
@@ -845,6 +852,14 @@ export default function TeacherMaterialsPage() {
                           >
                             <span>Lihat Materi</span>
                           </button>
+
+                          <Link
+                            href={`/teacher/questions?from_material=${encodeURIComponent(mat.id)}`}
+                            className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#FFD36D]/25 text-white/80 hover:text-[#FFD36D] border border-white/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                            title="Buat Soal dari Materi Ini"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </Link>
 
                           <button
                             type="button"
