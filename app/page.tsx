@@ -16,6 +16,15 @@ export default function HomePage() {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
+    // If OAuth provider returned code to root landing page (e.g. Supabase Site URL fallback), forward cleanly to /auth/callback
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has("code")) {
+        window.location.replace(`/auth/callback${window.location.search}`);
+        return;
+      }
+    }
+
     // Check client-side authentication session
     const checkAuth = async () => {
       try {
