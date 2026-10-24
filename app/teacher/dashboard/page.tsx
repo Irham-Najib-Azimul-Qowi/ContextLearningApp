@@ -142,7 +142,7 @@ export default function TeacherDashboardPage() {
                 <ArrowRight className="w-4 h-4 text-[#FFD36D] stroke-[2.5] group-hover/btn:translate-x-1 transition-transform" />
               </Link>
               <Link
-                href="/teacher/questions/generator"
+                href="/teacher/questions?action=generate"
                 className="py-3 px-4 sm:px-5 rounded-2xl bg-white/90 hover:bg-white text-[#23212A] border border-[#51465B]/25 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition-all whitespace-nowrap"
                 title="Generate Soal AI"
               >
@@ -187,7 +187,7 @@ export default function TeacherDashboardPage() {
                 <ArrowRight className="w-4 h-4 text-[#51465B] stroke-[2.5] group-hover/btn:translate-x-1 transition-transform" />
               </Link>
               <Link
-                href="/teacher/materials/create?tab=ai"
+                href="/teacher/materials?action=generate"
                 className="py-3 px-4 sm:px-5 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
                 title="Generate Materi AI"
               >

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -80,6 +80,8 @@ export default function TeacherMaterialsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSubject, setFilterSubject] = useState("Semua Mapel");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const hasAutoOpenedRef = useRef(false);
 
   // Creation Wizard Modal States
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -174,9 +176,7 @@ export default function TeacherMaterialsPage() {
   };
 
   // Open Wizard (Declared before useEffect to avoid TDZ)
-  const handleOpenWizard = () => {
-    setSelectedMethod("manual");
-    setWizardStep(1);
+  const handleOpenWizard = (method?: "manual" | "camera" | "pdf" | "ai") => {
     setTitle("");
     setManualDraft("");
     setUploadedFileName(null);
@@ -189,6 +189,14 @@ export default function TeacherMaterialsPage() {
     setIsSubsequentLocalization(false);
     setMaterialModelUsed("deterministic-rule-engine-v1");
     setPatentMaterialId(repository.getNextMaterialId());
+
+    if (method) {
+      setSelectedMethod(method);
+      setWizardStep(2);
+    } else {
+      setSelectedMethod("manual");
+      setWizardStep(1);
+    }
     setIsWizardOpen(true);
   };
 
@@ -199,7 +207,7 @@ export default function TeacherMaterialsPage() {
     window.addEventListener("materialSaved", handleSync);
     window.addEventListener("storage", handleSync);
 
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !hasAutoOpenedRef.current) {
       const params = new URLSearchParams(window.location.search);
       const createdId = params.get("created");
       if (createdId) {
@@ -207,8 +215,19 @@ export default function TeacherMaterialsPage() {
         setSearchQuery("");
         setFilterSubject("Semua Mapel");
       }
-      if (params.get("new") === "true") {
-        handleOpenWizard();
+      const methodParam =
+        params.get("method") ||
+        (params.get("tab") === "ai" || params.get("action") === "generate" || params.get("action") === "ai" ? "ai" : null) ||
+        (params.get("tab") === "manual" || params.get("action") === "manual" ? "manual" : null) ||
+        (params.get("tab") === "photo" || params.get("action") === "camera" || params.get("action") === "scan" ? "camera" : null) ||
+        (params.get("tab") === "pdf" || params.get("action") === "pdf" ? "pdf" : null);
+
+      if (methodParam && ["manual", "camera", "pdf", "ai"].includes(methodParam)) {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard(methodParam as "manual" | "camera" | "pdf" | "ai");
+      } else if (params.get("new") === "true" || params.get("action") === "new") {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard("manual");
       }
     }
 
@@ -826,7 +845,7 @@ export default function TeacherMaterialsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center items-start gap-3 sm:gap-5">
               <button
                 type="button"
-                onClick={handleOpenWizard}
+                onClick={() => handleOpenWizard()}
                 className="px-4 py-2.5 rounded-full bg-[#51465B] hover:bg-[#3E3547] text-[#FFD36D] border border-[#645770]/40 text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-2 active:scale-95 shrink-0 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />

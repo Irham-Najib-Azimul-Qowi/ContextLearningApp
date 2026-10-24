@@ -535,6 +535,20 @@ function TeacherQuestionsContent() {
       } else if (methodParam === "from_material") {
         hasAutoOpenedRef.current = true;
         handleOpenWizard("from_material");
+      } else if (
+        methodParam === "ai" ||
+        actionParam === "generate" ||
+        actionParam === "ai" ||
+        searchParams?.get("tab") === "ai"
+      ) {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard("ai");
+      } else if (methodParam === "camera" || actionParam === "camera" || actionParam === "scan") {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard("camera");
+      } else if (methodParam === "pdf" || actionParam === "pdf") {
+        hasAutoOpenedRef.current = true;
+        handleOpenWizard("pdf");
       } else if (methodParam === "manual" || actionParam === "manual" || actionParam === "new") {
         hasAutoOpenedRef.current = true;
         handleOpenWizard("manual");
