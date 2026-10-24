@@ -18,6 +18,9 @@ import { encryptSecret, maskApiKey, hashPasswordSync } from "./crypto";
 // ==============================================================================
 
 // Default Super Admin for Dev / Initial Seed
+// CRITICAL SECURITY ENFORCEMENT: Seed admin accounts are strictly disabled in production
+// to prevent unauthorized access via default credentials.
+const IS_DEV_ENV = process.env.NODE_ENV !== "production";
 const DEFAULT_SALT = "a1b2c3d4e5f67890";
 const ADMIN_HASH = hashPasswordSync("admin123", DEFAULT_SALT).hash;
 const SUPERADMIN_HASH = hashPasswordSync("AdminPahami2026!", DEFAULT_SALT).hash;
@@ -30,7 +33,7 @@ const INITIAL_ADMIN_ACCOUNTS: AdminAccount[] = [
     salt: DEFAULT_SALT,
     full_name: "Administrator",
     role: "SUPER_ADMIN",
-    is_active: true,
+    is_active: IS_DEV_ENV,
     failed_login_attempts: 0,
     locked_until: null,
     last_login_at: "2026-09-24T12:00:00Z",
@@ -44,7 +47,7 @@ const INITIAL_ADMIN_ACCOUNTS: AdminAccount[] = [
     salt: DEFAULT_SALT,
     full_name: "Super Administrator Developer",
     role: "SUPER_ADMIN",
-    is_active: true,
+    is_active: IS_DEV_ENV,
     failed_login_attempts: 0,
     locked_until: null,
     last_login_at: "2026-09-24T12:00:00Z",

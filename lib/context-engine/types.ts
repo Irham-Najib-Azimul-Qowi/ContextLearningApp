@@ -1,3 +1,5 @@
+import { TextDiffChunk } from "./contract";
+
 export type ContextCategory =
   | "commodity"
   | "occupation"
@@ -151,6 +153,8 @@ export interface QuestionDraftItem {
     warnings: string[];
     pedagogical_notes: string;
   };
+  diff_chunks?: TextDiffChunk[];
+  diffChunks?: TextDiffChunk[];
 }
 
 export interface MaterialContextualizedResult {
@@ -168,8 +172,11 @@ export interface MaterialContextualizedResult {
     reason?: string;
   }[];
   local_entities?: any[];
+  diff_chunks?: TextDiffChunk[];
+  diffChunks?: TextDiffChunk[];
   validation: {
     is_valid: boolean;
+    status?: "VALID" | "WARNING" | "INVALID";
     competency_preserved: boolean;
     local_context_grounded: boolean;
     math_numbers_strictly_preserved: boolean;

@@ -312,7 +312,9 @@ export interface LearningMaterial {
   is_contextualized: boolean;
   original_content?: string;
   context_variables?: any[];
+  diff_chunks?: any[];
   validation?: any;
+  teacher_approved?: boolean;
   published_to_classes?: string[]; // Class IDs
   image_url?: string;
   image_caption?: string;

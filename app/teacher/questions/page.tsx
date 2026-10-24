@@ -2823,10 +2823,35 @@ function TeacherQuestionsContent() {
 
                           {/* Naskah Asli vs Kontekstual */}
                           {q.original_question_text && q.original_question_text.trim() !== q.question_text.trim() && (
-                            <div className="space-y-1">
-                              <span className="text-[11px] text-gray-400 font-semibold block">Naskah Asli / Standar:</span>
-                              <div className="p-2.5 rounded-xl bg-black/25 border border-white/10 text-xs text-gray-300 italic font-normal leading-relaxed">
-                                {q.original_question_text}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                              <div className="space-y-1">
+                                <span className="text-[11px] text-gray-400 font-semibold block">Naskah Asli / Standar:</span>
+                                <div className="p-2.5 rounded-xl bg-black/25 border border-white/10 text-xs text-gray-300 italic font-normal leading-relaxed">
+                                  {q.original_question_text}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[11px] text-[#FFD36D] font-semibold block">Naskah Adaptasi Lokal ({region}):</span>
+                                <div className="p-2.5 rounded-xl bg-white/5 border border-[#FFD36D]/30 text-xs text-white font-medium leading-relaxed">
+                                  {(q as any).diff_chunks && (q as any).diff_chunks.length > 0 ? (
+                                    (q as any).diff_chunks.map((chunk: any, cIdx: number) => {
+                                      if (chunk.type === "substituted") {
+                                        return (
+                                          <mark
+                                            key={cIdx}
+                                            className="px-1 py-0.5 mx-0.5 rounded bg-[#FFD36D]/30 text-[#FFD36D] font-bold border border-[#FFD36D]/40 inline-flex items-center gap-0.5 not-italic"
+                                            title={chunk.reason || `Substitusi dari '${chunk.originalText}'`}
+                                          >
+                                            <span>{chunk.text}</span>
+                                          </mark>
+                                        );
+                                      }
+                                      return <span key={cIdx}>{chunk.text}</span>;
+                                    })
+                                  ) : (
+                                    q.question_text
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}

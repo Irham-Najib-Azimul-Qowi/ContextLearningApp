@@ -48,9 +48,13 @@ export async function POST(request: Request) {
     // Execute via unified ContextualAIEngine pipeline
     const result = await contextEngine.contextualize(contentInput);
 
+    const materialData = result.type === "material" ? result.material : undefined;
+    const diffChunks = materialData?.diff_chunks || undefined;
+
     return NextResponse.json({
       success: true,
       data: result.type === "material" ? result.material : result.questions,
+      diffChunks,
       modelUsed: result.modelUsed,
       requestId: result.requestId,
       retrievedEntities: result.retrievedEntities,

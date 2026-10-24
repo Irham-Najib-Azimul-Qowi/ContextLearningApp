@@ -43,6 +43,8 @@ import {
   extractMeaningfulTitle,
   isSectionHeaderOrMetadata,
 } from "@/lib/context-engine/document-parser";
+import { BeforeAfterDiffViewer } from "@/components/context-review/before-after-diff-viewer";
+import { TextDiffChunk } from "@/lib/context-engine/contract";
 
 const SUBJECT_OPTIONS = [
   "Semua Mapel",
@@ -62,6 +64,7 @@ export interface MaterialContextVariable {
 
 export interface MaterialValidation {
   is_valid: boolean;
+  status?: "VALID" | "WARNING" | "INVALID";
   competency_preserved?: boolean;
   local_context_grounded?: boolean;
   math_numbers_strictly_preserved?: boolean;
@@ -105,6 +108,11 @@ export default function TeacherMaterialsPage() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiError, setAiError] = useState<string | null>(null);
   const [originalContent, setOriginalContent] = useState<string>("");
+  const [diffChunks, setDiffChunks] = useState<TextDiffChunk[]>([]);
+  const [materialModelUsed, setMaterialModelUsed] = useState<string>("deterministic-rule-engine-v1");
+  const [isTeacherApproved, setIsTeacherApproved] = useState<boolean>(false);
+  const [isSubsequentLocalization, setIsSubsequentLocalization] = useState<boolean>(false);
+  const [showRawSourceInput, setShowRawSourceInput] = useState<boolean>(false);
   const [materialContextVariables, setMaterialContextVariables] = useState<MaterialContextVariable[]>([]);
   const [materialValidation, setMaterialValidation] = useState<MaterialValidation | null>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
@@ -175,6 +183,11 @@ export default function TeacherMaterialsPage() {
     setCapturedPhotoName(null);
     setPreviewTitle("");
     setPreviewNarrative("");
+    setOriginalContent("");
+    setDiffChunks([]);
+    setIsTeacherApproved(false);
+    setIsSubsequentLocalization(false);
+    setMaterialModelUsed("deterministic-rule-engine-v1");
     setPatentMaterialId(repository.getNextMaterialId());
     setIsWizardOpen(true);
   };
@@ -330,16 +343,26 @@ export default function TeacherMaterialsPage() {
           setPreviewTitle(json.data.title);
           setTitle(json.data.title);
         }
+        if (json.data.original_content) {
+          setOriginalContent(json.data.original_content);
+        } else if (textToUse && selectedMethod !== "ai") {
+          setOriginalContent(textToUse);
+        }
         if (json.data.content || json.data.contextual_content) {
           const finalNarrative = json.data.content || json.data.contextual_content;
           setPreviewNarrative(finalNarrative);
-          setManualDraft(finalNarrative);
-        }
-        if (json.data.original_content) {
-          setOriginalContent(json.data.original_content);
+          if (selectedMethod === "ai") {
+            setManualDraft(finalNarrative);
+          }
         }
         if (json.data.context_variables && Array.isArray(json.data.context_variables)) {
           setMaterialContextVariables(json.data.context_variables);
+        }
+        if (json.data.diff_chunks || json.diffChunks) {
+          setDiffChunks(json.data.diff_chunks || json.diffChunks);
+        }
+        if (json.modelUsed) {
+          setMaterialModelUsed(json.modelUsed);
         }
         if (json.data.validation) {
           setMaterialValidation(json.data.validation);
@@ -367,6 +390,62 @@ export default function TeacherMaterialsPage() {
           setPreviewTitle(effectiveTitle);
         }
       }
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  // Subsequent contextualization for pure AI-generated drafts
+  const handleSubsequentContextualization = async () => {
+    if (!previewNarrative.trim()) return;
+    const currentDraft = previewNarrative.trim();
+    // Preserve current generated draft as the source snapshot
+    setOriginalContent(currentDraft);
+    setIsSubsequentLocalization(true);
+    setIsAiGenerating(true);
+    setAiError(null);
+
+    try {
+      const res = await fetch("/api/ai/contextualize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "material",
+          inputMode: "manual",
+          rawText: currentDraft,
+          title: previewTitle || title || "Modul Tematik",
+          subject,
+          grade,
+          regionId: activeSchool?.region_id || "35.02",
+          regionName: region,
+        }),
+      });
+
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        if (json.data.title) {
+          setPreviewTitle(json.data.title);
+        }
+        if (json.data.content || json.data.contextual_content) {
+          setPreviewNarrative(json.data.content || json.data.contextual_content);
+        }
+        if (json.data.context_variables && Array.isArray(json.data.context_variables)) {
+          setMaterialContextVariables(json.data.context_variables);
+        }
+        if (json.data.diff_chunks || json.diffChunks) {
+          setDiffChunks(json.data.diff_chunks || json.diffChunks);
+        }
+        if (json.modelUsed) {
+          setMaterialModelUsed(json.modelUsed);
+        }
+        if (json.data.validation) {
+          setMaterialValidation(json.data.validation);
+        }
+      } else {
+        setAiError(json?.error?.message || "Gagal mengontekstualisasikan draf modul.");
+      }
+    } catch (err: any) {
+      setAiError(err.message || "Gagal memproses kontekstualisasi kearifan lokal.");
     } finally {
       setIsAiGenerating(false);
     }
@@ -425,7 +504,9 @@ export default function TeacherMaterialsPage() {
         is_contextualized: true,
         original_content: finalOrig,
         context_variables: finalCv,
+        diff_chunks: diffChunks,
         validation: finalVal,
+        teacher_approved: isTeacherApproved,
         published_to_classes: [],
       });
 
@@ -1235,307 +1316,280 @@ export default function TeacherMaterialsPage() {
                   </div>
                 )}
 
-                {/* Bar Verifikasi Pedagogis Modul (Human-in-the-Loop) */}
-                {materialValidation && (
-                  <div className="p-4 rounded-2xl bg-[#FFD36D]/10 border border-[#FFD36D]/30 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-[#FFD36D]" />
-                        <span className="text-xs font-black text-white uppercase tracking-wider">
-                          Verifikasi Pedagogis Modul DEPASKAN
-                        </span>
-                      </div>
-                      <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#FFD36D] text-[#251E2B]">
-                        {materialValidation.is_valid ? "Terverifikasi" : "Perlu Peninjauan Guru"}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Kompetensi Materi Terjaga
-                      </span>
-                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> Kearifan Lokal Terintegrasi: {region}
-                      </span>
-                    </div>
-                    {materialValidation.warnings && materialValidation.warnings.length > 0 && (
-                      <div className="p-2.5 rounded-xl bg-amber-900/30 border border-amber-500/30 text-amber-200 text-xs space-y-1">
-                        {materialValidation.warnings.map((w, wIdx) => (
-                          <div key={wIdx} className="flex items-start gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                            <span>{w}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Variabel Konteks yang Disubstitusi */}
-                {materialContextVariables && materialContextVariables.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
-                    <span className="text-[11px] font-bold text-gray-300 block">
-                      Substitusi Entitas Lokal Terintegrasi ({region}):
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {materialContextVariables.map((cv, cvIdx) => (
-                        <div
-                          key={cvIdx}
-                          className="px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] text-white flex items-center gap-1.5 shadow-xs"
-                          title={cv.reason || `${cv.original_term} disesuaikan dengan ${cv.replacement_term}`}
-                        >
-                          <span className="text-gray-400 line-through">{cv.original_term}</span>
-                          <span className="text-[#FFD36D]">➔</span>
-                          <span className="font-bold text-[#FFD36D]">{cv.replacement_term}</span>
-                          {cv.category && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/10 text-gray-300 uppercase">
-                              {cv.category}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Input Manual Konten: Naskah Lebar & Lapang */}
-                {selectedMethod === "manual" && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-gray-200">
-                        Naskah Materi Asli
-                      </label>
-                      <span className="text-[11px] text-gray-400 font-mono">
-                        {manualDraft.length} karakter
-                      </span>
-                    </div>
-                    <textarea
-                      rows={9}
-                      required
-                      value={manualDraft}
-                      onChange={(e) => setManualDraft(e.target.value)}
-                      placeholder="Ketik materi pembelajaran secara lengkap di sini. Masukkan konsep pembelajaran, data rill komoditas, atau aktivitas eksplorasi siswa..."
-                      className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                {/* Panel Peninjauan Before-and-After (Jika Hasil Kontekstualisasi Telah Siap) */}
+                {previewNarrative ? (
+                  <div className="space-y-4">
+                    <BeforeAfterDiffViewer
+                      mode={
+                        selectedMethod === "ai"
+                          ? isSubsequentLocalization
+                            ? "ai_then_contextualized"
+                            : "pure_ai_generation"
+                          : "existing_source"
+                      }
+                      originalText={originalContent || manualDraft}
+                      contextualizedText={previewNarrative}
+                      promptText={aiPrompt || title}
+                      diffChunks={diffChunks}
+                      contextVariables={materialContextVariables}
+                      validation={materialValidation || undefined}
+                      regionName={region}
+                      modelUsed={materialModelUsed}
+                      contentTypeLabel="Modul Materi Ajar"
+                      onTextChange={(newText) => setPreviewNarrative(newText)}
+                      isTeacherApproved={isTeacherApproved}
+                      onToggleApproval={(approved) => setIsTeacherApproved(approved)}
+                      onSubsequentContextualize={
+                        selectedMethod === "ai" && !isSubsequentLocalization
+                          ? handleSubsequentContextualization
+                          : undefined
+                      }
+                      isSubsequentLoading={isAiGenerating}
                     />
 
-                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div>
-                        <span className="font-bold text-[#FFD36D] text-xs block">Kearifan Lokal Wilayah: {region}</span>
-                        <span className="text-[11px] text-gray-300">
-                          Kontekstualisasikan naskah manual dengan kearifan lokal {region} menggunakan Gemini AI + RAG.
-                        </span>
-                      </div>
+                    {/* Toggle untuk Melihat / Mengubah Naskah Sumber Input */}
+                    <div className="flex items-center justify-between pt-1">
                       <button
                         type="button"
-                        onClick={handleTriggerAiContextTransformation}
-                        disabled={isAiGenerating || !manualDraft.trim()}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                        onClick={() => setShowRawSourceInput(!showRawSourceInput)}
+                        className="text-xs text-gray-300 hover:text-[#FFD36D] flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        {isAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                        <span>{isAiGenerating ? "Mengontekstualisasikan..." : "Kontekstualisasikan"}</span>
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>
+                          {showRawSourceInput
+                            ? "Sembunyikan Form Input Sumber"
+                            : "Ubah Naskah Sumber / Input Awal"}
+                        </span>
                       </button>
-                    </div>
 
-                    {previewNarrative && (
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider block">
-                          Hasil Kontekstualisasi (Dapat Diedit Sebelum Simpan)
-                        </label>
-                        <textarea
-                          rows={8}
-                          value={previewNarrative}
-                          onChange={(e) => setPreviewNarrative(e.target.value)}
-                          className="w-full p-4 rounded-2xl border-2 border-[#FFD36D]/40 bg-[#251E2B]/95 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[160px]"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Motret Naskah: Scan Camera & Editor */}
-                {selectedMethod === "camera" && (
-                  <div className="space-y-4">
-                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-3 bg-[#251E2B]/50">
-                      <Camera className="w-8 h-8 text-[#FFD36D] mx-auto" />
-                      <p className="text-xs font-bold text-gray-200">
-                        {capturedPhotoName ? `Foto terlampir: ${capturedPhotoName}` : "Foto lembar naskah materi dari buku atau modul fisik"}
-                      </p>
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setIsCameraModalOpen(true)}
-                          disabled={isExtractingText}
-                          className="px-4 py-2.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-[#FFD36D] text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
-                        >
-                          {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Camera className="w-3.5 h-3.5 text-[#FFD36D]" />}
-                          <span>Buka Kamera (Laptop/HP)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => cameraInputRef.current?.click()}
-                          disabled={isExtractingText}
-                          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />
-                          <span>Pilih dari Berkas</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {extractionError && (
-                      <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
-                        {extractionError}
-                      </div>
-                    )}
-
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
-                          HASIL EKSTRAKSI TEKS (DAPAT DIEDIT GURU)
-                        </label>
-                        <span className="text-[11px] text-gray-400 font-mono">
-                          {manualDraft.length} karakter
-                        </span>
-                      </div>
-                      <textarea
-                        rows={7}
-                        value={manualDraft}
-                        onChange={(e) => setManualDraft(e.target.value)}
-                        placeholder="Teks hasil OCR/ekstraksi akan muncul di sini. Anda dapat mengoreksi sebelum kontekstualisasi..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[140px]"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleTriggerAiContextTransformation}
-                      disabled={isAiGenerating || !manualDraft.trim()}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      <span>{isAiGenerating ? "Mengontekstualisasikan dengan Kearifan Lokal..." : "Kontekstualisasikan dengan Kearifan Lokal"}</span>
-                    </button>
-
-                    {previewNarrative && (
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider block">
-                          Hasil Kontekstualisasi (Dapat Diedit Sebelum Simpan)
-                        </label>
-                        <textarea
-                          rows={8}
-                          value={previewNarrative}
-                          onChange={(e) => setPreviewNarrative(e.target.value)}
-                          className="w-full p-4 rounded-2xl border-2 border-[#FFD36D]/40 bg-[#251E2B]/95 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[160px]"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Upload PDF: File & Editor */}
-                {selectedMethod === "pdf" && (
-                  <div className="space-y-4">
-                    <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
-                      <Upload className="w-8 h-8 text-[#FFD36D] mx-auto" />
-                      <p className="text-xs font-bold text-gray-200">
-                        {uploadedFileName ? `Dokumen: ${uploadedFileName}` : "Unggah berkas modul ajar format PDF"}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => pdfInputRef.current?.click()}
-                        disabled={isExtractingText}
-                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />}
-                        <span>{isExtractingText ? "Mengekstrak PDF..." : uploadedFileName ? "Ganti PDF" : "Upload PDF Sekarang"}</span>
-                      </button>
-                    </div>
-
-                    {extractionError && (
-                      <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
-                        {extractionError}
-                      </div>
-                    )}
-
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
-                          HASIL EKSTRAKSI TEKS DARI DOKUMEN PDF (DAPAT DIEDIT GURU)
-                        </label>
-                        <span className="text-[11px] text-gray-400 font-mono">
-                          {manualDraft.length} karakter
-                        </span>
-                      </div>
-                      <textarea
-                        rows={7}
-                        value={manualDraft}
-                        onChange={(e) => setManualDraft(e.target.value)}
-                        placeholder="Teks hasil ekstraksi PDF akan muncul di sini. Perbaiki atau tambahkan catatan..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[140px]"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleTriggerAiContextTransformation}
-                      disabled={isAiGenerating || !manualDraft.trim()}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      <span>{isAiGenerating ? "Mengontekstualisasikan dengan Kearifan Lokal..." : "Kontekstualisasikan dengan Kearifan Lokal"}</span>
-                    </button>
-
-                    {previewNarrative && (
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-[#FFD36D] uppercase tracking-wider block">
-                          Hasil Kontekstualisasi (Dapat Diedit Sebelum Simpan)
-                        </label>
-                        <textarea
-                          rows={8}
-                          value={previewNarrative}
-                          onChange={(e) => setPreviewNarrative(e.target.value)}
-                          className="w-full p-4 rounded-2xl border-2 border-[#FFD36D]/40 bg-[#251E2B]/95 focus:border-[#FFD36D] text-xs sm:text-sm text-white focus:outline-none transition-all shadow-inner leading-relaxed min-h-[160px]"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Generate AI: Penyesuaian Kearifan Lokal & Editor Luas */}
-                {selectedMethod === "ai" && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div>
-                        <span className="font-bold text-[#FFD36D] text-xs block">Kearifan Lokal Wilayah: {region}</span>
-                        <span className="text-[11px] text-gray-300">
-                          AI merumuskan narasi tematik berbasis komoditas dan budaya nyata {region}.
-                        </span>
-                      </div>
                       <button
                         type="button"
                         onClick={handleTriggerAiContextTransformation}
                         disabled={isAiGenerating}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                        className="text-xs text-[#FFD36D] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
                       >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>{isAiGenerating ? "Merumuskan..." : previewNarrative ? "Generate Ulang" : "Generate AI"}</span>
+                        <RefreshCw className={`w-3.5 h-3.5 ${isAiGenerating ? "animate-spin" : ""}`} />
+                        <span>Kontekstualisasikan Ulang</span>
                       </button>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-200">
-                        Hasil Generate & Narasi Kontekstual (Dapat Diedit)
-                      </label>
-                      <textarea
-                        rows={11}
-                        value={previewNarrative || manualDraft}
-                        onChange={(e) => {
-                          setPreviewNarrative(e.target.value);
-                          setManualDraft(e.target.value);
-                        }}
-                        placeholder="Klik Generate AI di atas atau ketik langsung draf narasi tematik di sini..."
-                        className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[260px]"
-                      />
-                    </div>
+                    {showRawSourceInput && (
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                        <label className="text-xs font-bold text-gray-300 block">
+                          Editor Naskah Sumber (Input Guru):
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={manualDraft}
+                          onChange={(e) => setManualDraft(e.target.value)}
+                          className="w-full p-3 rounded-xl border border-white/20 bg-[#251E2B] text-xs text-white focus:border-[#FFD36D] focus:outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Form Input Awal (Manual / Kamera / PDF / AI Prompt) Jika Belum Dikontekstualisasikan */
+                  <div className="space-y-4">
+                    {/* Input Manual Konten */}
+                    {selectedMethod === "manual" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-gray-200">
+                            Naskah Materi Asli
+                          </label>
+                          <span className="text-[11px] text-gray-400 font-mono">
+                            {manualDraft.length} karakter
+                          </span>
+                        </div>
+                        <textarea
+                          rows={9}
+                          required
+                          value={manualDraft}
+                          onChange={(e) => setManualDraft(e.target.value)}
+                          placeholder="Ketik materi pembelajaran secara lengkap di sini. Masukkan konsep pembelajaran, data rill komoditas, atau aktivitas eksplorasi siswa..."
+                          className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[180px]"
+                        />
+
+                        <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div>
+                            <span className="font-bold text-[#FFD36D] text-xs block">
+                              Kearifan Lokal Wilayah: {region}
+                            </span>
+                            <span className="text-[11px] text-gray-300">
+                              Kontekstualisasikan naskah manual dengan kearifan lokal {region} menggunakan mesin deterministik / AI.
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleTriggerAiContextTransformation}
+                            disabled={isAiGenerating || !manualDraft.trim()}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            {isAiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                            <span>{isAiGenerating ? "Mengontekstualisasikan..." : "Kontekstualisasikan"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Motret Naskah: Scan Camera & Editor */}
+                    {selectedMethod === "camera" && (
+                      <div className="space-y-4">
+                        <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-3 bg-[#251E2B]/50">
+                          <Camera className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                          <p className="text-xs font-bold text-gray-200">
+                            {capturedPhotoName ? `Foto terlampir: ${capturedPhotoName}` : "Foto lembar naskah materi dari buku atau modul fisik"}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setIsCameraModalOpen(true)}
+                              disabled={isExtractingText}
+                              className="px-4 py-2.5 rounded-xl bg-[#51465B] hover:bg-[#3D3445] text-[#FFD36D] text-xs font-extrabold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                            >
+                              {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Camera className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                              <span>Buka Kamera (Laptop/HP)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cameraInputRef.current?.click()}
+                              disabled={isExtractingText}
+                              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />
+                              <span>Pilih dari Berkas</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {extractionError && (
+                          <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                            {extractionError}
+                          </div>
+                        )}
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
+                              HASIL EKSTRAKSI TEKS (DAPAT DIEDIT GURU)
+                            </label>
+                            <span className="text-[11px] text-gray-400 font-mono">
+                              {manualDraft.length} karakter
+                            </span>
+                          </div>
+                          <textarea
+                            rows={7}
+                            value={manualDraft}
+                            onChange={(e) => setManualDraft(e.target.value)}
+                            placeholder="Teks hasil OCR/ekstraksi akan muncul di sini. Anda dapat mengoreksi sebelum kontekstualisasi..."
+                            className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[140px]"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleTriggerAiContextTransformation}
+                          disabled={isAiGenerating || !manualDraft.trim()}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          <span>{isAiGenerating ? "Mengontekstualisasikan dengan Kearifan Lokal..." : "Kontekstualisasikan dengan Kearifan Lokal"}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Upload PDF: File & Editor */}
+                    {selectedMethod === "pdf" && (
+                      <div className="space-y-4">
+                        <div className="p-4 border-2 border-dashed border-white/25 rounded-2xl text-center space-y-2 bg-[#251E2B]/50">
+                          <Upload className="w-8 h-8 text-[#FFD36D] mx-auto" />
+                          <p className="text-xs font-bold text-gray-200">
+                            {uploadedFileName ? `Dokumen: ${uploadedFileName}` : "Unggah berkas modul ajar format PDF"}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => pdfInputRef.current?.click()}
+                            disabled={isExtractingText}
+                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {isExtractingText ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFD36D]" /> : <Upload className="w-3.5 h-3.5 text-[#FFD36D]" />}
+                            <span>{isExtractingText ? "Mengekstrak PDF..." : uploadedFileName ? "Ganti PDF" : "Upload PDF Sekarang"}</span>
+                          </button>
+                        </div>
+
+                        {extractionError && (
+                          <div className="p-3 rounded-xl bg-rose-900/60 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                            {extractionError}
+                          </div>
+                        )}
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-gray-200 uppercase tracking-wider">
+                              HASIL EKSTRAKSI TEKS DARI DOKUMEN PDF (DAPAT DIEDIT GURU)
+                            </label>
+                            <span className="text-[11px] text-gray-400 font-mono">
+                              {manualDraft.length} karakter
+                            </span>
+                          </div>
+                          <textarea
+                            rows={7}
+                            value={manualDraft}
+                            onChange={(e) => setManualDraft(e.target.value)}
+                            placeholder="Teks hasil ekstraksi PDF akan muncul di sini. Perbaiki atau tambahkan catatan..."
+                            className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[140px]"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleTriggerAiContextTransformation}
+                          disabled={isAiGenerating || !manualDraft.trim()}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isAiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          <span>{isAiGenerating ? "Mengontekstualisasikan dengan Kearifan Lokal..." : "Kontekstualisasikan dengan Kearifan Lokal"}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Generate AI: Penyesuaian Kearifan Lokal & Editor Luas */}
+                    {selectedMethod === "ai" && (
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div>
+                            <span className="font-bold text-[#FFD36D] text-xs block">
+                              Kearifan Lokal Wilayah: {region}
+                            </span>
+                            <span className="text-[11px] text-gray-300">
+                              AI merumuskan narasi tematik berbasis komoditas dan budaya nyata {region}.
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleTriggerAiContextTransformation}
+                            disabled={isAiGenerating}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFD36D] to-[#FDB040] text-[#251E2B] text-xs font-bold shadow-md cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>{isAiGenerating ? "Merumuskan..." : "Generate AI"}</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-200">
+                            Topik atau Deskripsi Permintaan Materi
+                          </label>
+                          <textarea
+                            rows={5}
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder="Contoh: Buatkan modul materi IPAS Kelas 5 tentang siklus air dan pemanfaatan sumber mata air lokal..."
+                            className="w-full p-4 rounded-2xl border-2 border-white/20 bg-[#251E2B]/90 focus:border-[#FFD36D] text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none transition-all shadow-inner leading-relaxed min-h-[120px]"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

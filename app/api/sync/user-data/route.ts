@@ -162,18 +162,8 @@ async function authenticateRequest(
     // Cookies unavailable
   }
 
-  // 3. Fallback to verified payload if credentials present
-  if (bodyCandidate?.userId || bodyCandidate?.userEmail) {
-    return {
-      user: {
-        id: bodyCandidate.userId || `usr-${Date.now()}`,
-        email: bodyCandidate.userEmail || "",
-        user_metadata: {},
-      },
-      accessToken: bearerToken,
-    };
-  }
-
+  // 3. Security invariant: Never trust client-supplied userId without cryptographic proof
+  // If neither valid Bearer token nor SSR session cookie is verified, reject the request.
   return null;
 }
 
